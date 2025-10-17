@@ -1,0 +1,1662 @@
+[
+  {
+    "id": "129",
+    "code": "1",
+    "name": "INTERIOR",
+    "color": "#FFFF18",
+    "stops": [
+      {
+        "id": 10242,
+        "name": "ESTACI\u00d2 D'AUTOBUSOS",
+        "latitude": 41.61090045882,
+        "longitude": 0.62279917430489
+      },
+      {
+        "id": 10211,
+        "name": "CATALUNYA",
+        "latitude": 41.611833748809,
+        "longitude": 0.6202890387767
+      },
+      {
+        "id": 10380,
+        "name": "UNIVERSITAT",
+        "latitude": 41.61329,
+        "longitude": 0.61989
+      },
+      {
+        "id": 10258,
+        "name": "HISENDA",
+        "latitude": 41.6164216,
+        "longitude": 0.620783
+      },
+      {
+        "id": 10333,
+        "name": "RICARD VI\u00d1ES / PRAT DE LA RIBA",
+        "latitude": 41.61917664541,
+        "longitude": 0.61984203558836
+      },
+      {
+        "id": 10236,
+        "name": "ENSENYAN\u00c7A/PRAT DE LA RIBA",
+        "latitude": 41.620487342823,
+        "longitude": 0.62297635044911
+      },
+      {
+        "id": 12873,
+        "name": "AMBULATORI/GU\u00c0RDIA URBANA",
+        "latitude": 41.621206817941,
+        "longitude": 0.62512969932094
+      },
+      {
+        "id": 10177,
+        "name": "AUDITORI",
+        "latitude": 41.62066742724,
+        "longitude": 0.62789674228134
+      },
+      {
+        "id": 10246,
+        "name": "ESTACI\u00d3 RENFE/RAMBLA FERRAN",
+        "latitude": 41.619758982695,
+        "longitude": 0.63169760904543
+      },
+      {
+        "id": 10176,
+        "name": "AUDI\u00c8NCIA",
+        "latitude": 41.617913000665,
+        "longitude": 0.63006425759621
+      },
+      {
+        "id": 10315,
+        "name": "PONT VELL/FRANCESC MACIA",
+        "latitude": 41.616367097168,
+        "longitude": 0.62863837703435
+      },
+      {
+        "id": 10327,
+        "name": "PONT VELL/PAERIA",
+        "latitude": 41.614757994708,
+        "longitude": 0.62717854232791
+      },
+      {
+        "id": 10213,
+        "name": "CAVALLERS",
+        "latitude": 41.612619824156,
+        "longitude": 0.62480368870081
+      },
+      {
+        "id": 10242,
+        "name": "ESTACI\u00d2 D'AUTOBUSOS",
+        "latitude": 41.61090045882,
+        "longitude": 0.62279917430489
+      }
+    ]
+  },
+  {
+    "id": "130",
+    "code": "2",
+    "name": "RONDA - HOSPITALS",
+    "color": "#FF134A",
+    "stops": [
+      {
+        "id": 13058,
+        "name": "ESTACIO D`AUTOBUSOS/AV.MADRID",
+        "latitude": 41.61032204897,
+        "longitude": 0.62172142564305
+      },
+      {
+        "id": 10306,
+        "name": "AV. MADRID/COS-GAY\u00d3N",
+        "latitude": 41.608689292322,
+        "longitude": 0.61795274440124
+      },
+      {
+        "id": 10379,
+        "name": "RONDA/UNIO",
+        "latitude": 41.610217692666,
+        "longitude": 0.61594545378044
+      },
+      {
+        "id": 10318,
+        "name": "PLA\u00c7A PAGESOS",
+        "latitude": 41.612279470984,
+        "longitude": 0.61417736982317
+      },
+      {
+        "id": 10222,
+        "name": "RONDA/PIUSXII",
+        "latitude": 41.614668127949,
+        "longitude": 0.613405221293
+      },
+      {
+        "id": 10353,
+        "name": "RONDA/SEGRIA",
+        "latitude": 41.617431626473,
+        "longitude": 0.61383050230893
+      },
+      {
+        "id": 10286,
+        "name": "MERCAT FLEMING",
+        "latitude": 41.619876352792,
+        "longitude": 0.61569757497839
+      },
+      {
+        "id": 10261,
+        "name": "HOSPITAL SANTA MARIA 2",
+        "latitude": 41.622844687211,
+        "longitude": 0.61641032068563
+      },
+      {
+        "id": 10219,
+        "name": "ONZE DE SETEMBRE 2",
+        "latitude": 41.624832370046,
+        "longitude": 0.6136869504844
+      },
+      {
+        "id": 13056,
+        "name": "ARNAU DE VILANOVA 2",
+        "latitude": 41.626170937709,
+        "longitude": 0.61087749332872
+      },
+      {
+        "id": 10171,
+        "name": "ARNAU DE VILANOVA",
+        "latitude": 41.625990731885,
+        "longitude": 0.61072199749663
+      },
+      {
+        "id": 10220,
+        "name": "ONZE DE SETEMBRE",
+        "latitude": 41.624633463191,
+        "longitude": 0.61361372236767
+      },
+      {
+        "id": 10260,
+        "name": "HOSPITAL SANTA MARIA",
+        "latitude": 41.622759123179,
+        "longitude": 0.61616745911789
+      },
+      {
+        "id": 10235,
+        "name": "RONDA / ENRIC GRANADOS",
+        "latitude": 41.621765973745,
+        "longitude": 0.61822050475884
+      },
+      {
+        "id": 10263,
+        "name": "RONDA/HUMBERT TORRES",
+        "latitude": 41.623359113849,
+        "longitude": 0.62034638438926
+      },
+      {
+        "id": 10313,
+        "name": "RONDA/PLA\u00c7A EUROPA",
+        "latitude": 41.625109793696,
+        "longitude": 0.62255926229159
+      },
+      {
+        "id": 10310,
+        "name": "PL.EUROPA/P.VIANA",
+        "latitude": 41.625021501605,
+        "longitude": 0.62351432261335
+      },
+      {
+        "id": 10308,
+        "name": "P.VIANA/PLA\u00c7A DEL TREBALL",
+        "latitude": 41.623624632431,
+        "longitude": 0.62598195293413
+      },
+      {
+        "id": 13030,
+        "name": "P.VIANA/PRAT DE LA RIBA",
+        "latitude": 41.622244512184,
+        "longitude": 0.62840529872994
+      },
+      {
+        "id": 10248,
+        "name": "ESTACI\u00d3 RENFE/P.VIANA",
+        "latitude": 41.620683069122,
+        "longitude": 0.63141526726145
+      },
+      {
+        "id": 10176,
+        "name": "AUDI\u00c8NCIA",
+        "latitude": 41.617913000665,
+        "longitude": 0.63006425759621
+      },
+      {
+        "id": 10315,
+        "name": "PONT VELL/FRANCESC MACIA",
+        "latitude": 41.616367097168,
+        "longitude": 0.62863837703435
+      },
+      {
+        "id": 10198,
+        "name": "CAMPS ELISIS 2",
+        "latitude": 41.613694072296,
+        "longitude": 0.63004147568118
+      },
+      {
+        "id": 10254,
+        "name": "DRA. CASTELLS/GARRIGUES",
+        "latitude": 41.611921327756,
+        "longitude": 0.63125576925985
+      },
+      {
+        "id": 10337,
+        "name": "CAP CAPPONT",
+        "latitude": 41.610427394545,
+        "longitude": 0.62942974381031
+      },
+      {
+        "id": 10336,
+        "name": "DRA. CASTELLS/ESTUDI GENERAL",
+        "latitude": 41.608437681561,
+        "longitude": 0.62720459338994
+      },
+      {
+        "id": 10326,
+        "name": "PONT UNIVERSITAT",
+        "latitude": 41.609161647611,
+        "longitude": 0.62474348743443
+      },
+      {
+        "id": 13058,
+        "name": "ESTACIO D`AUTOBUSOS/AV.MADRID",
+        "latitude": 41.61032204897,
+        "longitude": 0.62172142564305
+      }
+    ]
+  },
+  {
+    "id": "131",
+    "code": "3",
+    "name": "EXTERIOR - HOSPITALS",
+    "color": "#FF5F28",
+    "stops": [
+      {
+        "id": 13055,
+        "name": "EST. D`AUTOBUSOS/JOANA RASPALL",
+        "latitude": 41.610077520555,
+        "longitude": 0.62218703466192
+      },
+      {
+        "id": 10472,
+        "name": "PONT UNIVERSITAT 2",
+        "latitude": 41.609171262472,
+        "longitude": 0.62440464990777
+      },
+      {
+        "id": 13048,
+        "name": "DRA CASTELLS/ESTUDI GENERAL 2",
+        "latitude": 41.608210861068,
+        "longitude": 0.62726969738412
+      },
+      {
+        "id": 13072,
+        "name": "CAP CAPPONT 2",
+        "latitude": 41.610159036944,
+        "longitude": 0.62965220087285
+      },
+      {
+        "id": 13049,
+        "name": "DRA. CASTELLS/GARRIGUES 2",
+        "latitude": 41.611771214697,
+        "longitude": 0.63155534016937
+      },
+      {
+        "id": 10197,
+        "name": "CAMPS ELISIS",
+        "latitude": 41.61368518975,
+        "longitude": 0.63031511601367
+      },
+      {
+        "id": 10339,
+        "name": "PONT VELL/AV. SEGRE",
+        "latitude": 41.615303477016,
+        "longitude": 0.62815252438928
+      },
+      {
+        "id": 13057,
+        "name": "AUDI\u00c8NCIA 2",
+        "latitude": 41.618482568988,
+        "longitude": 0.63109722638478
+      },
+      {
+        "id": 10247,
+        "name": "ESTACI\u00d3 RENFE",
+        "latitude": 41.620486878763,
+        "longitude": 0.63216514267674
+      },
+      {
+        "id": 10330,
+        "name": "P.VIANA/PRAT DE LA RIBA 2",
+        "latitude": 41.622830413113,
+        "longitude": 0.62787962940682
+      },
+      {
+        "id": 10226,
+        "name": "P.VIANA/CORTS CATALANES",
+        "latitude": 41.624175786689,
+        "longitude": 0.62542966817044
+      },
+      {
+        "id": 10314,
+        "name": "RONDA/PLA\u00c7A EUROPA 2",
+        "latitude": 41.625092237348,
+        "longitude": 0.6222751694705
+      },
+      {
+        "id": 10237,
+        "name": "RONDA/ROVIRA ROURE",
+        "latitude": 41.622083689894,
+        "longitude": 0.61834083679591
+      },
+      {
+        "id": 10261,
+        "name": "HOSPITAL SANTA MARIA 2",
+        "latitude": 41.622844687211,
+        "longitude": 0.61641032068563
+      },
+      {
+        "id": 10219,
+        "name": "ONZE DE SETEMBRE 2",
+        "latitude": 41.624832370046,
+        "longitude": 0.6136869504844
+      },
+      {
+        "id": 13056,
+        "name": "ARNAU DE VILANOVA 2",
+        "latitude": 41.626170937709,
+        "longitude": 0.61087749332872
+      },
+      {
+        "id": 10171,
+        "name": "ARNAU DE VILANOVA",
+        "latitude": 41.625990731885,
+        "longitude": 0.61072199749663
+      },
+      {
+        "id": 10220,
+        "name": "ONZE DE SETEMBRE",
+        "latitude": 41.624633463191,
+        "longitude": 0.61361372236767
+      },
+      {
+        "id": 10260,
+        "name": "HOSPITAL SANTA MARIA",
+        "latitude": 41.622759123179,
+        "longitude": 0.61616745911789
+      },
+      {
+        "id": 10229,
+        "name": "MERCAT FLEMING 2",
+        "latitude": 41.619501688584,
+        "longitude": 0.61500325091355
+      },
+      {
+        "id": 10269,
+        "name": "RONDA/SEGRIA 2",
+        "latitude": 41.617672415271,
+        "longitude": 0.61365446035474
+      },
+      {
+        "id": 10300,
+        "name": "RONDA/PIUS XII 2",
+        "latitude": 41.613719200577,
+        "longitude": 0.61324820184117
+      },
+      {
+        "id": 10319,
+        "name": "PLA\u00c7A PAGESOS 2",
+        "latitude": 41.611716882186,
+        "longitude": 0.61422441073603
+      },
+      {
+        "id": 10208,
+        "name": "RONDA/UNIO 2",
+        "latitude": 41.61003546396,
+        "longitude": 0.61584416246687
+      },
+      {
+        "id": 10266,
+        "name": "INSTITUTS",
+        "latitude": 41.607280025426,
+        "longitude": 0.6179129028867
+      },
+      {
+        "id": 10311,
+        "name": "PASSAREL\u00b7LA MARISTES",
+        "latitude": 41.608751877029,
+        "longitude": 0.62046798630558
+      },
+      {
+        "id": 13055,
+        "name": "EST. D`AUTOBUSOS/JOANA RASPALL",
+        "latitude": 41.610077520555,
+        "longitude": 0.62218703466192
+      }
+    ]
+  },
+  {
+    "id": "132",
+    "code": "4",
+    "name": "PARDINYES-MARIOLA",
+    "color": "#1571FD",
+    "stops": [
+      {
+        "id": 10186,
+        "name": "BLOCS JUAN CARLOS",
+        "latitude": 41.612583934974,
+        "longitude": 0.60939408502531
+      },
+      {
+        "id": 13177,
+        "name": "GERMANS IZQUIERDO / CAP",
+        "latitude": 41.613362051882,
+        "longitude": 0.61209726866603
+      },
+      {
+        "id": 13178,
+        "name": "MARIOLA / VENUS",
+        "latitude": 41.612132197448,
+        "longitude": 0.61283001398147
+      },
+      {
+        "id": 10241,
+        "name": "ESCORXADOR",
+        "latitude": 41.611855099301,
+        "longitude": 0.61642583835021
+      },
+      {
+        "id": 10380,
+        "name": "UNIVERSITAT",
+        "latitude": 41.61329,
+        "longitude": 0.61989
+      },
+      {
+        "id": 10258,
+        "name": "HISENDA",
+        "latitude": 41.6164216,
+        "longitude": 0.620783
+      },
+      {
+        "id": 10333,
+        "name": "RICARD VI\u00d1ES / PRAT DE LA RIBA",
+        "latitude": 41.61917664541,
+        "longitude": 0.61984203558836
+      },
+      {
+        "id": 10236,
+        "name": "ENSENYAN\u00c7A/PRAT DE LA RIBA",
+        "latitude": 41.620487342823,
+        "longitude": 0.62297635044911
+      },
+      {
+        "id": 10169,
+        "name": "AMBULATORI",
+        "latitude": 41.621455207801,
+        "longitude": 0.6253975050722
+      },
+      {
+        "id": 10348,
+        "name": "PRAT DE LA RIBA/SANT RUF",
+        "latitude": 41.622943142024,
+        "longitude": 0.62878653954147
+      },
+      {
+        "id": 11605,
+        "name": "COBRIMENT DE VIES 2",
+        "latitude": 41.624416913639,
+        "longitude": 0.63100228918193
+      },
+      {
+        "id": 11606,
+        "name": "BARRIS NORD",
+        "latitude": 41.626095874067,
+        "longitude": 0.63317258189454
+      },
+      {
+        "id": 13052,
+        "name": "ESCOLA LA MITJANA",
+        "latitude": 41.626889923431,
+        "longitude": 0.63738166996919
+      },
+      {
+        "id": 13043,
+        "name": "RECORRIDO",
+        "latitude": 41.627013047221,
+        "longitude": 0.64017074829803
+      },
+      {
+        "id": 10276,
+        "name": "PARC LA MITJANA",
+        "latitude": 41.62767283925,
+        "longitude": 0.64173445182293
+      },
+      {
+        "id": 10181,
+        "name": "AVINGUDA PEARSON",
+        "latitude": 41.625391127736,
+        "longitude": 0.64088785812464
+      },
+      {
+        "id": 13054,
+        "name": "ESCOLA PARDINYES",
+        "latitude": 41.624568893754,
+        "longitude": 0.63882281108393
+      },
+      {
+        "id": 10267,
+        "name": "JERONI PUJADES / RAMBLA",
+        "latitude": 41.623940778915,
+        "longitude": 0.637407706369
+      }
+    ]
+  },
+  {
+    "id": "133",
+    "code": "5",
+    "name": "CAPPONT - ARNAU DE VILANOVA",
+    "color": "#088F1A",
+    "stops": [
+      {
+        "id": 13056,
+        "name": "ARNAU DE VILANOVA 2",
+        "latitude": 41.626170937709,
+        "longitude": 0.61087749332872
+      },
+      {
+        "id": 25044,
+        "name": "JARDINS DE LES MAGNOLIES2",
+        "latitude": 41.62954,
+        "longitude": 0.62312
+      },
+      {
+        "id": 10796,
+        "name": "BARO DE MAIALS/VIC",
+        "latitude": 41.629138327538,
+        "longitude": 0.62630382589594
+      },
+      {
+        "id": 10795,
+        "name": "BARO DE MAIALS/SABADELL",
+        "latitude": 41.627740020665,
+        "longitude": 0.62837178176006
+      },
+      {
+        "id": 10794,
+        "name": "CAP BAL\u00c0FIA-PARDINYES",
+        "latitude": 41.626099352952,
+        "longitude": 0.63055561545066
+      },
+      {
+        "id": 11606,
+        "name": "BARRIS NORD",
+        "latitude": 41.626095874067,
+        "longitude": 0.63317258189454
+      },
+      {
+        "id": 13102,
+        "name": "RAMBLA CORREGIDOR ESCOFET",
+        "latitude": 41.624172184451,
+        "longitude": 0.63590743470445
+      },
+      {
+        "id": 10183,
+        "name": "JERONI PUJADES/BARO DE MAIALS",
+        "latitude": 41.622455196602,
+        "longitude": 0.63583392130374
+      },
+      {
+        "id": 13064,
+        "name": "LA LLOTJA",
+        "latitude": 41.619146605543,
+        "longitude": 0.63622192548314
+      },
+      {
+        "id": 10321,
+        "name": "PASSAREL\u00b7LA CAMPS ELISIS",
+        "latitude": 41.616853697143,
+        "longitude": 0.63260605737903
+      },
+      {
+        "id": 10315,
+        "name": "PONT VELL/FRANCESC MACIA",
+        "latitude": 41.616367097168,
+        "longitude": 0.62863837703435
+      },
+      {
+        "id": 10198,
+        "name": "CAMPS ELISIS 2",
+        "latitude": 41.613694072296,
+        "longitude": 0.63004147568118
+      },
+      {
+        "id": 14402,
+        "name": "ALACANT/GARRIGUES",
+        "latitude": 41.612137553826,
+        "longitude": 0.63188552856445
+      },
+      {
+        "id": 14399,
+        "name": "PONT DE SUERT",
+        "latitude": 41.612330069394,
+        "longitude": 0.63581228256226
+      },
+      {
+        "id": 14400,
+        "name": "AGUSTINS/GARRIGUES",
+        "latitude": 41.609987757621,
+        "longitude": 0.63454627990723
+      },
+      {
+        "id": 14401,
+        "name": "BARCELONA/RIU EBRE",
+        "latitude": 41.60780580165,
+        "longitude": 0.63154220581055
+      },
+      {
+        "id": 10465,
+        "name": "ESTUDI GENERAL/JOAN FUSTER",
+        "latitude": 41.607480514789,
+        "longitude": 0.6275303613392
+      },
+      {
+        "id": 10326,
+        "name": "PONT UNIVERSITAT",
+        "latitude": 41.609161647611,
+        "longitude": 0.62474348743443
+      },
+      {
+        "id": 10244,
+        "name": "ESTACI\u00d2 D'AUTOBUSOS / PONT UNIVERSITIAT",
+        "latitude": 41.610657288319,
+        "longitude": 0.62281760522546
+      }
+    ]
+  },
+  {
+    "id": "134",
+    "code": "6",
+    "name": "MERCAT BORDETA AGRONOMS TANATORI",
+    "color": "#08508A",
+    "stops": [
+      {
+        "id": 13042,
+        "name": "PLA D`URGELL",
+        "latitude": 41.603037478571,
+        "longitude": 0.64606843487877
+      },
+      {
+        "id": 10249,
+        "name": "EXTREMADURA",
+        "latitude": 41.600210625025,
+        "longitude": 0.64369284629288
+      },
+      {
+        "id": 18043,
+        "name": "MERCAT BORDETA/PL.SANT JORDI",
+        "latitude": 41.6022,
+        "longitude": 0.642313
+      },
+      {
+        "id": 10462,
+        "name": "MIQUEL BATLLORI/FONTANET",
+        "latitude": 41.602991512702,
+        "longitude": 0.6397900126691
+      },
+      {
+        "id": 10463,
+        "name": "MUSEU DE L`AIGUA",
+        "latitude": 41.603982116429,
+        "longitude": 0.6367180500293
+      },
+      {
+        "id": 13035,
+        "name": "PARC JOAN ORO",
+        "latitude": 41.604983116584,
+        "longitude": 0.63371761065009
+      },
+      {
+        "id": 10464,
+        "name": "MIQUEL BATLLORI/LL11",
+        "latitude": 41.606202692594,
+        "longitude": 0.62996509067124
+      },
+      {
+        "id": 10465,
+        "name": "ESTUDI GENERAL/JOAN FUSTER",
+        "latitude": 41.607480514789,
+        "longitude": 0.6275303613392
+      },
+      {
+        "id": 10326,
+        "name": "PONT UNIVERSITAT",
+        "latitude": 41.609161647611,
+        "longitude": 0.62474348743443
+      },
+      {
+        "id": 10243,
+        "name": "ESTACI\u00d3 D'AUTOBUSOS/PL.ESPANYA",
+        "latitude": 41.610735373338,
+        "longitude": 0.62223870716045
+      },
+      {
+        "id": 10211,
+        "name": "CATALUNYA",
+        "latitude": 41.611833748809,
+        "longitude": 0.6202890387767
+      },
+      {
+        "id": 10380,
+        "name": "UNIVERSITAT",
+        "latitude": 41.61329,
+        "longitude": 0.61989
+      },
+      {
+        "id": 10258,
+        "name": "HISENDA",
+        "latitude": 41.6164216,
+        "longitude": 0.620783
+      },
+      {
+        "id": 10346,
+        "name": "RICARD VI\u00d1ES/SANITAT",
+        "latitude": 41.619507502269,
+        "longitude": 0.61919181966552
+      },
+      {
+        "id": 13041,
+        "name": "PL.ENRIC GRANADOS/ROVIRA ROURE 2",
+        "latitude": 41.621365851197,
+        "longitude": 0.61827804312816
+      },
+      {
+        "id": 10261,
+        "name": "HOSPITAL SANTA MARIA 2",
+        "latitude": 41.622844687211,
+        "longitude": 0.61641032068563
+      },
+      {
+        "id": 10219,
+        "name": "ONZE DE SETEMBRE 2",
+        "latitude": 41.624832370046,
+        "longitude": 0.6136869504844
+      },
+      {
+        "id": 13056,
+        "name": "ARNAU DE VILANOVA 2",
+        "latitude": 41.626170937709,
+        "longitude": 0.61087749332872
+      },
+      {
+        "id": 10466,
+        "name": "TANATORI",
+        "latitude": 41.631813770053,
+        "longitude": 0.61057696510375
+      },
+      {
+        "id": 10466,
+        "name": "TANATORI",
+        "latitude": 41.631813770053,
+        "longitude": 0.61057696510375
+      },
+      {
+        "id": 13047,
+        "name": "VILA MONTCADA",
+        "latitude": 41.628571826964,
+        "longitude": 0.6127120658175
+      },
+      {
+        "id": 10171,
+        "name": "ARNAU DE VILANOVA",
+        "latitude": 41.625990731885,
+        "longitude": 0.61072199749663
+      },
+      {
+        "id": 10220,
+        "name": "ONZE DE SETEMBRE",
+        "latitude": 41.624633463191,
+        "longitude": 0.61361372236767
+      },
+      {
+        "id": 10260,
+        "name": "HOSPITAL SANTA MARIA",
+        "latitude": 41.622759123179,
+        "longitude": 0.61616745911789
+      },
+      {
+        "id": 13040,
+        "name": "ENRIC GRANADOS/ROVIRA ROURE",
+        "latitude": 41.621359100529,
+        "longitude": 0.61797571187537
+      },
+      {
+        "id": 10334,
+        "name": "RICARD VI\u00d1ES/BALMES",
+        "latitude": 41.618772107019,
+        "longitude": 0.61933507394838
+      },
+      {
+        "id": 10259,
+        "name": "HISENDA 2",
+        "latitude": 41.61677,
+        "longitude": 0.62032
+      },
+      {
+        "id": 10381,
+        "name": "UNIVERSITAT 2",
+        "latitude": 41.613194825898,
+        "longitude": 0.6196148345914
+      },
+      {
+        "id": 10312,
+        "name": "ESTACIO D`AUTOBUSOS/CATALUNYA",
+        "latitude": 41.610733204504,
+        "longitude": 0.62169875898597
+      },
+      {
+        "id": 10472,
+        "name": "PONT UNIVERSITAT 2",
+        "latitude": 41.609171262472,
+        "longitude": 0.62440464990777
+      },
+      {
+        "id": 10473,
+        "name": "ESTUDI GENERAL/JOAN FUSTER 2",
+        "latitude": 41.607389939887,
+        "longitude": 0.62726961521233
+      },
+      {
+        "id": 10474,
+        "name": "MIQUEL BATLLORI/LL11 2",
+        "latitude": 41.606120212502,
+        "longitude": 0.62989611218182
+      },
+      {
+        "id": 13036,
+        "name": "PARC JOAN ORO 2",
+        "latitude": 41.604891885985,
+        "longitude": 0.63366094802621
+      },
+      {
+        "id": 10475,
+        "name": "MUSEU DE L`AIGUA 2",
+        "latitude": 41.603890887208,
+        "longitude": 0.63666138391734
+      },
+      {
+        "id": 10476,
+        "name": "MIQUEL BATLLORI/FONTANET 2",
+        "latitude": 41.602891038962,
+        "longitude": 0.63972168089537
+      },
+      {
+        "id": 13066,
+        "name": "MERCAT BORDETA/AV. ARTESA",
+        "latitude": 41.602557858866,
+        "longitude": 0.64191766902944
+      },
+      {
+        "id": 10172,
+        "name": "AV. ARTESA",
+        "latitude": 41.60438492732,
+        "longitude": 0.6414191306132
+      },
+      {
+        "id": 10189,
+        "name": "PALAUET/BOQUE 2",
+        "latitude": 41.607013596666,
+        "longitude": 0.64469286627457
+      },
+      {
+        "id": 13061,
+        "name": "IES MARIA RUBIES/CENTRE",
+        "latitude": 41.605525940888,
+        "longitude": 0.64699340220575
+      },
+      {
+        "id": 13042,
+        "name": "PLA D`URGELL",
+        "latitude": 41.603037478571,
+        "longitude": 0.64606843487877
+      }
+    ]
+  },
+  {
+    "id": "135",
+    "code": "7",
+    "name": "COSTA MAGRANERS-AV.SANT PERE",
+    "color": "#099496",
+    "stops": [
+      {
+        "id": 10351,
+        "name": "LOCAL SOCIAL SEC\u00c0 2",
+        "latitude": 41.635388431915,
+        "longitude": 0.62940658819819
+      },
+      {
+        "id": 10239,
+        "name": "ESCOLA  TERRES DE PONENT",
+        "latitude": 41.637733356321,
+        "longitude": 0.6283884514803
+      },
+      {
+        "id": 10275,
+        "name": "LA LLUM",
+        "latitude": 41.638802626517,
+        "longitude": 0.62786435650876
+      },
+      {
+        "id": 10298,
+        "name": "MARIMUNT/PICABAIX",
+        "latitude": 41.6374596941,
+        "longitude": 0.62691166492687
+      },
+      {
+        "id": 10352,
+        "name": "LOCAL SOCIAL SEC\u00c0",
+        "latitude": 41.636433997262,
+        "longitude": 0.62752166668554
+      },
+      {
+        "id": 10272,
+        "name": "LLIBERTAT/LA CREU",
+        "latitude": 41.633622120085,
+        "longitude": 0.63036883523682
+      },
+      {
+        "id": 10323,
+        "name": "LLIBERTAT/POBLA DE SEGUR",
+        "latitude": 41.631764900877,
+        "longitude": 0.63108716709985
+      },
+      {
+        "id": 10374,
+        "name": "TORRE VICENS",
+        "latitude": 41.630879359663,
+        "longitude": 0.62924511806614
+      },
+      {
+        "id": 10796,
+        "name": "BARO DE MAIALS/VIC",
+        "latitude": 41.629138327538,
+        "longitude": 0.62630382589594
+      },
+      {
+        "id": 10795,
+        "name": "BARO DE MAIALS/SABADELL",
+        "latitude": 41.627740020665,
+        "longitude": 0.62837178176006
+      },
+      {
+        "id": 10794,
+        "name": "CAP BAL\u00c0FIA-PARDINYES",
+        "latitude": 41.626099352952,
+        "longitude": 0.63055561545066
+      },
+      {
+        "id": 11604,
+        "name": "COBRIMENT DE VIES",
+        "latitude": 41.624511951509,
+        "longitude": 0.63080675749173
+      },
+      {
+        "id": 11608,
+        "name": "PRAT DE LA RIBA/P.VIANA",
+        "latitude": 41.622626934488,
+        "longitude": 0.6274940814435
+      },
+      {
+        "id": 11609,
+        "name": "AMBULATORI/PALLARS",
+        "latitude": 41.621516543902,
+        "longitude": 0.62487914071422
+      },
+      {
+        "id": 13082,
+        "name": "ENSENYAN\u00c7A/HUMBERT TORRES",
+        "latitude": 41.62036378188,
+        "longitude": 0.62226893075005
+      },
+      {
+        "id": 10334,
+        "name": "RICARD VI\u00d1ES/BALMES",
+        "latitude": 41.618772107019,
+        "longitude": 0.61933507394838
+      },
+      {
+        "id": 10259,
+        "name": "HISENDA 2",
+        "latitude": 41.61677,
+        "longitude": 0.62032
+      },
+      {
+        "id": 10381,
+        "name": "UNIVERSITAT 2",
+        "latitude": 41.613194825898,
+        "longitude": 0.6196148345914
+      },
+      {
+        "id": 10244,
+        "name": "ESTACI\u00d2 D'AUTOBUSOS / PONT UNIVERSITIAT",
+        "latitude": 41.610657288319,
+        "longitude": 0.62281760522546
+      },
+      {
+        "id": 10214,
+        "name": "CAVALLERS 2",
+        "latitude": 41.612760509636,
+        "longitude": 0.62522455010853
+      },
+      {
+        "id": 10328,
+        "name": "PONT VELL/BLONDEL",
+        "latitude": 41.614365822128,
+        "longitude": 0.62707384164396
+      },
+      {
+        "id": 10198,
+        "name": "CAMPS ELISIS 2",
+        "latitude": 41.613694072296,
+        "longitude": 0.63004147568118
+      },
+      {
+        "id": 10230,
+        "name": "GARRIGUES/DRA. CASTELLS",
+        "latitude": 41.611890732408,
+        "longitude": 0.6314915641758
+      },
+      {
+        "id": 10187,
+        "name": "GARRIGUES/BLOCS LA CAIXA 2",
+        "latitude": 41.610100918314,
+        "longitude": 0.63338648867408
+      },
+      {
+        "id": 10202,
+        "name": "GARRIGUES/CANAL 2",
+        "latitude": 41.606728725653,
+        "longitude": 0.63757775753235
+      },
+      {
+        "id": 10355,
+        "name": "GARRIGUES/SICORIS 2",
+        "latitude": 41.605726908405,
+        "longitude": 0.6396662723641
+      },
+      {
+        "id": 13059,
+        "name": "AV. ARTESA 2",
+        "latitude": 41.603404950541,
+        "longitude": 0.64150283437437
+      },
+      {
+        "id": 13067,
+        "name": "MERCAT BORDETA/PL. SANT JORDI 2",
+        "latitude": 41.602319892242,
+        "longitude": 0.64261028486178
+      },
+      {
+        "id": 10301,
+        "name": "PLA D'URGELL 2",
+        "latitude": 41.602192559477,
+        "longitude": 0.64565485468574
+      },
+      {
+        "id": 13076,
+        "name": "CENTRE/IES MARIA R\u00daBIES",
+        "latitude": 41.604757018808,
+        "longitude": 0.64550941242739
+      },
+      {
+        "id": 10189,
+        "name": "PALAUET/BOQUE 2",
+        "latitude": 41.607013596666,
+        "longitude": 0.64469286627457
+      },
+      {
+        "id": 10174,
+        "name": "PALAUET/ASTURIES 2",
+        "latitude": 41.609859700791,
+        "longitude": 0.64839590527789
+      },
+      {
+        "id": 10376,
+        "name": "PALAUET/ALMERIA 2",
+        "latitude": 41.612011501415,
+        "longitude": 0.65056187814786
+      },
+      {
+        "id": 10216,
+        "name": "CEMENTIRI 2",
+        "latitude": 41.612667277944,
+        "longitude": 0.65577591899898
+      },
+      {
+        "id": 10324,
+        "name": "MECANOVA",
+        "latitude": 41.612544365448,
+        "longitude": 0.65734232335922
+      },
+      {
+        "id": 13060,
+        "name": "GARCIA LORCA-N240",
+        "latitude": 41.61070477194,
+        "longitude": 0.66331323737609
+      },
+      {
+        "id": 10268,
+        "name": "JOAN GAVARRA",
+        "latitude": 41.609870432023,
+        "longitude": 0.66365057271878
+      },
+      {
+        "id": 10283,
+        "name": "LOCAL SOCIAL MAGRANERS",
+        "latitude": 41.608976954023,
+        "longitude": 0.66284571889037
+      }
+    ]
+  },
+  {
+    "id": "136",
+    "code": "8",
+    "name": "BAL\u00c0FIA - CLOT - CENTRE",
+    "color": "#FF84FF",
+    "stops": [
+      {
+        "id": 10244,
+        "name": "ESTACI\u00d2 D'AUTOBUSOS / PONT UNIVERSITIAT",
+        "latitude": 41.610657288319,
+        "longitude": 0.62281760522546
+      },
+      {
+        "id": 10214,
+        "name": "CAVALLERS 2",
+        "latitude": 41.612760509636,
+        "longitude": 0.62522455010853
+      },
+      {
+        "id": 10328,
+        "name": "PONT VELL/BLONDEL",
+        "latitude": 41.614365822128,
+        "longitude": 0.62707384164396
+      },
+      {
+        "id": 13057,
+        "name": "AUDI\u00c8NCIA 2",
+        "latitude": 41.618482568988,
+        "longitude": 0.63109722638478
+      },
+      {
+        "id": 10247,
+        "name": "ESTACI\u00d3 RENFE",
+        "latitude": 41.620486878763,
+        "longitude": 0.63216514267674
+      },
+      {
+        "id": 11608,
+        "name": "PRAT DE LA RIBA/P.VIANA",
+        "latitude": 41.622626934488,
+        "longitude": 0.6274940814435
+      },
+      {
+        "id": 11609,
+        "name": "AMBULATORI/PALLARS",
+        "latitude": 41.621516543902,
+        "longitude": 0.62487914071422
+      },
+      {
+        "id": 10165,
+        "name": "ENSENYAN\u00c7A/ALCALDE PORQUERES",
+        "latitude": 41.620895619935,
+        "longitude": 0.62290257421682
+      },
+      {
+        "id": 13078,
+        "name": "CLOT DE LES GRANOTES 2",
+        "latitude": 41.623606694513,
+        "longitude": 0.62316998682539
+      },
+      {
+        "id": 13031,
+        "name": "ALCALDE PORQUERES/PL. EUROPA 2",
+        "latitude": 41.626571315452,
+        "longitude": 0.62280897097846
+      },
+      {
+        "id": 10285,
+        "name": "MERCAT BALAFIA 2",
+        "latitude": 41.628307091191,
+        "longitude": 0.6226497814398
+      },
+      {
+        "id": 10203,
+        "name": "CANT\u00c0BRIA 2",
+        "latitude": 41.631146156897,
+        "longitude": 0.62192054437586
+      },
+      {
+        "id": 10278,
+        "name": "LAURE\u00c0 FIGUEROLA 2",
+        "latitude": 41.63394232006,
+        "longitude": 0.62125348093213
+      },
+      {
+        "id": 10277,
+        "name": "LAURE\u00c0 FIGUEROLA",
+        "latitude": 41.633921340574,
+        "longitude": 0.62111019359101
+      }
+    ]
+  },
+  {
+    "id": "137",
+    "code": "9",
+    "name": "POLIGONS",
+    "color": "#00080B",
+    "stops": [
+      {
+        "id": 10339,
+        "name": "PONT VELL/AV. SEGRE",
+        "latitude": 41.615303477016,
+        "longitude": 0.62815252438928
+      },
+      {
+        "id": 13038,
+        "name": "PASSAREL\u00b7LA CAMPS ELISIS 2",
+        "latitude": 41.616959844286,
+        "longitude": 0.63347813396469
+      },
+      {
+        "id": 10387,
+        "name": "PALAU DE CONGRESSOS",
+        "latitude": 41.620534858915,
+        "longitude": 0.63798584995915
+      },
+      {
+        "id": 10388,
+        "name": "CIUTAT DEL TRANSPORT",
+        "latitude": 41.61628269439,
+        "longitude": 0.6469701652918
+      },
+      {
+        "id": 10389,
+        "name": "AV. IND\u00daSTRIA P.203",
+        "latitude": 41.617547505275,
+        "longitude": 0.65174108281099
+      },
+      {
+        "id": 10390,
+        "name": "AV. IND\u00daSTRIA P.208",
+        "latitude": 41.620147826338,
+        "longitude": 0.65426322280473
+      },
+      {
+        "id": 10391,
+        "name": "SEGRE AV.IND./PAU AGUST\u00cdN",
+        "latitude": 41.621626888173,
+        "longitude": 0.65568592124621
+      },
+      {
+        "id": 10392,
+        "name": "AV. IND\u00daSTRIA/E.MIES",
+        "latitude": 41.624126357818,
+        "longitude": 0.65820324687729
+      },
+      {
+        "id": 10393,
+        "name": "AV. IND\u00daSTRIA P.503",
+        "latitude": 41.626918760732,
+        "longitude": 0.66084373163176
+      },
+      {
+        "id": 10394,
+        "name": "GROS MERCAT",
+        "latitude": 41.628715578409,
+        "longitude": 0.66212176224747
+      },
+      {
+        "id": 10395,
+        "name": "J.SEGURA I FARR\u00c9 P.714",
+        "latitude": 41.628628968746,
+        "longitude": 0.6642910703833
+      },
+      {
+        "id": 10396,
+        "name": "J.SEGURA I FARR\u00c9 P.708",
+        "latitude": 41.625184721999,
+        "longitude": 0.66410335887658
+      },
+      {
+        "id": 10397,
+        "name": "J.SEGURA I FARR\u00c9 P.702",
+        "latitude": 41.621743685306,
+        "longitude": 0.66495977857178
+      },
+      {
+        "id": 12899,
+        "name": "ALCARR\u00c0S",
+        "latitude": 41.614539078593,
+        "longitude": 0.66853216095706
+      },
+      {
+        "id": 12900,
+        "name": "ELS FRARES SUD",
+        "latitude": 41.611960983631,
+        "longitude": 0.67152926239075
+      },
+      {
+        "id": 12901,
+        "name": "NEOPARC",
+        "latitude": 41.614697512811,
+        "longitude": 0.65993345092191
+      },
+      {
+        "id": 12902,
+        "name": "CTRA. TARRAGONA",
+        "latitude": 41.613423356681,
+        "longitude": 0.65663120537031
+      },
+      {
+        "id": 12903,
+        "name": "CEMENTIRI",
+        "latitude": 41.611231,
+        "longitude": 0.65523
+      },
+      {
+        "id": 10377,
+        "name": "PALAUET/ALMERIA",
+        "latitude": 41.612054538154,
+        "longitude": 0.65046430852505
+      },
+      {
+        "id": 10175,
+        "name": "PALAUET/ASTURIES",
+        "latitude": 41.609229302097,
+        "longitude": 0.64731888879419
+      },
+      {
+        "id": 13034,
+        "name": "PALAUET/BOQUE",
+        "latitude": 41.607281408283,
+        "longitude": 0.64475758343354
+      },
+      {
+        "id": 10292,
+        "name": "PALAUET/GARRIGUES",
+        "latitude": 41.605750657655,
+        "longitude": 0.6412613681794
+      },
+      {
+        "id": 10354,
+        "name": "GARRIGUES/SICORIS",
+        "latitude": 41.605975203137,
+        "longitude": 0.63947722169239
+      },
+      {
+        "id": 10188,
+        "name": "GARRIGUES/BLOCS LA CAIXA",
+        "latitude": 41.610237640965,
+        "longitude": 0.63346549265599
+      },
+      {
+        "id": 10231,
+        "name": "GARRIGUES/ALACANT",
+        "latitude": 41.611941451066,
+        "longitude": 0.63179507106836
+      },
+      {
+        "id": 10339,
+        "name": "PONT VELL/AV. SEGRE",
+        "latitude": 41.615303477016,
+        "longitude": 0.62815252438928
+      }
+    ]
+  },
+  {
+    "id": "138",
+    "code": "10",
+    "name": "GRAN DE LLIVIA-CAPARRELLA",
+    "color": "#892D00",
+    "stops": [
+      {
+        "id": 10223,
+        "name": "COMPLEX CAPARRELLA",
+        "latitude": 41.598919187265,
+        "longitude": 0.58136329741797
+      },
+      {
+        "id": 13073,
+        "name": "CAPARRELLA 2",
+        "latitude": 41.598086966619,
+        "longitude": 0.58664853405009
+      },
+      {
+        "id": 18045,
+        "name": "CREU DEL BATLLE",
+        "latitude": 41.5994,
+        "longitude": 0.598
+      },
+      {
+        "id": 11610,
+        "name": "CAMI DE RUFEA",
+        "latitude": 41.605332634861,
+        "longitude": 0.61446944450277
+      },
+      {
+        "id": 11611,
+        "name": "TON SIRERA",
+        "latitude": 41.606677233311,
+        "longitude": 0.61763584985347
+      },
+      {
+        "id": 10311,
+        "name": "PASSAREL\u00b7LA MARISTES",
+        "latitude": 41.608751877029,
+        "longitude": 0.62046798630558
+      },
+      {
+        "id": 10244,
+        "name": "ESTACI\u00d2 D'AUTOBUSOS / PONT UNIVERSITIAT",
+        "latitude": 41.610657288319,
+        "longitude": 0.62281760522546
+      },
+      {
+        "id": 10214,
+        "name": "CAVALLERS 2",
+        "latitude": 41.612760509636,
+        "longitude": 0.62522455010853
+      },
+      {
+        "id": 10328,
+        "name": "PONT VELL/BLONDEL",
+        "latitude": 41.614365822128,
+        "longitude": 0.62707384164396
+      },
+      {
+        "id": 13057,
+        "name": "AUDI\u00c8NCIA 2",
+        "latitude": 41.618482568988,
+        "longitude": 0.63109722638478
+      },
+      {
+        "id": 10247,
+        "name": "ESTACI\u00d3 RENFE",
+        "latitude": 41.620486878763,
+        "longitude": 0.63216514267674
+      },
+      {
+        "id": 11697,
+        "name": "SANT RUF/ROSA PARKS",
+        "latitude": 41.623909117981,
+        "longitude": 0.62778005644557
+      },
+      {
+        "id": 13071,
+        "name": "CAP BAL\u00c0FIA-PARDINYES/ROSA PARKS",
+        "latitude": 41.626131715938,
+        "longitude": 0.63030329846755
+      },
+      {
+        "id": 13051,
+        "name": "ROSA PARKS/AMB. ESPENS 2",
+        "latitude": 41.627799310942,
+        "longitude": 0.63168265583871
+      },
+      {
+        "id": 13080,
+        "name": "CTRA. ALBESA 2",
+        "latitude": 41.641736384075,
+        "longitude": 0.63621622473136
+      },
+      {
+        "id": 10815,
+        "name": "DEL VERDEROL",
+        "latitude": 41.646765877351,
+        "longitude": 0.63654804165491
+      },
+      {
+        "id": 10816,
+        "name": "C.E.I.P. LL\u00cdVIA",
+        "latitude": 41.650252058083,
+        "longitude": 0.64111546479613
+      },
+      {
+        "id": 10817,
+        "name": "ANTONI VILAPLANA",
+        "latitude": 41.649948281147,
+        "longitude": 0.64204097079073
+      }
+    ]
+  },
+  {
+    "id": "332",
+    "code": "20",
+    "name": "RONDA",
+    "color": "#0A8FA9",
+    "stops": [
+      {
+        "id": 10242,
+        "name": "ESTACI\u00d2 D'AUTOBUSOS",
+        "latitude": 41.61090045882,
+        "longitude": 0.62279917430489
+      },
+      {
+        "id": 13058,
+        "name": "ESTACIO D`AUTOBUSOS/AV.MADRID",
+        "latitude": 41.61032204897,
+        "longitude": 0.62172142564305
+      },
+      {
+        "id": 10306,
+        "name": "AV. MADRID/COS-GAY\u00d3N",
+        "latitude": 41.608689292322,
+        "longitude": 0.61795274440124
+      },
+      {
+        "id": 10379,
+        "name": "RONDA/UNIO",
+        "latitude": 41.610217692666,
+        "longitude": 0.61594545378044
+      },
+      {
+        "id": 10318,
+        "name": "PLA\u00c7A PAGESOS",
+        "latitude": 41.612279470984,
+        "longitude": 0.61417736982317
+      },
+      {
+        "id": 10222,
+        "name": "RONDA/PIUSXII",
+        "latitude": 41.614668127949,
+        "longitude": 0.613405221293
+      },
+      {
+        "id": 10353,
+        "name": "RONDA/SEGRIA",
+        "latitude": 41.617431626473,
+        "longitude": 0.61383050230893
+      },
+      {
+        "id": 10286,
+        "name": "MERCAT FLEMING",
+        "latitude": 41.619876352792,
+        "longitude": 0.61569757497839
+      },
+      {
+        "id": 10235,
+        "name": "RONDA / ENRIC GRANADOS",
+        "latitude": 41.621765973745,
+        "longitude": 0.61822050475884
+      },
+      {
+        "id": 10263,
+        "name": "RONDA/HUMBERT TORRES",
+        "latitude": 41.623359113849,
+        "longitude": 0.62034638438926
+      },
+      {
+        "id": 10313,
+        "name": "RONDA/PLA\u00c7A EUROPA",
+        "latitude": 41.625109793696,
+        "longitude": 0.62255926229159
+      },
+      {
+        "id": 10310,
+        "name": "PL.EUROPA/P.VIANA",
+        "latitude": 41.625021501605,
+        "longitude": 0.62351432261335
+      },
+      {
+        "id": 10308,
+        "name": "P.VIANA/PLA\u00c7A DEL TREBALL",
+        "latitude": 41.623624632431,
+        "longitude": 0.62598195293413
+      },
+      {
+        "id": 13030,
+        "name": "P.VIANA/PRAT DE LA RIBA",
+        "latitude": 41.622244512184,
+        "longitude": 0.62840529872994
+      },
+      {
+        "id": 10248,
+        "name": "ESTACI\u00d3 RENFE/P.VIANA",
+        "latitude": 41.620683069122,
+        "longitude": 0.63141526726145
+      },
+      {
+        "id": 10176,
+        "name": "AUDI\u00c8NCIA",
+        "latitude": 41.617913000665,
+        "longitude": 0.63006425759621
+      },
+      {
+        "id": 10315,
+        "name": "PONT VELL/FRANCESC MACIA",
+        "latitude": 41.616367097168,
+        "longitude": 0.62863837703435
+      },
+      {
+        "id": 10327,
+        "name": "PONT VELL/PAERIA",
+        "latitude": 41.614757994708,
+        "longitude": 0.62717854232791
+      },
+      {
+        "id": 10213,
+        "name": "CAVALLERS",
+        "latitude": 41.612619824156,
+        "longitude": 0.62480368870081
+      },
+      {
+        "id": 10242,
+        "name": "ESTACI\u00d2 D'AUTOBUSOS",
+        "latitude": 41.61090045882,
+        "longitude": 0.62279917430489
+      }
+    ]
+  }
+]
