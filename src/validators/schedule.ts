@@ -6,13 +6,15 @@ import { z } from "zod";
 
 const parseTimeToSeconds = (timeStr: string | null | undefined): number => {
   if (!timeStr) return 0;
-  const minSecMatch = timeStr.match(/(\d+)\s*min\s*(\d+)\s*s/);
+  const minSecReg = /(\d+)\s*min\s*(\d+)\s*s/;
+  const minSecMatch = minSecReg.exec(timeStr);
   if (minSecMatch) {
-    return parseInt(minSecMatch[1], 10) * 60 + parseInt(minSecMatch[2], 10);
+    return parseInt(minSecMatch[1]!, 10) * 60 + parseInt(minSecMatch[2]!, 10);
   }
-  const quoteMatch = timeStr.match(/(\d+)'\s*(\d+)''/);
+  const quoteReg = /(\d+)'\s*(\d+)''/;
+  const quoteMatch = quoteReg.exec(timeStr);
   if (quoteMatch) {
-    return parseInt(quoteMatch[1], 10) * 60 + parseInt(quoteMatch[2], 10);
+    return parseInt(quoteMatch[1]!, 10) * 60 + parseInt(quoteMatch[2]!, 10);
   }
   return 0;
 };
