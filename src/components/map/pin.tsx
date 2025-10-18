@@ -1,6 +1,7 @@
 import React from "react";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import type { Stop } from "@prisma/client";
+import { useBusFinder } from "@/context/buses";
 
 interface MapPinProps {
   stop: Stop;
@@ -8,9 +9,14 @@ interface MapPinProps {
 }
 
 const MapPin = React.memo(({ stop, zoom }: MapPinProps) => {
+  const { selectStop } = useBusFinder();
+
   if (zoom < 14) {
     return (
-      <AdvancedMarker position={{ lat: stop.latitude, lng: stop.longitude }}>
+      <AdvancedMarker
+        position={{ lat: stop.latitude, lng: stop.longitude }}
+        onClick={() => selectStop(stop)}
+      >
         <div className="size-3 rounded-full bg-black opacity-75" />
       </AdvancedMarker>
     );
@@ -18,7 +24,10 @@ const MapPin = React.memo(({ stop, zoom }: MapPinProps) => {
 
   if (zoom < 16.5) {
     return (
-      <AdvancedMarker position={{ lat: stop.latitude, lng: stop.longitude }}>
+      <AdvancedMarker
+        position={{ lat: stop.latitude, lng: stop.longitude }}
+        onClick={() => selectStop(stop)}
+      >
         <div
           title={stop.name}
           className="size-8 rounded-full border-2 bg-black shadow-md transition-transform hover:scale-110"
@@ -28,7 +37,10 @@ const MapPin = React.memo(({ stop, zoom }: MapPinProps) => {
   }
 
   return (
-    <AdvancedMarker position={{ lat: stop.latitude, lng: stop.longitude }}>
+    <AdvancedMarker
+      position={{ lat: stop.latitude, lng: stop.longitude }}
+      onClick={() => selectStop(stop)}
+    >
       <div
         title={stop.name}
         className="group relative flex cursor-pointer items-center transition-transform hover:!scale-110"

@@ -1,4 +1,6 @@
 "use client";
+import StopDetails from "@/components/stop/details";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { api } from "@/trpc/react";
 import type { Route, Stop } from "@prisma/client";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -11,6 +13,7 @@ interface BusFinderValue {
   isLoadingStops: boolean;
   toggleRoute: (routeId: string) => void;
   isRouteSelected: (routeId: string) => boolean;
+  selectStop: (stop: Stop) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
@@ -23,6 +26,7 @@ export const BusFinderProvider = ({
   children: React.ReactNode;
 }) => {
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
+  const [selectedStop, setSelectedStop] = useState<Stop | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
@@ -41,10 +45,12 @@ export const BusFinderProvider = ({
     api.routes.getAll.useQuery();
 
   // 4. Pass the debounced query to the tRPC hook
-  const { data: stops, isLoading: isLoadingStops } = api.stops.get.useQuery({
-    routeIds: selectedRoutes,
-    query: debouncedQuery,
-  });
+  const { data: stops, isLoading: isLoadingStops } = api.stops.getMany.useQuery(
+    {
+      routeIds: selectedRoutes,
+      query: debouncedQuery,
+    },
+  );
 
   function toggleRoute(routeId: string) {
     setSelectedRoutes((currentRoutes) =>
@@ -58,6 +64,10 @@ export const BusFinderProvider = ({
     return selectedRoutes.includes(routeId);
   }
 
+  function selectStop(stop: Stop) {
+    setSelectedStop(stop);
+  }
+
   if (!routes) return null;
 
   // 5. Provide the new state and setter function in the context value
@@ -69,6 +79,7 @@ export const BusFinderProvider = ({
     isLoadingStops,
     toggleRoute,
     isRouteSelected,
+    selectStop,
     searchQuery,
     setSearchQuery,
   } satisfies BusFinderValue;
@@ -76,6 +87,18 @@ export const BusFinderProvider = ({
   return (
     <BusFinderContext.Provider value={value}>
       {children}
+      <Drawer
+        open={!!selectedStop}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setSelectedStop(undefined); // Close the dialog by clearing the selected stop
+          }
+        }}
+      >
+        <DrawerContent>
+          {selectedStop && <StopDetails stop={selectedStop} />}
+        </DrawerContent>
+      </Drawer>
     </BusFinderContext.Provider>
   );
 };
