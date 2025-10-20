@@ -6,6 +6,7 @@ import {
 } from "../../ui/input-group";
 import { Search } from "lucide-react";
 import { useBusFinder } from "@/context/buses";
+import { Spinner } from "@/components/ui/spinner";
 
 const SearchInput = () => {
   const { stops, searchQuery, setSearchQuery, isLoadingStops } = useBusFinder();
@@ -21,7 +22,14 @@ const SearchInput = () => {
         <Search />
       </InputGroupAddon>
       <InputGroupAddon align="inline-end">
-        {isLoadingStops ? "carregant..." : `${stops?.length ?? 0} parades`}
+        {isLoadingStops ? (
+          <>
+            carregant
+            <Spinner />
+          </>
+        ) : (
+          (stops?.length ?? 0) > 0 && `${stops?.length ?? 0} parades`
+        )}
       </InputGroupAddon>
     </InputGroup>
   );
