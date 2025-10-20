@@ -7,6 +7,9 @@ import { useBusFinder } from "@/context/buses";
 import React from "react";
 import MapPinsRenderer from "@/components/map/pins/pins-renderer";
 import { Card } from "../ui/card";
+import { Button } from "../ui/button";
+import Link from "next/link";
+import Github from "../icons/github";
 
 const BusMap = () => {
   const { stops } = useBusFinder();
@@ -25,6 +28,18 @@ const BusMap = () => {
       >
         {stops && <MapPinsRenderer stops={stops} />}
       </MapComponent>
+      <div className="absolute bottom-0 flex w-full justify-center p-6">
+        <Button variant={"ghost"} asChild className="w-full max-w-sm">
+          <Link
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://github.com/jtayped/moventis-lleida"
+          >
+            <Github />
+            visita el repositori
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 };
