@@ -1,6 +1,6 @@
 import { ClockAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import CountdownTimer from "../ui/countdown";
+import CountdownTimer from "../../ui/countdown";
 import { formatRelativeTime, formatAbsoluteTime } from "@/lib/time";
 import type { Schedules } from "@/types/schedules";
 

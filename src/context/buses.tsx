@@ -1,5 +1,5 @@
 "use client";
-import StopDetails from "@/components/stop-details";
+import StopDetails from "@/components/map/stop-details";
 import {
   Drawer,
   DrawerContent,

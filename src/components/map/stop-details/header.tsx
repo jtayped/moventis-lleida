@@ -1,6 +1,6 @@
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import LastUpdated from "@/components/stop-details/last-updated";
+import LastUpdated from "@/components/map/stop-details/last-updated";
 
 interface StopDetailsHeaderProps {
   name: string;
