@@ -66,7 +66,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
       <ScrollArea className="h-[400px] pr-3">
         <div className="border-t">
           {sortedSchedules.length > 0 ? (
-            <div className="divide-y divide-gray-200">
+            <div className="divide-gray-300 divide-y">
               {sortedSchedules.map((line) => (
                 <StopScheduleLine
                   key={line.externalLineId}
@@ -76,7 +76,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-gray-500">
+            <div className="text-muted-foreground py-8 text-center">
               <p>No bus schedules available for this stop.</p>
             </div>
           )}

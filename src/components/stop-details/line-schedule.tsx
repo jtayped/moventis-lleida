@@ -17,7 +17,7 @@ export const StopScheduleLine = ({
     <div key={line.externalLineId} className="py-3">
       <div className="flex items-center gap-3 pr-2 pb-2">
         <span className="text-xl font-bold text-blue-600">{line.lineCode}</span>
-        <span className="truncate text-lg text-gray-600">{line.lineName}</span>
+        <span className="truncate text-lg text-muted-foreground">{line.lineName}</span>
       </div>
       <div
         className="grid gap-2"
