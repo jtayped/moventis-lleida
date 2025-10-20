@@ -32,7 +32,6 @@ function parseArrivalTime(scheduleDetails: ApiSchedule): Date {
     console.warn("Could not parse real-time string:", scheduleDetails.minutos);
     return now;
   } else {
-    // SCHEDULED:
     const timeParts = scheduleDetails.hora.split(":");
     const hours = parseInt(timeParts[0] ?? "0", 10);
     const minutes = parseInt(timeParts[1] ?? "0", 10);
@@ -68,22 +67,33 @@ export async function getStopSchedule(
       );
     }
 
-    // console.log(res.data[0]?.trayectos); // This log is fine for debugging
     const data = apiScheduleSchema.parse(res.data);
 
     const cleanedData: Schedules = data.map((line) => {
-      const [lineCode, lineName] = line.desc_linea.split(" - ", 2);
+      const cleanedDesc = line.desc_linea
+        .toLowerCase()
+        .replace(/\s*-\s*/g, " - ")
+        .replace(/\s*\/\s*/g, " / ");
 
-      // FIX: Handle both array and object values inside line.trayectos
+      let lineCode: string;
+      let lineName: string;
+
+      const separator = " - ";
+      const separatorIndex = cleanedDesc.indexOf(separator);
+
+      if (separatorIndex !== -1) {
+        lineCode = cleanedDesc.substring(0, separatorIndex);
+        lineName = cleanedDesc.substring(separatorIndex + separator.length);
+      } else {
+        lineCode = "";
+        lineName = cleanedDesc;
+      }
+
       const journeys = Object.values(line.trayectos).flatMap(
         (scheduleValue, index) => {
-          // scheduleValue can be an object OR an array
-
-          // Case 1: It's an array (like the "ARNAU DE VILANOVA" example)
           if (Array.isArray(scheduleValue)) {
             return scheduleValue.map((scheduleDetails, journeyIndex) => {
               return {
-                // Create a synthetic ID as none is provided
                 externalJourneyId: `${line.idLinea}-${index}-${journeyIndex}`,
                 isRealTime: scheduleDetails.real === "S",
                 arrivalTime: parseArrivalTime(scheduleDetails),
@@ -91,7 +101,6 @@ export async function getStopSchedule(
             });
           }
 
-          // Case 2: It's an object (like the "AGRÒNOMS" example)
           return Object.entries(scheduleValue).map(
             ([arrivalId, scheduleDetails]) => {
               return {
@@ -106,8 +115,8 @@ export async function getStopSchedule(
 
       return {
         externalLineId: line.idLinea,
-        lineCode: lineCode ?? "",
-        lineName: lineName ?? line.desc_linea,
+        lineCode: lineCode,
+        lineName: lineName,
         selected: line.selected === 1,
         journeys: journeys,
       };
