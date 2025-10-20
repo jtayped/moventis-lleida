@@ -5,7 +5,7 @@ import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
 
-const siteUrl = "https://moventis-lleida.vercel.app";
+const siteUrl = "https://moventis-lleida.joeltaylor.business";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
