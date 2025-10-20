@@ -5,11 +5,7 @@ export const routesRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
     const getCachedRoutes = unstable_cache(
       async () => {
-        return ctx.db.route.findMany({
-          orderBy: {
-            code: "asc",
-          },
-        });
+        return ctx.db.route.findMany({});
       },
       ["all-bus-routes"],
       {
