@@ -4,7 +4,7 @@ import { RefreshCw, Antenna } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "../ui/card";
 
@@ -12,7 +12,7 @@ import { Card } from "../ui/card";
  * Formats seconds into a relative time string (e.g., "Now", "12 min", "1h 30m").
  */
 const formatRelativeTime = (seconds: number): string => {
-  if (seconds < 30) return "Now";
+  if (seconds < 30) return "arribant";
   const totalMinutes = Math.round(seconds / 60);
 
   if (totalMinutes < 60) {
@@ -74,10 +74,10 @@ const formatTimeAgo = (timestamp: number | null): string => {
   const now = Date.now();
   const secondsAgo = Math.round((now - timestamp) / 1000);
 
-  if (secondsAgo < 10) return "just now";
-  if (secondsAgo < 60) return `${secondsAgo}s ago`;
+  if (secondsAgo < 10) return "ara";
+  if (secondsAgo < 60) return `fa ${secondsAgo}s`;
   const minutesAgo = Math.floor(secondsAgo / 60);
-  return `${minutesAgo}m ago`;
+  return `fa ${minutesAgo}m`;
 };
 
 /**
@@ -97,7 +97,9 @@ const LastUpdated = ({ timestamp }: { timestamp: number | null }) => {
 
   if (!timestamp) return null;
 
-  return <span className="text-xs text-gray-500">Updated {displayTime}</span>;
+  return (
+    <span className="text-xs text-gray-500">actualitzat {displayTime}</span>
+  );
 };
 
 const StopDetails = ({ stop }: { stop: Stop }) => {
@@ -148,7 +150,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
 
   if (isLoading) {
     return (
-      <div className="mt-4 p-4">
+      <div className="mt-4 p-4 md:mx-auto md:w-lg">
         <div className="mb-4 flex items-center justify-between pb-4">
           <Skeleton className="h-8 w-2/3" />
           <Skeleton className="h-9 w-9 rounded-md" />
@@ -170,23 +172,23 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
 
   if (isError || !details) {
     return (
-      <div className="flex h-full flex-col items-center justify-center p-4 text-center">
+      <div className="flex h-[400px] flex-col items-center justify-center p-4 text-center">
         <h3 className="text-destructive font-semibold">
-          Failed to load bus times.
+          hi ha hagut un problema carregant els busos :(
         </h3>
         <Button
           onClick={() => refetch()}
           variant="destructive"
           className="mt-4"
         >
-          Try Again
+          torna a intentar-ho
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="mt-4 flex flex-col p-4">
+    <div className="mt-4 flex flex-col p-4 md:mx-auto md:w-lg">
       <div className="flex items-start justify-between pb-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">{details.name}</h2>
@@ -204,7 +206,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
         </Button>
       </div>
 
-      <ScrollArea className="h-auto max-h-[75vh]">
+      <ScrollArea className="h-[400px] pr-3">
         <div className="border-t">
           {/* FIX: Use the new sortedSchedules array */}
           {sortedSchedules.length > 0 ? (
@@ -224,7 +226,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
                     className="grid gap-2"
                     style={{
                       gridTemplateColumns:
-                        "repeat(auto-fill, minmax(75px, 1fr))",
+                        "repeat(auto-fill, minmax(100px, 1fr))",
                     }}
                   >
                     {line.journeys.length > 0 ? (
@@ -276,6 +278,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
             </div>
           )}
         </div>
+        <ScrollBar orientation="vertical" />
       </ScrollArea>
     </div>
   );

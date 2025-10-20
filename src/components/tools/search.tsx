@@ -13,7 +13,7 @@ const SearchInput = () => {
   return (
     <InputGroup className="bg-card">
       <InputGroupInput
-        placeholder="Search stop..."
+        placeholder="busca la teva parada"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
@@ -21,7 +21,7 @@ const SearchInput = () => {
         <Search />
       </InputGroupAddon>
       <InputGroupAddon align="inline-end">
-        {isLoadingStops ? "..." : `${stops?.length ?? 0} stops`}
+        {isLoadingStops ? "carregant..." : `${stops?.length ?? 0} parades`}
       </InputGroupAddon>
     </InputGroup>
   );

@@ -6,16 +6,17 @@ import { INITIAL_BOUNDS, RESTRICTED_BOUNDS } from "@/constants/lleida";
 import { useBusFinder } from "@/context/buses";
 import React from "react";
 import MapPinsRenderer from "@/components/map/pins-renderer";
+import { Card } from "../ui/card";
 
 const BusMap = () => {
   const { stops } = useBusFinder();
 
   return (
     <div className="relative">
-      <div className="absolute top-0 z-10 w-full space-y-2 p-6">
+      <Card className="md:bg-card md:border-border absolute top-0 z-10 mx-auto w-full space-y-2 rounded-none rounded-br-xl border-none bg-transparent p-6 shadow-none md:max-w-2xl md:shadow-lg">
         <SearchInput />
         <BusRoutes />
-      </div>
+      </Card>
       <MapComponent
         mapId="lleida"
         bounds={INITIAL_BOUNDS}
