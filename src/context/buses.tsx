@@ -16,6 +16,7 @@ interface BusFinderValue {
   selectStop: (stop: Stop) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  selectedStop: Stop | undefined;
 }
 
 const BusFinderContext = createContext<BusFinderValue | undefined>(undefined);
@@ -82,6 +83,7 @@ export const BusFinderProvider = ({
     selectStop,
     searchQuery,
     setSearchQuery,
+    selectedStop,
   } satisfies BusFinderValue;
 
   return (
