@@ -25,7 +25,7 @@ export const StopDetailsSkeleton = () => {
         <Progress value={progress} className="my-4 w-3/4 max-w-sm" />
 
         <p className="mt-1 max-w-sm text-sm text-gray-500">
-          estem consultant les dades de moventi, pot tardar uns segons :/
+          estem consultant les dades de moventis, pot tardar uns segons :/
         </p>
       </div>
     </div>
