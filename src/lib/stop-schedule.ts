@@ -113,6 +113,10 @@ export async function getStopSchedule(
         },
       );
 
+      journeys.sort(
+        (a, b) => a.arrivalTime.getTime() - b.arrivalTime.getTime(),
+      );
+
       return {
         externalLineId: line.idLinea,
         lineCode: lineCode,
