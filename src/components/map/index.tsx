@@ -1,11 +1,11 @@
 "use client";
-import BusRoutes from "@/components/tools/routes";
-import SearchInput from "@/components/tools/search";
+import BusRoutes from "@/components/map/tools/routes";
+import SearchInput from "@/components/map/tools/search";
 import MapComponent from "@/components/ui/map";
 import { INITIAL_BOUNDS, RESTRICTED_BOUNDS } from "@/constants/lleida";
 import { useBusFinder } from "@/context/buses";
 import React from "react";
-import MapPinsRenderer from "@/components/map/pins-renderer";
+import MapPinsRenderer from "@/components/map/pins/pins-renderer";
 import { Card } from "../ui/card";
 
 const BusMap = () => {

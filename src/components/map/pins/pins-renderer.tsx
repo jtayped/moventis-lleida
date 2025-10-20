@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
 import MapPin from "./pin";
 import type { Stop } from "@prisma/client";
-import { useBusFinder } from "@/context/buses"; // Import context here
+import { useBusFinder } from "@/context/buses";
 
 // Define our zoom "buckets"
 type ZoomBucket = "small" | "medium" | "large";

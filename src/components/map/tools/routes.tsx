@@ -1,8 +1,8 @@
 import React from "react";
-import { Badge } from "../ui/badge";
+import { Badge } from "../../ui/badge";
 import { Plus, Check } from "lucide-react"; // 1. Import the Check icon
 import { useBusFinder } from "@/context/buses";
-import { ScrollArea, ScrollBar } from "../ui/scroll-area";
+import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
 
 const BusRoutes = () => {
   const { routes, isRouteSelected, toggleRoute } = useBusFinder();
@@ -20,7 +20,6 @@ const BusRoutes = () => {
   return (
     <ScrollArea className="pb-3">
       <ol className="flex gap-1">
-        {/* Map over the new sortedRoutes array */}
         {sortedRoutes.map((r) => (
           <Badge
             key={r.id}

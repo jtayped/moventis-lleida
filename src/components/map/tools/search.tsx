@@ -3,7 +3,7 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "../ui/input-group";
+} from "../../ui/input-group";
 import { Search } from "lucide-react";
 import { useBusFinder } from "@/context/buses";
 
