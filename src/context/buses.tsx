@@ -1,6 +1,11 @@
 "use client";
 import StopDetails from "@/components/stop/details";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { api } from "@/trpc/react";
 import type { Route, Stop } from "@prisma/client";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -116,7 +121,15 @@ export const BusFinderProvider = ({
         }}
       >
         <DrawerContent>
-          {selectedStop && <StopDetails stop={selectedStop} />}
+          {selectedStop && (
+            <>
+              <DrawerTitle className="sr-only">{selectStop.name}</DrawerTitle>
+              <DrawerDescription className="sr-only">
+                hores d&apos;arribada per la parada {selectStop.name}
+              </DrawerDescription>
+              <StopDetails stop={selectedStop} />
+            </>
+          )}
         </DrawerContent>
       </Drawer>
     </BusFinderContext.Provider>
