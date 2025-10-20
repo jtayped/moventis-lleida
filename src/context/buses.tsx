@@ -29,9 +29,15 @@ export const BusFinderProvider = ({
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
   const [selectedStop, setSelectedStop] = useState<Stop | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Debounce effect
+  // --- Debouncing States ---
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  // 1. Add new state for debounced routes
+  const [debouncedSelectedRoutes, setDebouncedSelectedRoutes] = useState<
+    string[]
+  >([]);
+
+  // Debounce effect for search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
@@ -42,13 +48,24 @@ export const BusFinderProvider = ({
     };
   }, [searchQuery]);
 
+  // 2. Add debounce effect for selected routes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSelectedRoutes(selectedRoutes);
+    }, 200); // You can adjust the delay
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [selectedRoutes]); // This effect runs whenever selectedRoutes changes
+
   const { data: routes, isLoading: isLoadingRoutes } =
     api.routes.getAll.useQuery();
 
-  // 4. Pass the debounced query to the tRPC hook
+  // 3. Pass the debounced states to the tRPC hook
   const { data: stops, isLoading: isLoadingStops } = api.stops.getMany.useQuery(
     {
-      routeIds: selectedRoutes,
+      routeIds: debouncedSelectedRoutes, // Use the debounced routes
       query: debouncedQuery,
     },
   );
@@ -62,6 +79,7 @@ export const BusFinderProvider = ({
   }
 
   function isRouteSelected(routeId: string): boolean {
+    // This should still use the immediate state for responsive UI
     return selectedRoutes.includes(routeId);
   }
 
@@ -71,11 +89,10 @@ export const BusFinderProvider = ({
 
   if (!routes) return null;
 
-  // 5. Provide the new state and setter function in the context value
   const value = {
     routes,
     stops,
-    selectedRoutes,
+    selectedRoutes, // Provide the immediate state to the context for responsive UI
     isLoadingRoutes,
     isLoadingStops,
     toggleRoute,
