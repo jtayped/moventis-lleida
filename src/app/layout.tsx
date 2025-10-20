@@ -5,6 +5,7 @@ import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const siteUrl = "https://moventis-lleida.joeltaylor.business";
 
@@ -124,6 +125,7 @@ export default function RootLayout({
       <body>
         <TRPCReactProvider>
           {children}
+          <SpeedInsights />
           <Analytics />
         </TRPCReactProvider>
       </body>
