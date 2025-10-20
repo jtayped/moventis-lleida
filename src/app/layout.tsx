@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
   title: {
-    default: "bus urbà lleida | temps real (no oficial)",
+    default: "bus urbà lleida | temps real",
     template: "%s | bus lleida",
   },
 
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "horaris bus urbà lleida (no oficial)",
+    title: "horaris bus urbà lleida",
 
     description:
       "consulta els horaris de l'autobús urbà de lleida en temps real.",
@@ -101,7 +101,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
 
-    title: "horaris bus urbà lleida (no oficial)",
+    title: "horaris bus urbà lleida",
 
     description:
       "consulta els horaris de l'autobús urbà de lleida en temps real.",
