@@ -9,7 +9,6 @@ interface BusFinderValue {
   routes: Route[];
   stops: Stop[] | undefined;
   selectedRoutes: string[];
-  isLoadingRoutes: boolean;
   isLoadingStops: boolean;
   toggleRoute: (routeId: string) => void;
   isRouteSelected: (routeId: string) => boolean;
@@ -23,16 +22,15 @@ const BusFinderContext = createContext<BusFinderValue | undefined>(undefined);
 
 export const BusFinderProvider = ({
   children,
+  initialRoutes, // <-- 1. Accept routes as a prop
 }: {
   children: React.ReactNode;
+  initialRoutes: Route[]; // <-- This data comes from the server
 }) => {
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
   const [selectedStop, setSelectedStop] = useState<Stop | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // --- Debouncing States ---
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  // 1. Add new state for debounced routes
   const [debouncedSelectedRoutes, setDebouncedSelectedRoutes] = useState<
     string[]
   >([]);
@@ -48,24 +46,28 @@ export const BusFinderProvider = ({
     };
   }, [searchQuery]);
 
-  // 2. Add debounce effect for selected routes
+  // Debounce effect for selected routes
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSelectedRoutes(selectedRoutes);
-    }, 200); // You can adjust the delay
+    }, 300);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [selectedRoutes]); // This effect runs whenever selectedRoutes changes
+  }, [selectedRoutes]);
 
-  const { data: routes, isLoading: isLoadingRoutes } =
-    api.routes.getAll.useQuery();
+  // 2. Remove the client-side query for routes
+  // const { data: routes, isLoading: isLoadingRoutes } =
+  //   api.routes.getAll.useQuery();
 
-  // 3. Pass the debounced states to the tRPC hook
+  // 3. Use the prop directly
+  const routes = initialRoutes;
+
+  // The query for stops remains, as it's dynamic
   const { data: stops, isLoading: isLoadingStops } = api.stops.getMany.useQuery(
     {
-      routeIds: debouncedSelectedRoutes, // Use the debounced routes
+      routeIds: debouncedSelectedRoutes,
       query: debouncedQuery,
     },
   );
@@ -79,7 +81,6 @@ export const BusFinderProvider = ({
   }
 
   function isRouteSelected(routeId: string): boolean {
-    // This should still use the immediate state for responsive UI
     return selectedRoutes.includes(routeId);
   }
 
@@ -87,13 +88,13 @@ export const BusFinderProvider = ({
     setSelectedStop(stop);
   }
 
-  if (!routes) return null;
+  // 4. This check is no longer needed, as initialRoutes are guaranteed
+  // if (!routes) return null;
 
   const value = {
-    routes,
+    routes, // Use the prop
     stops,
-    selectedRoutes, // Provide the immediate state to the context for responsive UI
-    isLoadingRoutes,
+    selectedRoutes,
     isLoadingStops,
     toggleRoute,
     isRouteSelected,
