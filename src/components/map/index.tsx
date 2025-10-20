@@ -2,7 +2,7 @@
 import BusRoutes from "@/components/tools/routes";
 import SearchInput from "@/components/tools/search";
 import MapComponent from "@/components/ui/map";
-import { BOUNDS } from "@/constants/lleida";
+import { INITIAL_BOUNDS, RESTRICTED_BOUNDS } from "@/constants/lleida";
 import { useBusFinder } from "@/context/buses";
 import React from "react";
 import MapPinsRenderer from "@/components/map/pins-renderer";
@@ -16,7 +16,12 @@ const BusMap = () => {
         <SearchInput />
         <BusRoutes />
       </div>
-      <MapComponent mapId="lleida" bounds={BOUNDS} className="h-screen w-full">
+      <MapComponent
+        mapId="lleida"
+        bounds={INITIAL_BOUNDS}
+        restrictions={{ latLngBounds: RESTRICTED_BOUNDS, strictBounds: false }}
+        className="h-screen w-full"
+      >
         {stops && <MapPinsRenderer stops={stops} />}
       </MapComponent>
     </div>

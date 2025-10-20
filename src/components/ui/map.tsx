@@ -20,11 +20,10 @@ interface MapComponentProps {
   defaultCenter?: Coordinates;
   defaultZoom?: number;
   mapId?: string;
+  restrictions?: google.maps.MapRestriction | undefined | null;
   className?: string;
   children?: React.ReactNode;
 }
-
-// --- THE COMPONENT ---
 
 /**
  * A generic, reusable map component that displays multiple custom, clickable markers.
@@ -34,6 +33,7 @@ const MapComponent = ({
   bounds,
   mapId,
   className,
+  restrictions,
   defaultZoom = 1,
   defaultCenter = { lat: 0, lng: 0 },
   children,
@@ -46,6 +46,7 @@ const MapComponent = ({
         <Map
           style={{ width: "100%", height: "100%" }}
           defaultBounds={bounds}
+          restriction={restrictions}
           defaultCenter={!bounds ? defaultCenter : undefined}
           defaultZoom={!bounds ? defaultZoom : undefined}
           gestureHandling="greedy"

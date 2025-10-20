@@ -2,7 +2,7 @@ import React from "react";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import type { Stop } from "@prisma/client";
 import { useBusFinder } from "@/context/buses";
-import { Bus } from "lucide-react"; // Import a bus icon
+import { Bus } from "lucide-react";
 
 interface MapPinProps {
   stop: Stop;
