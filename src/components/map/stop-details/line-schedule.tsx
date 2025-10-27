@@ -1,8 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import ArrivalTimeCard from "./arrival-time-item";
 import type { Schedules } from "@/types/schedules";
+import { LINE_COLORS } from "@/constants/lines";
 
-type Line = Schedules[number];
+type Line = Schedules[number] & {
+  lineCode: keyof typeof LINE_COLORS;
+};
 
 interface StopScheduleLineProps {
   line: Line;
@@ -16,8 +19,15 @@ export const StopScheduleLine = ({
   return (
     <div key={line.externalLineId} className="py-3">
       <div className="flex items-center gap-3 pr-2 pb-2">
-        <span className="text-xl font-bold text-blue-600">{line.lineCode}</span>
-        <span className="truncate text-lg text-muted-foreground">{line.lineName}</span>
+        <span
+          className="flex size-8 items-center justify-center rounded-lg text-lg text-white"
+          style={{ backgroundColor: LINE_COLORS[line.lineCode] }}
+        >
+          {line.lineCode}
+        </span>
+        <span className="text-muted-foreground truncate text-lg">
+          {line.lineName}
+        </span>
       </div>
       <div
         className="grid gap-2"
