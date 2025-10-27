@@ -10,8 +10,8 @@ const BusRoutes = () => {
   // Create a sorted copy of the routes array
   // We use [...routes] to create a shallow copy before sorting
   const sortedRoutes = [...routes].sort((a, b) => {
-    const aIsSelected = isRouteSelected(a.id);
-    const bIsSelected = isRouteSelected(b.id);
+    const aIsSelected = isRouteSelected(a.code);
+    const bIsSelected = isRouteSelected(b.code);
 
     // This moves selected items (true) to the front
     return Number(bIsSelected) - Number(aIsSelected);
@@ -23,11 +23,11 @@ const BusRoutes = () => {
         {sortedRoutes.map((r) => (
           <Badge
             key={r.id}
-            variant={isRouteSelected(r.id) ? "default" : "outline"}
-            onClick={() => toggleRoute(r.id)}
+            variant={isRouteSelected(r.code) ? "default" : "outline"}
+            onClick={() => toggleRoute(r.code)}
             className="cursor-pointer py-2"
           >
-            {isRouteSelected(r.id) ? <Check /> : <Plus />}
+            {isRouteSelected(r.code) ? <Check /> : <Plus />}
             <span
               style={{ backgroundColor: r.color }}
               className="ml-2 flex size-5 items-center justify-center rounded-sm text-white"

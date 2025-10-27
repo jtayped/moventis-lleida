@@ -2,14 +2,16 @@ import { api } from "@/trpc/react";
 import type { Stop } from "@prisma/client";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useMemo } from "react";
-
-// Import the new modular components
 import StopDetailsSkeleton from "./loading";
 import StopDetailsError from "./error";
 import StopDetailsHeader from "./header";
 import StopScheduleLine from "./line-schedule";
+import { useBusFinder } from "@/context/buses";
+import { CheckCheck, Spline } from "lucide-react";
 
 const StopDetails = ({ stop }: { stop: Stop }) => {
+  const { selectedRoutes } = useBusFinder();
+
   const {
     data: details,
     isLoading,
@@ -39,12 +41,25 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
     return closest;
   }, [details]);
 
-  const sortedSchedules = useMemo(() => {
-    if (!details?.schedules) return [];
-    return [...details.schedules].sort((a, b) => {
-      return (b.selected ? 1 : 0) - (a.selected ? 1 : 0);
-    });
-  }, [details?.schedules]);
+  const { selectedLines, otherLines } = useMemo(() => {
+    if (!details?.schedules) {
+      return { selectedLines: [], otherLines: [] };
+    }
+
+    const selectedRoutesSet = new Set(selectedRoutes);
+    const selected: typeof details.schedules = [];
+    const other: typeof details.schedules = [];
+
+    for (const line of details.schedules) {
+      if (selectedRoutesSet.has(line.lineCode)) {
+        selected.push(line);
+      } else {
+        other.push(line);
+      }
+    }
+
+    return { selectedLines: selected, otherLines: other };
+  }, [details, selectedRoutes]);
 
   if (isLoading) {
     return <StopDetailsSkeleton />;
@@ -64,20 +79,54 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
       />
 
       <ScrollArea className="h-[400px] pr-3">
-        <div className="border-t">
-          {sortedSchedules.length > 0 ? (
-            <div className="divide-gray-300 divide-y">
-              {sortedSchedules.map((line) => (
-                <StopScheduleLine
-                  key={line.externalLineId}
-                  line={line}
-                  closestJourneyId={closestJourney?.externalJourneyId ?? null}
-                />
-              ))}
+        <div>
+          {selectedLines.length === 0 && otherLines.length === 0 ? (
+            <div className="text-muted-foreground py-8 text-center">
+              <p>No hi ha horaris disponibles per a aquesta parada.</p>
             </div>
           ) : (
-            <div className="text-muted-foreground py-8 text-center">
-              <p>No bus schedules available for this stop.</p>
+            <div>
+              {selectedLines.length > 0 && (
+                <div className="py-2">
+                  <div className="my-4 mb-2 flex items-center gap-2 px-1">
+                    <CheckCheck className="h-5 w-5" />
+                    <h3 className="text-lg font-bold">línies seleccionades</h3>
+                  </div>
+                  <div className="divide-y divide-gray-300">
+                    {selectedLines.map((line) => (
+                      <StopScheduleLine
+                        key={line.externalLineId}
+                        line={line}
+                        closestJourneyId={
+                          closestJourney?.externalJourneyId ?? null
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {otherLines.length > 0 && (
+                <div className="py-2">
+                  {selectedLines.length > 0 && (
+                    <hr className="my-2 border-gray-200" />
+                  )}
+                  <div className="my-4 mb-2 flex items-center gap-2 px-1">
+                    <Spline className="h-5 w-5" />
+                    <h3 className="text-lg font-bold">correspondències</h3>
+                  </div>
+                  <div className="divide-y divide-gray-300">
+                    {otherLines.map((line) => (
+                      <StopScheduleLine
+                        key={line.externalLineId}
+                        line={line}
+                        closestJourneyId={
+                          closestJourney?.externalJourneyId ?? null
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

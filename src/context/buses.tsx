@@ -7,16 +7,17 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { api } from "@/trpc/react";
-import type { Route, Stop } from "@prisma/client";
+import type { Lines, Line } from "@/types/lines";
+import type { Stop } from "@prisma/client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface BusFinderValue {
-  routes: Route[];
+  routes: Line[];
   stops: Stop[] | undefined;
   selectedRoutes: string[];
   isLoadingStops: boolean;
-  toggleRoute: (routeId: string) => void;
-  isRouteSelected: (routeId: string) => boolean;
+  toggleRoute: (routeId: Lines) => void;
+  isRouteSelected: (routeId: Lines) => boolean;
   selectStop: (stop: Stop) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -30,14 +31,14 @@ export const BusFinderProvider = ({
   initialRoutes, // <-- 1. Accept routes as a prop
 }: {
   children: React.ReactNode;
-  initialRoutes: Route[]; // <-- This data comes from the server
+  initialRoutes: Line[]; // <-- This data comes from the server
 }) => {
-  const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
+  const [selectedRoutes, setSelectedRoutes] = useState<Lines[]>([]);
   const [selectedStop, setSelectedStop] = useState<Stop | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [debouncedSelectedRoutes, setDebouncedSelectedRoutes] = useState<
-    string[]
+    Lines[]
   >([]);
 
   // Debounce effect for search query
@@ -72,21 +73,21 @@ export const BusFinderProvider = ({
   // The query for stops remains, as it's dynamic
   const { data: stops, isLoading: isLoadingStops } = api.stops.getMany.useQuery(
     {
-      routeIds: debouncedSelectedRoutes,
+      routeCodes: debouncedSelectedRoutes,
       query: debouncedQuery,
     },
   );
 
-  function toggleRoute(routeId: string) {
+  function toggleRoute(routeCode: Lines) {
     setSelectedRoutes((currentRoutes) =>
-      currentRoutes.includes(routeId)
-        ? currentRoutes.filter((id) => id !== routeId)
-        : [...currentRoutes, routeId],
+      currentRoutes.includes(routeCode)
+        ? currentRoutes.filter((id) => id !== routeCode)
+        : [...currentRoutes, routeCode],
     );
   }
 
-  function isRouteSelected(routeId: string): boolean {
-    return selectedRoutes.includes(routeId);
+  function isRouteSelected(routeCode: Lines): boolean {
+    return selectedRoutes.includes(routeCode);
   }
 
   function selectStop(stop: Stop) {

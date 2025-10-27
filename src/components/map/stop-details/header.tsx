@@ -16,7 +16,7 @@ export const StopDetailsHeader = ({
   refetch,
 }: StopDetailsHeaderProps) => {
   return (
-    <div className="flex items-start justify-between pb-4">
+    <div className="flex items-start justify-between">
       <div>
         <h2 className="text-2xl font-bold">{name}</h2>
         <LastUpdated timestamp={dataUpdatedAt} />
