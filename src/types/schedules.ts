@@ -1,6 +1,8 @@
+import type { Lines } from "./lines";
+
 export type Schedules = {
   externalLineId: number;
-  lineCode: string;
+  lineCode: Lines;
   lineName: string;
   selected: boolean;
   journeys: {

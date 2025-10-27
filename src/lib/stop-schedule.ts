@@ -1,3 +1,4 @@
+import type { Lines } from "@/types/lines";
 import type { Schedules } from "@/types/schedules";
 import { apiScheduleSchema, type scheduleSchema } from "@/validators/schedule";
 import axios, { AxiosError } from "axios";
@@ -75,18 +76,17 @@ export async function getStopSchedule(
         .replace(/\s*-\s*/g, " - ")
         .replace(/\s*\/\s*/g, " / ");
 
-      let lineCode: string;
+      let lineCode: Lines;
       let lineName: string;
 
       const separator = " - ";
       const separatorIndex = cleanedDesc.indexOf(separator);
 
       if (separatorIndex !== -1) {
-        lineCode = cleanedDesc.substring(0, separatorIndex);
+        lineCode = cleanedDesc.substring(0, separatorIndex) as Lines;
         lineName = cleanedDesc.substring(separatorIndex + separator.length);
       } else {
-        lineCode = "";
-        lineName = cleanedDesc;
+        throw new Error("Line not defined.");
       }
 
       const journeys = Object.values(line.trayectos).flatMap(
