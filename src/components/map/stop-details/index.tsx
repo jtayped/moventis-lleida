@@ -8,6 +8,9 @@ import StopDetailsHeader from "./header";
 import StopScheduleLine from "./line-schedule";
 import { useBusFinder } from "@/context/buses";
 import { CheckCheck, Spline } from "lucide-react";
+import type { Journey } from "@/types/schedules";
+
+type ScheduledTime = Journey["scheduledTimes"][number];
 
 const StopDetails = ({ stop }: { stop: Stop }) => {
   const { selectedRoutes } = useBusFinder();
@@ -23,18 +26,24 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
     stopId: stop.id,
   });
 
-  const closestJourney = useMemo(() => {
+  // This memo now finds the closest *individual scheduled time*
+  const closestScheduledTime = useMemo(() => {
     if (!details?.schedules) return null;
-    let closest = null;
+
+    let closest: ScheduledTime | null = null;
     let minDiff = Infinity;
     const now = Date.now();
 
     for (const line of details.schedules) {
+      // Loop through journey groups (e.g., "agrònoms - pla d'urgell")
       for (const journey of line.journeys) {
-        const diff = (journey.arrivalTime.getTime() - now) / 1000;
-        if (diff > 0 && diff < minDiff) {
-          minDiff = diff;
-          closest = journey;
+        // Loop through the times for that journey group
+        for (const scheduledTime of journey.scheduledTimes) {
+          const diff = (scheduledTime.arrivalTime.getTime() - now) / 1000;
+          if (diff > 0 && diff < minDiff) {
+            minDiff = diff;
+            closest = scheduledTime;
+          }
         }
       }
     }
@@ -82,7 +91,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
         <div>
           {selectedLines.length === 0 && otherLines.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center">
-              <p>No hi ha horaris disponibles per a aquesta parada.</p>
+              <p>no hi ha horaris disponibles per a aquesta parada.</p>
             </div>
           ) : (
             <div>
@@ -97,9 +106,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
                       <StopScheduleLine
                         key={line.externalLineId}
                         line={line}
-                        closestJourneyId={
-                          closestJourney?.externalJourneyId ?? null
-                        }
+                        closestScheduledTime={closestScheduledTime}
                       />
                     ))}
                   </div>
@@ -119,9 +126,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
                       <StopScheduleLine
                         key={line.externalLineId}
                         line={line}
-                        closestJourneyId={
-                          closestJourney?.externalJourneyId ?? null
-                        }
+                        closestScheduledTime={closestScheduledTime}
                       />
                     ))}
                   </div>

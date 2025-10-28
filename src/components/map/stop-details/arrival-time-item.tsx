@@ -2,13 +2,14 @@ import { ClockAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import CountdownTimer from "../../ui/countdown";
 import { formatRelativeTime, formatAbsoluteTime } from "@/lib/time";
-import type { Schedules } from "@/types/schedules";
 
-// Define minimal types based on usage in the original component
-type Journey = Schedules[number]["journeys"][number];
+type ScheduledTime = {
+  arrivalTime: Date;
+  isRealTime: boolean;
+};
 
 interface ArrivalTimeCardProps {
-  journey: Journey;
+  journey: ScheduledTime;
   isClosest: boolean;
 }
 
@@ -21,10 +22,7 @@ export const ArrivalTimeCard = ({
   );
 
   return (
-    <Card
-      key={journey.externalJourneyId}
-      className={`flex h-auto flex-col items-center p-2`}
-    >
+    <Card className={`flex h-auto flex-col items-center p-2`}>
       <span className="flex items-center text-sm font-bold">
         {isClosest ? (
           <CountdownTimer targetDate={journey.arrivalTime} />
