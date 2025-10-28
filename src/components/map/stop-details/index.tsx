@@ -82,6 +82,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
     <div className="mt-4 flex flex-col p-4 md:mx-auto md:w-lg">
       <StopDetailsHeader
         name={details.name}
+        lines={details.routes}
         dataUpdatedAt={dataUpdatedAt}
         isFetching={isFetching}
         refetch={refetch}

@@ -1,9 +1,12 @@
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LastUpdated from "@/components/map/stop-details/last-updated";
+import type { Line } from "@/types/lines";
+import { Badge } from "@/components/ui/badge";
 
 interface StopDetailsHeaderProps {
   name: string;
+  lines: Line[];
   dataUpdatedAt: number | null;
   isFetching: boolean;
   refetch: () => void;
@@ -11,6 +14,7 @@ interface StopDetailsHeaderProps {
 
 export const StopDetailsHeader = ({
   name,
+  lines,
   dataUpdatedAt,
   isFetching,
   refetch,
@@ -18,7 +22,18 @@ export const StopDetailsHeader = ({
   return (
     <div className="flex items-start justify-between">
       <div>
-        <h2 className="text-2xl font-bold">{name}</h2>
+        <ol className="flex flex-wrap gap-2">
+          {lines.map((l) => (
+            <Badge
+              key={l.code}
+              className="px-4 text-xs"
+              style={{ backgroundColor: l.color }}
+            >
+              {l.code}
+            </Badge>
+          ))}
+        </ol>
+        <h2 className="mt-4 text-2xl font-bold">{name}</h2>
         <LastUpdated timestamp={dataUpdatedAt} />
       </div>
       <Button

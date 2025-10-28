@@ -4,6 +4,7 @@ import type { Stop } from "@prisma/client";
 import { getStopSchedule } from "@/lib/stop-schedule";
 import { TRPCError } from "@trpc/server";
 import { LINES } from "@/constants/lines";
+import type { Lines } from "@/types/lines";
 
 export const stopsRouter = createTRPCRouter({
   getMany: publicProcedure
@@ -60,6 +61,11 @@ export const stopsRouter = createTRPCRouter({
         stop.routes[0]!.externalId,
       );
 
-      return { ...stop, schedules };
+      const typedRoutes = stop.routes.map((r) => ({
+        ...r,
+        code: r.code as Lines,
+      }));
+
+      return { ...stop, routes: typedRoutes, schedules };
     }),
 });
