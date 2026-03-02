@@ -18,7 +18,22 @@ model Route {
     code  String
     color String
 
-    stops Stop[]
+    stops         Stop[]
+    operatingDays OperatingDay[]
+
+    updatedAt DateTime  @updatedAt
+    createdAt DateTime  @default(now())
+    deletedAt DateTime?
+}
+
+model OperatingDay {
+    id   String   @id @default(cuid())
+    date DateTime
+
+    routeId String
+    route   Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+    @@unique([routeId, date])
 }
 
 model Stop {
@@ -31,4 +46,8 @@ model Stop {
     longitude Float
 
     routes Route[]
+
+    updatedAt DateTime  @updatedAt
+    createdAt DateTime  @default(now())
+    deletedAt DateTime?
 }
