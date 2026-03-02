@@ -16,7 +16,6 @@ export const stopsRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }): Promise<Stop[]> => {
       const { routeCodes, query } = input;
-      console.log(routeCodes);
       // If no routes are selected AND there is no search query, return nothing.
       if (routeCodes.length === 0 && !query) {
         return []; // Return an empty array immediately
