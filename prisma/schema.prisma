@@ -27,13 +27,12 @@ model Route {
 }
 
 model OperatingDay {
-    id   String   @id @default(cuid())
     date DateTime
 
     routeId String
     route   Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
 
-    @@unique([routeId, date])
+    @@id([routeId, date])
 }
 
 model Stop {
