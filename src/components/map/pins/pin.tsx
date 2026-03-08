@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import type { Stop } from "@prisma/client";
 import { Bus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface MapPinProps {
   stop: Stop;
@@ -12,6 +13,16 @@ interface MapPinProps {
 
 const MapPin = React.memo(
   ({ stop, zoomBucket, isSelected, onClick }: MapPinProps) => {
+    // Check if the stop is newer than 14 days
+    const isNew = useMemo(() => {
+      if (!stop.createdAt) return false;
+
+      const fourteenDaysInMs = 14 * 24 * 60 * 60 * 1000;
+      const ageInMs = Date.now() - new Date(stop.createdAt).getTime();
+
+      return ageInMs < fourteenDaysInMs;
+    }, [stop.createdAt]);
+
     if (zoomBucket === "small") {
       return (
         <AdvancedMarker
@@ -33,8 +44,13 @@ const MapPin = React.memo(
           zIndex={isSelected ? 10 : 1}
         >
           <div
-            className={`flex size-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-lg transition-all hover:scale-110 ${isSelected ? "scale-105 bg-blue-800 ring-4 ring-blue-300" : ""} `}
+            className={`relative flex size-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-lg transition-all hover:scale-110 ${isSelected ? "scale-105 bg-blue-800 ring-4 ring-blue-300" : ""} `}
           >
+            {isNew && (
+              <Badge className="absolute -top-2.5 left-1/2 z-20 flex h-4 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 text-[10px] font-bold tracking-wider text-white uppercase shadow-sm hover:bg-red-600">
+                nou
+              </Badge>
+            )}
             <Bus size={16} />
           </div>
         </AdvancedMarker>
@@ -55,6 +71,11 @@ const MapPin = React.memo(
           <div
             className={`group relative flex cursor-pointer flex-col items-center transition-transform hover:!scale-110 ${isSelected ? "scale-105" : "scale-100"} `}
           >
+            {isNew && (
+              <Badge className="absolute -top-3 left-1/2 z-20 flex h-6 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 font-bold tracking-wider text-white uppercase shadow-sm hover:bg-red-600">
+                nou
+              </Badge>
+            )}
             <div
               className={`z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-lg ${isSelected ? "bg-blue-800 ring-4 ring-blue-300" : ""} `}
             >
