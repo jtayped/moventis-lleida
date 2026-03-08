@@ -47,8 +47,8 @@ const MapPin = React.memo(
             className={`relative flex size-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-lg transition-all hover:scale-110 ${isSelected ? "scale-105 bg-blue-800 ring-4 ring-blue-300" : ""} `}
           >
             {isNew && (
-              <Badge className="absolute -top-2.5 left-1/2 z-20 flex h-4 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 text-[10px] font-bold tracking-wider text-white uppercase shadow-sm hover:bg-red-600">
-                nou
+              <Badge className="absolute -top-4 left-1/2 z-20 flex h-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 text-xs font-extrabold text-white shadow-sm hover:bg-red-600">
+                new
               </Badge>
             )}
             <Bus size={16} />
@@ -72,8 +72,8 @@ const MapPin = React.memo(
             className={`group relative flex cursor-pointer flex-col items-center transition-transform hover:!scale-110 ${isSelected ? "scale-105" : "scale-100"} `}
           >
             {isNew && (
-              <Badge className="absolute -top-3 left-1/2 z-20 flex h-6 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 font-bold tracking-wider text-white uppercase shadow-sm hover:bg-red-600">
-                nou
+              <Badge className="absolute -top-3 left-1/2 z-20 flex h-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 font-bold tracking-wider text-white shadow-sm hover:bg-red-600">
+                new
               </Badge>
             )}
             <div
