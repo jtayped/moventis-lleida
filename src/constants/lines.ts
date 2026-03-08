@@ -12,6 +12,9 @@ export const LINES = [
   "9",
   "10",
   "20",
+  "70",
+  "n1",
+  "16",
 ] as const;
 
 export const LINE_COLORS: Record<Lines, string> = {
@@ -26,4 +29,7 @@ export const LINE_COLORS: Record<Lines, string> = {
   "9": "#00080B",
   "10": "#892D00",
   "20": "#0A8FA9",
+  "70": "#D40011",
+  n1: "#08508A",
+  "16": "#24FF9F",
 };
