@@ -9,7 +9,7 @@ export type Journey = {
 };
 
 export type Schedules = {
-  externalLineId: number;
+  externalLineId: string;
   lineCode: Lines;
   lineName: string;
   selected: boolean;
