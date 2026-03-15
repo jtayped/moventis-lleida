@@ -125,7 +125,7 @@ function processApiLine(line: ApiScheduleLine): Schedules[number] {
 
   // 4. Construct the final clean object for this line
   return {
-    externalLineId: line.idLinea,
+    externalLineId: String(line.idLinea),
     lineCode: lineCode,
     lineName: lineName,
     selected: line.selected === 1,
@@ -241,8 +241,7 @@ export async function getStopSchedule(
 
     // 2. Transform the raw API data into the clean, final structure
     const cleanedData = transformApiDataToSchedules(apiData);
-
-    console.log(cleanedData[0]?.journeys);
+    
     return cleanedData;
   } catch (error) {
     // 3. Handle any errors that occurred during the process
