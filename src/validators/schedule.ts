@@ -35,7 +35,7 @@ const journeySchema = z.record(
 
 // This schema remains the same
 const lineSchema = z.object({
-  idLinea: z.string(),
+  idLinea: z.number(),
   desc_linea: z.string(),
   trayectos: journeySchema,
   incidencias: z.unknown().nullable(),
