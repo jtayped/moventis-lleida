@@ -96,8 +96,19 @@ async function fetchAndParseSchedules(
 
   const res = await axios.get(url);
 
+  // The API returns {"idLinea":"N",...} as a sentinel when no service exists for this route/stop.
+  // Filter these out before Zod parsing so they don't cause coercion failures.
+  const validData = Array.isArray(res.data)
+    ? (res.data as unknown[]).filter(
+        (item) =>
+          typeof item === "object" &&
+          item !== null &&
+          (item as Record<string, unknown>).idLinea !== "N",
+      )
+    : res.data;
+
   // Parse and validate the entire API response
-  return apiScheduleSchema.parse(res.data);
+  return apiScheduleSchema.parse(validData);
 }
 
 /**
@@ -125,7 +136,7 @@ function processApiLine(line: ApiScheduleLine, now: Date): Schedules[number] {
     externalLineId: String(line.idLinea),
     lineCode: lineCode,
     lineName: lineName,
-    selected: line.selected === 1,
+    selected: line.selected,
     journeys: journeys,
   };
 }
@@ -229,6 +240,7 @@ export async function getStopSchedule(
     return cleanedData;
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("ZodError:", JSON.stringify(error.issues, null, 2));
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Moventis API response shape changed.",

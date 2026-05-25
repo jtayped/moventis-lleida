@@ -66,9 +66,15 @@ export const stopsRouter = createTRPCRouter({
           getStopSchedule(stop.externalId, route.externalId),
         ),
       );
-      const schedules = scheduleResults
+      const allSchedules = scheduleResults
         .filter((s): s is NonNullable<typeof s> => s !== null)
         .flat();
+
+      // The Moventis API bundles multiple lines per response, so fetching N routes
+      // produces overlapping entries. Keep only the first occurrence of each line.
+      const schedules = [
+        ...new Map(allSchedules.map((s) => [s.externalLineId, s])).values(),
+      ];
 
       const typedRoutes = stop.routes.map((r) => ({
         ...r,
