@@ -22,7 +22,7 @@ const BusMap = () => {
         <BusRoutes />
       </Card>
       <MapComponent
-        mapId={env.NEXT_PUBLIC_MAPS_MAP_ID}
+        mapId={env.NEXT_PUBLIC_MAPS_MAP_ID || undefined}
         bounds={INITIAL_BOUNDS}
         restrictions={{ latLngBounds: RESTRICTED_BOUNDS, strictBounds: false }}
         className="h-screen w-full"

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "main": "src/_app.tsx",
   "scripts": {
-    "dev": "expo start --android",
+    "dev": "expo start",
     "build": "expo export",
     "lint": "expo lint"
   },

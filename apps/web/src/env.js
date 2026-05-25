@@ -20,7 +20,7 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_MAPS_API_KEY: z.string(),
-    NEXT_PUBLIC_MAPS_MAP_ID: z.string(),
+    NEXT_PUBLIC_MAPS_MAP_ID: z.string().optional().default(""),
   },
 
   /**
