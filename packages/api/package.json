@@ -1,0 +1,23 @@
+{
+  "name": "@moventis/api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@moventis/db": "workspace:*",
+    "@moventis/shared": "workspace:*",
+    "@trpc/server": "^11.0.0",
+    "axios": "^1.12.2",
+    "next": "15.2.8",
+    "superjson": "^2.2.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@moventis/eslint-config": "workspace:*",
+    "@moventis/tsconfig": "workspace:*"
+  }
+}
