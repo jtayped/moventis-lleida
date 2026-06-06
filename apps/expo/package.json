@@ -1,10 +1,10 @@
 {
   "name": "@moventis/expo",
   "version": "0.1.0",
-  "main": "src/_app.tsx",
+  "main": "index.ts",
   "scripts": {
     "dev": "expo start",
-    "build": "expo export",
+    "build": "expo export --platform ios,android",
     "lint": "expo lint"
   },
   "dependencies": {

@@ -1,5 +1,4 @@
 import React from "react";
-import { registerRootComponent } from "expo";
 import { Text, View } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
@@ -34,4 +33,4 @@ const App = () => {
   );
 };
 
-registerRootComponent(App);
+export default App;

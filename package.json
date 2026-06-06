@@ -6,9 +6,10 @@
   },
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "dev:web": "turbo run dev --filter=@moventis/web",
+    "build": "node scripts/dev.cjs build",
+    "dev": "node scripts/dev.cjs dev",
+    "dev:web": "node scripts/dev.cjs dev --filter=@moventis/web",
+    "dev:expo": "node scripts/dev.cjs dev --filter=@moventis/expo",
     "lint": "turbo run lint"
   },
   "devDependencies": {
