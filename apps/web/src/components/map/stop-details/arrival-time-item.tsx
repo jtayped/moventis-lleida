@@ -2,6 +2,7 @@ import { ClockAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import CountdownTimer from "../../ui/countdown";
 import { formatRelativeTime, formatAbsoluteTime } from "@/lib/time";
+import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
 interface ScheduledTime {
@@ -31,8 +32,18 @@ export const ArrivalTimeCard = ({
   }, [journey.arrivalTime]);
 
   return (
-    <Card className={`flex h-auto flex-col items-center p-2`}>
-      <span className="flex items-center text-sm font-bold">
+    <Card
+      className={cn(
+        "flex h-auto flex-col items-center p-2",
+        isClosest && "border-primary/30 bg-primary/5",
+      )}
+    >
+      <span
+        className={cn(
+          "flex items-center text-sm font-bold",
+          isClosest && "text-primary",
+        )}
+      >
         {isClosest ? (
           <CountdownTimer targetDate={journey.arrivalTime} />
         ) : (

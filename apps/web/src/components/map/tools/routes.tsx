@@ -29,12 +29,12 @@ const BusRoutes = () => {
             key={r.id}
             variant={isRouteSelected(r.code) ? "default" : "outline"}
             onClick={() => toggleRoute(r.code)}
-            className="cursor-pointer py-2"
+            className="cursor-pointer gap-1.5 px-2.5 py-1.5"
           >
             {isRouteSelected(r.code) ? <Check /> : <Plus />}
             <span
               style={{ backgroundColor: r.color }}
-              className="ml-2 flex size-5 items-center justify-center rounded-sm text-white"
+              className="flex size-5 items-center justify-center rounded-sm text-white text-[11px] font-semibold"
             >
               {r.code}
             </span>

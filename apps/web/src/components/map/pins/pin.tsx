@@ -32,7 +32,7 @@ const MapPin = React.memo(
           title={stop.name}
           zIndex={isSelected ? 10 : 1}
         >
-          <div className="size-2.5 rounded-full bg-blue-500 opacity-70" />
+          <div className="size-2.5 rounded-full bg-primary opacity-70" />
         </AdvancedMarker>
       );
     }
@@ -46,7 +46,7 @@ const MapPin = React.memo(
           zIndex={isSelected ? 10 : 1}
         >
           <div
-            className={`relative flex size-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-lg transition-all hover:scale-110 ${isSelected ? "scale-105 bg-blue-800 ring-4 ring-blue-300" : ""} `}
+            className={`relative flex size-7 items-center justify-center rounded-full border-2 border-white bg-primary text-white shadow-lg transition-all hover:scale-110 ${isSelected ? "scale-105 bg-primary/80 ring-4 ring-primary/40" : ""} `}
           >
             {isNew && (
               <Badge className="absolute -top-4 left-1/2 z-20 flex h-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 text-xs font-extrabold text-white shadow-sm hover:bg-red-600">
@@ -79,12 +79,12 @@ const MapPin = React.memo(
               </Badge>
             )}
             <div
-              className={`z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-lg ${isSelected ? "bg-blue-800 ring-4 ring-blue-300" : ""} `}
+              className={`z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-primary text-white shadow-lg ${isSelected ? "bg-primary/80 ring-4 ring-primary/40" : ""} `}
             >
               <Bus size={22} />
             </div>
             <div
-              className={`z-0 h-4 w-4 -translate-y-2.5 rotate-45 transform bg-blue-600 ${isSelected ? "bg-blue-800" : ""} `}
+              className={`z-0 h-4 w-4 -translate-y-2.5 rotate-45 transform bg-primary ${isSelected ? "bg-primary/80" : ""} `}
             />
           </div>
         </div>

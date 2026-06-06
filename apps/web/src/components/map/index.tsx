@@ -17,7 +17,7 @@ const BusMap = () => {
 
   return (
     <div className="relative">
-      <Card className="md:bg-card md:border-border absolute top-0 z-10 mx-auto w-full space-y-2 rounded-none rounded-br-xl border-none bg-transparent p-6 shadow-none md:max-w-md md:shadow-lg">
+      <Card className="bg-background/90 backdrop-blur-sm md:bg-card md:border-border absolute top-0 z-10 mx-auto w-full space-y-2 rounded-none rounded-br-xl border-none p-4 shadow-md md:max-w-md md:p-6 md:shadow-lg">
         <SearchInput />
         <BusRoutes />
       </Card>

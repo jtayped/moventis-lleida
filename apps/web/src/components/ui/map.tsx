@@ -25,10 +25,25 @@ interface MapComponentProps {
   children?: React.ReactNode;
 }
 
-/**
- * A generic, reusable map component that displays multiple custom, clickable markers.
- * @template T - The type of the data for each pin, which must include lat and lng.
- */
+// Applied only when no Map ID is set. When a Map ID is configured, set styles
+// via Google Cloud Console > Map Styles instead.
+const MINIMAL_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { elementType: "geometry", stylers: [{ color: "#f4f6f8" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#eef1f4" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e2e6ea" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f0f2f5" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#d8dde3" }] },
+  { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#6b7280" }] },
+  { featureType: "road.local", elementType: "labels.text.fill", stylers: [{ color: "#9ca3af" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#d6e4f5" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#7ea8c9" }] },
+  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#374151" }] },
+  { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#6b7280" }] },
+];
+
 const MapComponent = ({
   bounds,
   mapId,
@@ -52,6 +67,7 @@ const MapComponent = ({
           gestureHandling="greedy"
           disableDefaultUI
           mapId={mapId}
+          styles={!mapId ? MINIMAL_MAP_STYLES : undefined}
         >
           {children}
         </Map>
