@@ -4,7 +4,6 @@
   "main": "index.ts",
   "scripts": {
     "dev": "expo start",
-    "build": "expo export --platform ios,android",
     "lint": "expo lint"
   },
   "dependencies": {
