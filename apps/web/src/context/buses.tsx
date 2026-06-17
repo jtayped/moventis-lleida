@@ -10,7 +10,7 @@ import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 interface BusFinderValue {
   routes: Line[];
@@ -23,6 +23,11 @@ interface BusFinderValue {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedStop: Stop | undefined;
+  /** Returns the active direction for a route ("I" = outbound, "V" = return). Default "I". */
+  getDirectionForRoute: (code: Lines) => "I" | "V";
+  setDirectionFilter: (code: Lines, dir: "I" | "V") => void;
+  /** Look up a full Stop object by id from the currently loaded route stops. */
+  findStop: (id: string) => Stop | undefined;
 }
 
 const BusFinderContext = createContext<BusFinderValue | undefined>(undefined);
@@ -37,12 +42,12 @@ export const BusFinderProvider = ({
   const [selectedRoutes, setSelectedRoutes] = useState<Lines[]>([]);
   const [selectedStop, setSelectedStop] = useState<Stop | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
+  const [directionFilters, setDirectionFilters] = useState<Record<string, "I" | "V">>({});
 
   const debouncedQuery = useDebounce(searchQuery);
   const debouncedSelectedRoutes = useDebounce(selectedRoutes);
 
   // One query per selected route so React Query caches each line independently.
-  // Adding line 9 when line 6 is already loaded only fires one new request.
   const routeQueries = api.useQueries((t) =>
     debouncedSelectedRoutes.map((code) =>
       t.stops.getByRoute({ routeCode: code }),
@@ -57,16 +62,18 @@ export const BusFinderProvider = ({
       { enabled: debouncedSelectedRoutes.length === 0 && debouncedQuery.trim().length > 0 },
     );
 
-  // Merge per-route results into a deduplicated pool keyed by stop ID.
-  const routeStops = useMemo(() => {
+  // All stops for selected routes, deduplicated — used for navigation lookups.
+  const allRouteStopsMap = useMemo(() => {
     const map = new Map<string, Stop>();
     for (const q of routeQueries) {
       for (const stop of q.data ?? []) {
         map.set(stop.id, stop);
       }
     }
-    return [...map.values()];
+    return map;
   }, [routeQueries]);
+
+  const routeStops = useMemo(() => [...allRouteStopsMap.values()], [allRouteStopsMap]);
 
   // Apply client-side name filter when routes are selected and a query is typed.
   const stops = useMemo(() => {
@@ -101,6 +108,20 @@ export const BusFinderProvider = ({
     setSelectedStop(stop);
   }
 
+  const getDirectionForRoute = useCallback(
+    (code: Lines): "I" | "V" => directionFilters[code] ?? "I",
+    [directionFilters],
+  );
+
+  function setDirectionFilter(code: Lines, dir: "I" | "V") {
+    setDirectionFilters((prev) => ({ ...prev, [code]: dir }));
+  }
+
+  const findStop = useCallback(
+    (id: string): Stop | undefined => allRouteStopsMap.get(id),
+    [allRouteStopsMap],
+  );
+
   const value = {
     routes: initialRoutes,
     stops,
@@ -112,6 +133,9 @@ export const BusFinderProvider = ({
     searchQuery,
     setSearchQuery,
     selectedStop,
+    getDirectionForRoute,
+    setDirectionFilter,
+    findStop,
   } satisfies BusFinderValue;
 
   return (

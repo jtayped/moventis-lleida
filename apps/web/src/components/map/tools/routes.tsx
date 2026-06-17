@@ -1,9 +1,10 @@
 import React, { useMemo } from "react";
 import { Badge } from "../../ui/badge";
-import { Plus, Check } from "lucide-react"; // 1. Import the Check icon
+import { Plus, Check } from "lucide-react";
 import { useBusFinder } from "@/context/buses";
 import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
 import { getContrastTextColor } from "@/lib/contrast";
+import { StopList } from "./stop-list";
 
 const BusRoutes = () => {
   const { routes, isRouteSelected, toggleRoute, selectedRoutes, searchQuery } = useBusFinder();
@@ -56,6 +57,7 @@ const BusRoutes = () => {
           Selecciona una línia per veure les parades al mapa
         </p>
       )}
+      {selectedRoutes.length > 0 && <StopList />}
     </>
   );
 };
