@@ -4,7 +4,7 @@ import SearchInput from "@/components/map/tools/search";
 import MapComponent from "@/components/ui/map";
 import { INITIAL_BOUNDS, RESTRICTED_BOUNDS } from "@moventis/shared";
 import { useBusFinder } from "@/context/buses";
-import React from "react";
+import React, { useState } from "react";
 import MapPinsRenderer from "@/components/map/pins/pins-renderer";
 import RoutePaths from "@/components/map/route-paths";
 import { Card } from "../ui/card";
@@ -12,14 +12,30 @@ import { Button } from "../ui/button";
 import Link from "next/link";
 import Github from "../icons/github";
 import { env } from "@/env";
+import LinesPanel from "@/components/map/lines-panel";
+import { LayoutList } from "lucide-react";
 
 const BusMap = () => {
   const { stops } = useBusFinder();
+  const [linesOpen, setLinesOpen] = useState(false);
 
   return (
     <div className="relative">
       <Card className="bg-transparent shadow-none md:bg-card md:border-border absolute top-0 z-10 mx-auto w-full space-y-2 rounded-none rounded-br-xl border-none p-4 md:max-w-md md:p-6 md:shadow-lg">
-        <SearchInput />
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <SearchInput />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setLinesOpen(true)}
+            title="veure totes les línies"
+            className="h-9 w-9 shrink-0"
+          >
+            <LayoutList className="size-4" />
+          </Button>
+        </div>
         <BusRoutes />
       </Card>
       <MapComponent
@@ -43,6 +59,7 @@ const BusMap = () => {
           </Link>
         </Button>
       </div>
+      <LinesPanel open={linesOpen} onClose={() => setLinesOpen(false)} />
     </div>
   );
 };
