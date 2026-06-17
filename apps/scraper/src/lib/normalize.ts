@@ -17,42 +17,6 @@ const CORRECTIONS: [RegExp, string][] = [
   [/\bBARO\b/g, "BARÓ"],
 ];
 
-// Articles and prepositions kept lowercase when not at the start of the string
-const SMALL_WORDS = new Set([
-  "a",
-  "al",
-  "d",
-  "de",
-  "del",
-  "els",
-  "el",
-  "en",
-  "i",
-  "l",
-  "la",
-  "les",
-  "per",
-  "un",
-  "una",
-]);
-
-function capitalize(word: string): string {
-  if (!word) return word;
-  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-}
-
-function titleCase(s: string): string {
-  return s
-    .split(" ")
-    .map((word, idx) => {
-      if (!word) return word;
-      const lower = word.toLowerCase();
-      if (idx > 0 && SMALL_WORDS.has(lower)) return lower;
-      return capitalize(word);
-    })
-    .join(" ");
-}
-
 export function normalizeName(raw: string): string {
   let s = raw
     // Various quote-like chars used as apostrophe in the API
@@ -73,7 +37,7 @@ export function normalizeName(raw: string): string {
   // Collapse runs of whitespace
   s = s.replace(/\s+/g, " ").trim();
 
-  return titleCase(s);
+  return s.toLowerCase();
 }
 
 /**
