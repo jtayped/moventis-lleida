@@ -8,21 +8,8 @@ import { Button } from "@/components/ui/button";
 import { LINE_COLORS, type Lines } from "@moventis/shared";
 import { getContrastTextColor } from "@/lib/contrast";
 
-interface NavItem {
-  code: Lines;
-  prev: { id: string; name: string } | null;
-  next: { id: string; name: string } | null;
-}
-
-function RouteNav({
-  routeCode,
-  stopId,
-}: {
-  routeCode: Lines;
-  stopId: string;
-}) {
-  const { findStop, selectStop, getDirectionForRoute } = useBusFinder();
-  const dir = getDirectionForRoute(routeCode);
+function RouteNav({ routeCode, stopId }: { routeCode: Lines; stopId: string }) {
+  const { findStop, selectStop } = useBusFinder();
   const color = LINE_COLORS[routeCode];
 
   const { data: variants } = api.routes.getVariantStops.useQuery(
@@ -30,24 +17,24 @@ function RouteNav({
     { staleTime: Infinity },
   );
 
-  const nav = useMemo((): NavItem | null => {
+  // Use the principal outbound variant; fall back to any variant that includes this stop.
+  const nav = useMemo(() => {
     if (!variants) return null;
-    const dirVariants = variants.filter((v) => v.direction === dir);
-    for (const variant of dirVariants) {
+    const ordered = [...variants].sort(
+      (a, b) => Number(b.isPrincipal) - Number(a.isPrincipal),
+    );
+    for (const variant of ordered) {
       const idx = variant.stops.findIndex((s) => s.id === stopId);
       if (idx === -1) continue;
       return {
-        code: routeCode,
         prev: idx > 0 ? (variant.stops[idx - 1] ?? null) : null,
         next: idx < variant.stops.length - 1 ? (variant.stops[idx + 1] ?? null) : null,
       };
     }
     return null;
-  }, [variants, dir, stopId, routeCode]);
+  }, [variants, stopId]);
 
   if (!nav) return null;
-
-  const textColor = getContrastTextColor(color);
 
   function navigate(targetId: string) {
     const stop = findStop(targetId);
@@ -56,8 +43,8 @@ function RouteNav({
 
   return (
     <div
-      className="flex items-center justify-between gap-2 rounded-lg px-1 py-1"
-      style={{ borderLeft: `3px solid ${color}`, paddingLeft: "8px" }}
+      className="flex items-center justify-between gap-2 rounded-lg py-1 pl-2"
+      style={{ borderLeft: `3px solid ${color}` }}
     >
       <Button
         variant="ghost"
@@ -72,7 +59,7 @@ function RouteNav({
 
       <span
         className="shrink-0 rounded px-2 py-0.5 text-xs font-bold"
-        style={{ backgroundColor: color, color: textColor }}
+        style={{ backgroundColor: color, color: getContrastTextColor(color) }}
       >
         {routeCode}
       </span>

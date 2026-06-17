@@ -89,4 +89,21 @@ export const routesRouter = createTRPCRouter({
   getVariantStops: publicProcedure
     .input(z.object({ code: z.enum(LINES) }))
     .query(({ input }) => getCachedVariantStops(input.code)),
+  /** Returns the line codes of routes that have at least one operating day today. */
+  getTodayActive: publicProcedure.query(async ({ ctx }) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+    const active = await ctx.db.route.findMany({
+      where: {
+        operatingDays: { some: { date: { gte: today, lt: tomorrow } } },
+      },
+      select: { code: true },
+    });
+
+    return active
+      .map((r) => r.code)
+      .filter((c): c is Lines => (LINES as readonly string[]).includes(c));
+  }),
 });

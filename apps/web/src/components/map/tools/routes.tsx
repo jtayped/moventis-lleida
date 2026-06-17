@@ -4,21 +4,19 @@ import { Plus, Check } from "lucide-react";
 import { useBusFinder } from "@/context/buses";
 import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
 import { getContrastTextColor } from "@/lib/contrast";
-import { StopList } from "./stop-list";
 
 const BusRoutes = () => {
-  const { routes, isRouteSelected, toggleRoute, selectedRoutes, searchQuery } = useBusFinder();
+  const { routes, isRouteSelected, toggleRoute, selectedRoutes, searchQuery, activeRouteCodes } =
+    useBusFinder();
 
-  // Create a sorted copy of the routes array
-  // We use [...routes] to create a shallow copy before sorting
+  const activeSet = useMemo(() => new Set(activeRouteCodes), [activeRouteCodes]);
+
   const sortedRoutes = useMemo(
     () =>
       [...routes].sort((a, b) => {
-        const aIsSelected = isRouteSelected(a.code);
-        const bIsSelected = isRouteSelected(b.code);
-
-        // This moves selected items (true) to the front
-        return Number(bIsSelected) - Number(aIsSelected);
+        const aSelected = isRouteSelected(a.code);
+        const bSelected = isRouteSelected(b.code);
+        return Number(bSelected) - Number(aSelected);
       }),
     [routes, isRouteSelected],
   );
@@ -28,22 +26,32 @@ const BusRoutes = () => {
       <div className="relative">
         <ScrollArea className="pb-3">
           <ol className="flex gap-1">
-            {sortedRoutes.map((r) => (
-              <Badge
-                key={r.id}
-                variant={isRouteSelected(r.code) ? "default" : "outline"}
-                onClick={() => toggleRoute(r.code)}
-                className="cursor-pointer gap-1.5 px-2.5 py-1.5"
-              >
-                {isRouteSelected(r.code) ? <Check /> : <Plus />}
-                <span
-                  style={{ backgroundColor: r.color, color: getContrastTextColor(r.color) }}
-                  className="flex size-5 items-center justify-center rounded-sm text-[11px] font-semibold"
+            {sortedRoutes.map((r) => {
+              const isActive = activeSet.size === 0 || activeSet.has(r.code);
+              const isSelected = isRouteSelected(r.code);
+              return (
+                <Badge
+                  key={r.id}
+                  variant={isSelected ? "default" : "outline"}
+                  onClick={() => toggleRoute(r.code)}
+                  className="cursor-pointer gap-1.5 px-2.5 py-1.5 transition-opacity"
+                  style={!isActive ? { opacity: 0.4 } : undefined}
+                  title={!isActive ? "fora d'horari avui" : undefined}
                 >
-                  {r.code}
-                </span>
-              </Badge>
-            ))}
+                  {isSelected ? <Check /> : <Plus />}
+                  <span
+                    style={{
+                      backgroundColor: r.color,
+                      color: getContrastTextColor(r.color),
+                      filter: !isActive ? "grayscale(1)" : undefined,
+                    }}
+                    className="flex size-5 items-center justify-center rounded-sm text-[11px] font-semibold"
+                  >
+                    {r.code}
+                  </span>
+                </Badge>
+              );
+            })}
           </ol>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
@@ -57,7 +65,6 @@ const BusRoutes = () => {
           Selecciona una línia per veure les parades al mapa
         </p>
       )}
-      {selectedRoutes.length > 0 && <StopList />}
     </>
   );
 };

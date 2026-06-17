@@ -19,13 +19,12 @@ interface BusFinderValue {
   isLoadingStops: boolean;
   toggleRoute: (routeId: Lines) => void;
   isRouteSelected: (routeId: Lines) => boolean;
+  /** Routes that have at least one operating day today. */
+  activeRouteCodes: Lines[];
   selectStop: (stop: Stop) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedStop: Stop | undefined;
-  /** Returns the active direction for a route ("I" = outbound, "V" = return). Default "I". */
-  getDirectionForRoute: (code: Lines) => "I" | "V";
-  setDirectionFilter: (code: Lines, dir: "I" | "V") => void;
   /** Look up a full Stop object by id from the currently loaded route stops. */
   findStop: (id: string) => Stop | undefined;
 }
@@ -42,10 +41,13 @@ export const BusFinderProvider = ({
   const [selectedRoutes, setSelectedRoutes] = useState<Lines[]>([]);
   const [selectedStop, setSelectedStop] = useState<Stop | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
-  const [directionFilters, setDirectionFilters] = useState<Record<string, "I" | "V">>({});
 
   const debouncedQuery = useDebounce(searchQuery);
   const debouncedSelectedRoutes = useDebounce(selectedRoutes);
+
+  const { data: activeRouteCodes = [] } = api.routes.getTodayActive.useQuery(undefined, {
+    staleTime: 60 * 60 * 1000, // treat as fresh for 1 hour
+  });
 
   // One query per selected route so React Query caches each line independently.
   const routeQueries = api.useQueries((t) =>
@@ -108,15 +110,6 @@ export const BusFinderProvider = ({
     setSelectedStop(stop);
   }
 
-  const getDirectionForRoute = useCallback(
-    (code: Lines): "I" | "V" => directionFilters[code] ?? "I",
-    [directionFilters],
-  );
-
-  function setDirectionFilter(code: Lines, dir: "I" | "V") {
-    setDirectionFilters((prev) => ({ ...prev, [code]: dir }));
-  }
-
   const findStop = useCallback(
     (id: string): Stop | undefined => allRouteStopsMap.get(id),
     [allRouteStopsMap],
@@ -129,12 +122,11 @@ export const BusFinderProvider = ({
     isLoadingStops,
     toggleRoute,
     isRouteSelected,
+    activeRouteCodes,
     selectStop,
     searchQuery,
     setSearchQuery,
     selectedStop,
-    getDirectionForRoute,
-    setDirectionFilter,
     findStop,
   } satisfies BusFinderValue;
 
