@@ -17,7 +17,7 @@ export const StopScheduleLine = ({
   closestScheduledTime,
   now,
 }: StopScheduleLineProps) => {
-  const lineColor = LINE_COLORS[line.lineCode as keyof typeof LINE_COLORS];
+  const lineColor = LINE_COLORS[line.lineCode];
 
   return (
     <div className="py-3">

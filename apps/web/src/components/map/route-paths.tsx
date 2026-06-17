@@ -43,7 +43,6 @@ const RoutePaths = () => {
       lines.push({ code, color, paths: data.paths });
     });
     return computeOffsetLayers(lines);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature, routes]);
 
   useEffect(() => {
