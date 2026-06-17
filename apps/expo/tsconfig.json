@@ -1,0 +1,19 @@
+{
+  "extends": "@moventis/tsconfig/expo.json",
+  "compilerOptions": {
+    "paths": {
+      "~/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "eslint.config.js",
+    "metro.config.js"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

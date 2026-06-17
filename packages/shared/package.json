@@ -1,0 +1,19 @@
+{
+  "name": "@moventis/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@moventis/db": "workspace:*",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@moventis/eslint-config": "workspace:*",
+    "@moventis/tsconfig": "workspace:*",
+    "typescript": "^5.8.2"
+  }
+}

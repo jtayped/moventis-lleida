@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-06T00:00:00Z",
+  "title": "Design System: Bus Urbà Lleida",
+  "extensions": {
+    "colorMeta": {
+      "lleida-blue": {
+        "role": "primary",
+        "displayName": "Lleida Blue",
+        "canonical": "oklch(0.546 0.229 263)",
+        "tonalRamp": [
+          "oklch(0.15 0.20 263)",
+          "oklch(0.25 0.22 263)",
+          "oklch(0.35 0.23 263)",
+          "oklch(0.45 0.23 263)",
+          "oklch(0.546 0.229 263)",
+          "oklch(0.65 0.18 263)",
+          "oklch(0.78 0.10 263)",
+          "oklch(0.93 0.04 263)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(0.145 0 0)",
+        "tonalRamp": [
+          "oklch(0.08 0 0)",
+          "oklch(0.145 0 0)",
+          "oklch(0.205 0 0)",
+          "oklch(0.30 0 0)",
+          "oklch(0.40 0 0)",
+          "oklch(0.556 0 0)",
+          "oklch(0.70 0 0)",
+          "oklch(0.85 0 0)"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "oklch(0.556 0 0)",
+        "tonalRamp": [
+          "oklch(0.20 0 0)",
+          "oklch(0.30 0 0)",
+          "oklch(0.40 0 0)",
+          "oklch(0.50 0 0)",
+          "oklch(0.556 0 0)",
+          "oklch(0.65 0 0)",
+          "oklch(0.75 0 0)",
+          "oklch(0.85 0 0)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": [
+          "oklch(0.70 0 0)",
+          "oklch(0.78 0 0)",
+          "oklch(0.84 0 0)",
+          "oklch(0.90 0 0)",
+          "oklch(0.922 0 0)",
+          "oklch(0.945 0 0)",
+          "oklch(0.97 0 0)",
+          "oklch(1 0 0)"
+        ]
+      },
+      "destructive": {
+        "role": "semantic",
+        "displayName": "Destructive Red",
+        "canonical": "oklch(0.577 0.245 27.325)",
+        "tonalRamp": [
+          "oklch(0.25 0.22 27)",
+          "oklch(0.35 0.23 27)",
+          "oklch(0.45 0.24 27)",
+          "oklch(0.52 0.245 27)",
+          "oklch(0.577 0.245 27)",
+          "oklch(0.68 0.20 27)",
+          "oklch(0.80 0.12 27)",
+          "oklch(0.93 0.05 27)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Stop name headings in the arrival drawer. Two lines maximum." },
+      "body": { "displayName": "Body", "purpose": "Arrival times, journey names, supporting text." },
+      "label": { "displayName": "Label", "purpose": "Timestamps, route codes in text context, section labels." }
+    },
+    "shadows": [
+      {
+        "name": "floating-card",
+        "value": "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)",
+        "purpose": "Filter panel overlaid on the map only. No other surface uses this."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default easing for state transitions (button hover, chip toggle)."
+      },
+      {
+        "name": "ease-drawer",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Arrival drawer slide-up animation. Expo deceleration."
+      }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px", "purpose": "Mobile-to-desktop breakpoint. Filter panel goes from full-width to constrained card above this." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action button. Uses Lleida Blue — reserved for interactive affordances only.",
+      "html": "<button class=\"ds-btn-primary\">Cercar parades</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #2563eb; color: #ffffff; padding: 8px 16px; height: 36px; border-radius: 8px; font-family: 'Geist Sans', system-ui, sans-serif; font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: background 0.15s cubic-bezier(0.4,0,0.2,1); white-space: nowrap; text-decoration: none; } .ds-btn-primary:hover { background: #1d4ed8; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.35); } .ds-btn-primary:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Minimal action button for secondary controls like refresh and close inside the arrival drawer.",
+      "html": "<button class=\"ds-btn-ghost\"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8'/><path d='M3 3v5h5'/><path d='M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16'/><path d='M16 16h5v5'/></svg></button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: transparent; color: #696969; border: none; border-radius: 8px; cursor: pointer; transition: background 0.15s, color 0.15s; } .ds-btn-ghost:hover { background: #f7f7f7; color: #181818; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.35); }"
+    },
+    {
+      "name": "Route Filter Badge",
+      "kind": "chip",
+      "description": "Toggle chip in the horizontal filter list. Outline = unselected; filled = selected. Always includes a colored line swatch.",
+      "html": "<li class=\"ds-route-badge ds-route-badge--outline\"><svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/><path d='M12 5v14'/></svg><span class=\"ds-route-badge__swatch\" style=\"background:#FF134A\">2</span></li>",
+      "css": ".ds-route-badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 6px; font-family: 'Geist Sans', system-ui, sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; list-style: none; transition: background 0.15s, border-color 0.15s; } .ds-route-badge--outline { background: #ffffff; border: 1px solid #eaeaea; color: #181818; } .ds-route-badge--selected { background: #181818; border: 1px solid #181818; color: #ffffff; } .ds-route-badge__swatch { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; color: #ffffff; font-size: 11px; font-weight: 600; }"
+    },
+    {
+      "name": "Line Number Badge",
+      "kind": "chip",
+      "refersTo": "badge-line",
+      "description": "Square identifier chip in stop details header and schedule rows. Always uses the line's official transit color.",
+      "html": "<span class=\"ds-line-badge\" style=\"background:#1571FD\">4</span>",
+      "css": ".ds-line-badge { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #1571FD; color: #ffffff; border-radius: 8px; font-family: 'Geist Sans', system-ui, sans-serif; font-size: 14px; font-weight: 600; flex-shrink: 0; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Container surface. On desktop the filter panel is a card floating over the map; on mobile it spans full-width with no border.",
+      "html": "<div class=\"ds-card\"><p style=\"font-size:14px;color:#181818\">Contingut de la targeta</p></div>",
+      "css": ".ds-card { background: #ffffff; border-radius: 14px; border: 1px solid #eaeaea; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06); font-family: 'Geist Sans', system-ui, sans-serif; }"
+    },
+    {
+      "name": "Arrival Time Tile",
+      "kind": "card",
+      "description": "Small dense tile showing one scheduled arrival. Live countdown for the closest; relative offset for others.",
+      "html": "<div class=\"ds-arrival-tile ds-arrival-tile--closest\"><span class=\"ds-arrival-tile__time\">2:34</span><span class=\"ds-arrival-tile__clock\">14:23</span></div>",
+      "css": ".ds-arrival-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; border-radius: 10px; border: 1px solid #eaeaea; background: #ffffff; min-width: 80px; gap: 2px; font-family: 'Geist Sans', system-ui, sans-serif; } .ds-arrival-tile__time { font-size: 14px; font-weight: 700; color: #181818; line-height: 1.2; } .ds-arrival-tile__clock { font-size: 11px; font-family: monospace; color: #696969; line-height: 1.2; } .ds-arrival-tile--closest { border-color: #2563eb; background: #eff6ff; } .ds-arrival-tile--closest .ds-arrival-tile__time { color: #2563eb; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "description": "Stop name search field in the filter panel.",
+      "html": "<div class=\"ds-input-wrap\"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class=\"ds-input-icon\"><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg><input class=\"ds-input\" type=\"text\" placeholder=\"Cerca parades...\" /></div>",
+      "css": ".ds-input-wrap { position: relative; display: flex; align-items: center; } .ds-input-icon { position: absolute; left: 12px; color: #696969; pointer-events: none; flex-shrink: 0; } .ds-input { width: 100%; height: 36px; padding: 0 12px 0 36px; background: #ffffff; border: 1px solid #eaeaea; border-radius: 8px; font-family: 'Geist Sans', system-ui, sans-serif; font-size: 14px; color: #181818; outline: none; transition: border-color 0.15s, box-shadow 0.15s; } .ds-input::placeholder { color: #696969; } .ds-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Transit Board",
+    "overview": "This is a precision instrument. Every element is designed for one primary context: a phone in someone's hand at a bus stop, likely in daylight, with 30 seconds before the bus arrives. The visual language is borrowed from real-time departure boards — information-forward, legible at a glance, with no surface area wasted on decoration.\n\nLleida Blue anchors interactive chrome; per-line transit colors carry route identity. Everything else is neutral and gets out of the way. The system explicitly rejects government-style transit design: heavy institutional color blocks, all-caps hierarchy, and the visual weight of civic obligation. It also rejects generic SaaS product aesthetics: card grids with identical content, blue everywhere, 'seamless' experience language.",
+    "keyCharacteristics": [
+      "Single geometric sans (Geist) across all roles — weight and size alone carry hierarchy",
+      "Lleida Blue reserved strictly for interactive chrome; never decorative",
+      "Per-line transit colors are categorical identifiers, not palette elements",
+      "Flat surfaces by default; minimal shadow appears only on floating chrome",
+      "High contrast ratios — body text targets 5:1 minimum for outdoor readability"
+    ],
+    "rules": [
+      { "name": "The One Blue Rule", "body": "Lleida Blue (#2563eb) is the only color that communicates 'interact with me.' If it appears decoratively, the signal breaks. Keep it out of illustrations, backgrounds, borders, and any surface not tied to an action or link.", "section": "colors" },
+      { "name": "The Line Color Sovereignty Rule", "body": "Per-line transit colors are categorical identifiers, not palette elements. Never use a line color for a UI purpose it wasn't meant for. The yellow of Line 1 means 'Line 1,' full stop.", "section": "colors" },
+      { "name": "The Single Family Rule", "body": "One font family (Geist Sans) across all roles. Weight contrast and scale steps carry the full hierarchy. Introducing a second family adds cognitive overhead without serving legibility at the bus stop.", "section": "typography" },
+      { "name": "The Label Case Rule", "body": "No all-caps labels. At 12px in outdoor light, all-caps labels reduce legibility. Use medium weight (500) and size contrast for label distinction instead.", "section": "typography" },
+      { "name": "The Flat Default Rule", "body": "Every surface starts at ground level. Shadow appears only when a UI element physically floats above the map. The arrival drawer is not floating — it slides from the bottom and uses a border, not a shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Lleida Blue exclusively for interactive affordances: buttons, links, focus rings, and active chip states.",
+      "Do keep body text in Ink (#181818) and target 5:1 contrast minimum for all text used outdoors.",
+      "Do use per-line transit colors only on line number badges and map pins.",
+      "Do keep surfaces flat by default. Add the floating card shadow only when an element physically overlays the map.",
+      "Do size tap targets to at minimum 44×44px for all interactive elements.",
+      "Do use text-wrap: balance on stop name headings."
+    ],
+    "donts": [
+      "Don't use government-style transit design: heavy institutional color blocks, all-caps headers, high-contrast bordered boxes that read as signage.",
+      "Don't introduce a second typeface.",
+      "Don't use Lleida Blue decoratively — not as a section background, a highlight tint, a gradient, or a border stripe.",
+      "Don't reuse per-line transit colors for UI purposes unrelated to their line.",
+      "Don't add border-left stripes as colored accents on cards or list items.",
+      "Don't use placeholder text below 4.5:1 contrast.",
+      "Don't add glassmorphism, gradient fills, or background-blur as visual decoration."
+    ]
+  }
+}
