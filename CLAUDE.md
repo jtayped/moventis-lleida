@@ -54,7 +54,7 @@ NEXT_PUBLIC_MAPS_MAP_ID=""    # Google Cloud Map ID (required for AdvancedMarker
 ANDROID_HOME=                 # Android SDK path (Expo only)
 ```
 
-`scripts/dev.cjs` loads the root `.env` into `process.env` before running turbo, so all apps receive the vars automatically. Env is validated at startup via `@t3-oss/env-nextjs` in `apps/web/src/env.js`.
+Turbo loads the root `.env` automatically via `globalDotEnv` in `turbo.json`. Env is validated at startup via `@t3-oss/env-nextjs` in `apps/web/src/env.js`.
 
 ## Architecture
 
