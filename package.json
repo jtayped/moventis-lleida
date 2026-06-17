@@ -10,6 +10,7 @@
     "dev": "node scripts/dev.cjs dev",
     "dev:web": "node scripts/dev.cjs dev --filter=@moventis/web",
     "dev:expo": "node scripts/dev.cjs dev --filter=@moventis/expo",
+    "dev:scraper": "node scripts/dev.cjs dev --filter=@moventis/scraper",
     "lint": "turbo run lint"
   },
   "devDependencies": {
