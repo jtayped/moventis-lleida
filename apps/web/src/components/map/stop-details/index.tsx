@@ -8,7 +8,7 @@ import StopDetailsHeader from "./header";
 import StopScheduleLine from "./line-schedule";
 import StopNavigation from "./stop-navigation";
 import { useBusFinder } from "@/context/buses";
-import { CheckCheck, ArrowRightLeft } from "lucide-react";
+import { CheckCheck, ArrowRightLeft, TriangleAlert } from "lucide-react";
 import type { Journey, Schedules } from "@moventis/shared";
 
 type ScheduledTime = Journey["scheduledTimes"][number];
@@ -128,6 +128,15 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
       />
 
       <StopNavigation stopId={stop.id} />
+
+      {stop.deletedAt && (
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+          <TriangleAlert size={16} className="mt-0.5 shrink-0" />
+          <span>
+            aquesta parada ja no es troba en servei. pot ser temporal per obres o canvis de ruta.
+          </span>
+        </div>
+      )}
 
       <ScrollArea className="h-100 pr-3">
         <div>

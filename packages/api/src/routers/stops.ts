@@ -68,6 +68,17 @@ export const stopsRouter = createTRPCRouter({
       if (stop.routes.length === 0)
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
+      const typedRoutes = stop.routes.map((r) => ({
+        ...r,
+        code: assertLine(r.code),
+      }));
+
+      // Skip live schedule fetch for soft-deleted stops — the stop no longer
+      // exists in the Moventis API and the request would fail or return stale data.
+      if (stop.deletedAt) {
+        return { ...stop, routes: typedRoutes, schedules: [] };
+      }
+
       const scheduleResults = await Promise.all(
         stop.routes.map((route) =>
           getStopSchedule(stop.externalId, route.externalId),
@@ -83,11 +94,6 @@ export const stopsRouter = createTRPCRouter({
       const schedules = [
         ...new Map(allSchedules.map((s) => [s.externalLineId, s])).values(),
       ].filter((s) => (LINES as readonly string[]).includes(s.lineCode));
-
-      const typedRoutes = stop.routes.map((r) => ({
-        ...r,
-        code: assertLine(r.code),
-      }));
 
       return { ...stop, routes: typedRoutes, schedules };
     }),
