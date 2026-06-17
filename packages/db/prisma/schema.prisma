@@ -18,6 +18,9 @@ model Route {
     code  String
     color String
 
+    // Aggregated route geometry: { paths: [lng, lat][][] }. Null when unknown.
+    path Json?
+
     stops         Stop[]
     operatingDays OperatingDay[]
 

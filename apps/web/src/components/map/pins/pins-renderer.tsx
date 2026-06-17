@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
 import MapPin from "./pin";
 import type { Stop } from "@moventis/db";
 import { useBusFinder } from "@/context/buses";
 
-// Define our zoom "buckets"
 type ZoomBucket = "small" | "medium" | "large";
 
 const getZoomBucket = (zoom: number): ZoomBucket => {
@@ -16,14 +15,16 @@ const getZoomBucket = (zoom: number): ZoomBucket => {
 const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
   const map = useMap();
 
-  const { selectStop, selectedStop } = useBusFinder();
-  const selectedStopId = selectedStop?.id ?? undefined;
+  const { selectStop, selectedStop, routes, selectedRoutes } = useBusFinder();
+  const selectedStopId = selectedStop?.id;
 
-  // This state holds the raw zoom level
   const [zoom, setZoom] = useState<number>(() => map?.getZoom() ?? 12);
-
-  // This memoized value holds the *bucket*, which changes less often
   const zoomBucket = useMemo(() => getZoomBucket(zoom), [zoom]);
+
+  const primaryPinColor = useMemo(() => {
+    if (selectedRoutes.length !== 1) return undefined;
+    return routes.find((r) => r.code === selectedRoutes[0])?.color;
+  }, [selectedRoutes, routes]);
 
   useEffect(() => {
     if (!map) return;
@@ -45,14 +46,6 @@ const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
     };
   }, [map]);
 
-  // Memoize the click handler so it's a stable prop
-  const handlePinClick = useCallback(
-    (stop: Stop) => {
-      selectStop(stop);
-    },
-    [selectStop],
-  );
-
   return (
     <>
       {stops.map((stop) => (
@@ -61,7 +54,8 @@ const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
           stop={stop}
           zoomBucket={zoomBucket}
           selectedStopId={selectedStopId}
-          onClick={handlePinClick}
+          onClick={selectStop}
+          pinColor={primaryPinColor}
         />
       ))}
     </>

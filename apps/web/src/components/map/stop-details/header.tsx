@@ -4,6 +4,7 @@ import LastUpdated from "@/components/map/stop-details/last-updated";
 import type { Line } from "@moventis/shared";
 import { Badge } from "@/components/ui/badge";
 import { DrawerClose } from "@/components/ui/drawer";
+import { getContrastTextColor } from "@/lib/contrast";
 
 interface StopDetailsHeaderProps {
   name: string;
@@ -28,7 +29,7 @@ export const StopDetailsHeader = ({
             <Badge
               key={l.code}
               className="px-4 text-xs"
-              style={{ backgroundColor: l.color }}
+              style={{ backgroundColor: l.color, color: getContrastTextColor(l.color) }}
             >
               {l.code}
             </Badge>

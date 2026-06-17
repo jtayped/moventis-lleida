@@ -21,8 +21,6 @@ type ScheduledTime = Journey["scheduledTimes"][number];
 // --- CONSTANTS ---
 
 const realTimeRegex = /(?:(\d+)\s*h\s*)?(\d+)\s*min\s*(\d+)\s*s/;
-const API_URL_TEMPLATE =
-  "https://www.moventis.es/api/json/GetTiemposParada/es/{externalStopId}/{externalRouteId}/0";
 
 // --- TEXT & TIME HELPERS ---
 
@@ -89,10 +87,7 @@ async function fetchAndParseSchedules(
   externalStopId: string,
   externalRouteId: string,
 ): Promise<ApiScheduleLine[]> {
-  const url = API_URL_TEMPLATE.replace(
-    "{externalStopId}",
-    externalStopId,
-  ).replace("{externalRouteId}", externalRouteId);
+  const url = `https://www.moventis.es/api/json/GetTiemposParada/es/${externalStopId}/${externalRouteId}/0`;
 
   const res = await axios.get(url);
 

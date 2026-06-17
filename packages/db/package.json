@@ -11,7 +11,11 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:snap": "node scripts/snap-to-roads.mjs",
+    "db:aggregate": "node scripts/aggregate-route-paths.mjs",
+    "db:seed-paths": "node scripts/seed-route-paths.mjs",
+    "db:prepare-paths": "pnpm db:snap && pnpm db:aggregate"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0"

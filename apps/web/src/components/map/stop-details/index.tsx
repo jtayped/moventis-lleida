@@ -7,10 +7,31 @@ import StopDetailsError from "./error";
 import StopDetailsHeader from "./header";
 import StopScheduleLine from "./line-schedule";
 import { useBusFinder } from "@/context/buses";
-import { CheckCheck, Spline } from "lucide-react";
-import type { Journey } from "@moventis/shared";
+import { CheckCheck, ArrowRightLeft } from "lucide-react";
+import type { Journey, Schedules } from "@moventis/shared";
 
 type ScheduledTime = Journey["scheduledTimes"][number];
+
+const ScheduleGroup = ({
+  lines,
+  closestScheduledTime,
+  now,
+}: {
+  lines: Schedules;
+  closestScheduledTime: ScheduledTime | null;
+  now: number;
+}) => (
+  <div className="divide-y divide-gray-300">
+    {lines.map((line) => (
+      <StopScheduleLine
+        key={line.externalLineId}
+        line={line}
+        closestScheduledTime={closestScheduledTime}
+        now={now}
+      />
+    ))}
+  </div>
+);
 
 const StopDetails = ({ stop }: { stop: Stop }) => {
   const { selectedRoutes } = useBusFinder();
@@ -32,7 +53,6 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
     return () => clearInterval(id);
   }, []);
 
-  // This memo now finds the closest *individual scheduled time*
   const closestScheduledTime = useMemo(() => {
     if (!details?.schedules) return null;
 
@@ -40,9 +60,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
     let minDiff = Infinity;
 
     for (const line of details.schedules) {
-      // Loop through journey groups (e.g., "agrònoms - pla d'urgell")
       for (const journey of line.journeys) {
-        // Loop through the times for that journey group
         for (const scheduledTime of journey.scheduledTimes) {
           const diff = (scheduledTime.arrivalTime.getTime() - now) / 1000;
           if (diff > 0 && diff < minDiff) {
@@ -114,62 +132,42 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
             <div className="text-muted-foreground py-8 text-center">
               <p>no hi ha horaris disponibles per a aquesta parada.</p>
             </div>
-          ) : (
+          ) : showSections ? (
             <div>
-              {showSections ? (
-                <>
-                  {selectedLines.length > 0 && (
-                    <div className="py-2">
-                      <div className="my-4 mb-2 flex items-center gap-2 px-1">
-                        <CheckCheck className="h-5 w-5" />
-                        <h3 className="text-lg font-bold">
-                          línies seleccionades
-                        </h3>
-                      </div>
-                      <div className="divide-y divide-gray-300">
-                        {selectedLines.map((line) => (
-                          <StopScheduleLine
-                            key={line.externalLineId}
-                            line={line}
-                            closestScheduledTime={closestScheduledTime}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {otherLines.length > 0 && (
-                    <div className="py-2">
-                      {selectedLines.length > 0 && (
-                        <hr className="my-2 border-gray-200" />
-                      )}
-                      <div className="my-4 mb-2 flex items-center gap-2 px-1">
-                        <Spline className="h-5 w-5" />
-                        <h3 className="text-lg font-bold">correspondències</h3>
-                      </div>
-                      <div className="divide-y divide-gray-300">
-                        {otherLines.map((line) => (
-                          <StopScheduleLine
-                            key={line.externalLineId}
-                            line={line}
-                            closestScheduledTime={closestScheduledTime}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="divide-y divide-gray-300">
-                  {filteredSchedules.map((line) => (
-                    <StopScheduleLine
-                      key={line.externalLineId}
-                      line={line}
-                      closestScheduledTime={closestScheduledTime}
-                    />
-                  ))}
+              {selectedLines.length > 0 && (
+                <div className="py-2">
+                  <div className="my-4 mb-2 flex items-center gap-2 px-1">
+                    <CheckCheck className="h-5 w-5" />
+                    <h3 className="text-lg font-bold">línies seleccionades</h3>
+                  </div>
+                  <ScheduleGroup
+                    lines={selectedLines}
+                    closestScheduledTime={closestScheduledTime}
+                    now={now}
+                  />
+                </div>
+              )}
+              {otherLines.length > 0 && (
+                <div className="py-2">
+                  {selectedLines.length > 0 && <hr className="my-2 border-gray-200" />}
+                  <div className="my-4 mb-2 flex items-center gap-2 px-1">
+                    <ArrowRightLeft className="h-5 w-5" />
+                    <h3 className="text-lg font-bold">correspondències</h3>
+                  </div>
+                  <ScheduleGroup
+                    lines={otherLines}
+                    closestScheduledTime={closestScheduledTime}
+                    now={now}
+                  />
                 </div>
               )}
             </div>
+          ) : (
+            <ScheduleGroup
+              lines={filteredSchedules}
+              closestScheduledTime={closestScheduledTime}
+              now={now}
+            />
           )}
         </div>
         <ScrollBar orientation="vertical" />

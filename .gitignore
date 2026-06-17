@@ -53,3 +53,11 @@ yarn-error.log*
 
 # temp files
 _tmp_*
+
+# OSRM preprocessed road data (large binary files, regenerate with Docker)
+packages/db/data/osm/
+packages/db/data/route-paths/raw/
+packages/db/data/route-paths/matched/
+
+# Claude Code tool artifacts
+.impeccable/

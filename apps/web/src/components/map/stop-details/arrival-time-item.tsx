@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import CountdownTimer from "../../ui/countdown";
 import { formatRelativeTime, formatAbsoluteTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
 
 interface ScheduledTime {
   arrivalTime: Date;
@@ -13,35 +12,27 @@ interface ScheduledTime {
 interface ArrivalTimeCardProps {
   journey: ScheduledTime;
   isClosest: boolean;
+  now: number;
 }
 
 export const ArrivalTimeCard = ({
   journey,
   isClosest,
+  now,
 }: ArrivalTimeCardProps) => {
-  const [diffInSeconds, setDiffInSeconds] = useState(() =>
-    Math.round((journey.arrivalTime.getTime() - Date.now()) / 1000),
-  );
-  useEffect(() => {
-    const id = setInterval(() => {
-      setDiffInSeconds(
-        Math.round((journey.arrivalTime.getTime() - Date.now()) / 1000),
-      );
-    }, 30_000);
-    return () => clearInterval(id);
-  }, [journey.arrivalTime]);
+  const diffInSeconds = Math.round((journey.arrivalTime.getTime() - now) / 1000);
 
   return (
     <Card
       className={cn(
         "flex h-auto flex-col items-center p-2",
-        isClosest && "border-primary/30 bg-primary/5",
+        isClosest && "border-foreground/20 bg-foreground/[0.04] py-4",
       )}
     >
       <span
         className={cn(
-          "flex items-center text-sm font-bold",
-          isClosest && "text-primary",
+          "flex items-center font-bold",
+          isClosest ? "text-3xl" : "text-sm",
         )}
       >
         {isClosest ? (
@@ -58,7 +49,12 @@ export const ArrivalTimeCard = ({
           />
         )}
       </span>
-      <span className="font-mono text-xs">
+      <span
+        className={cn(
+          "font-mono",
+          isClosest ? "text-sm text-muted-foreground" : "text-xs",
+        )}
+      >
         {formatAbsoluteTime(journey.arrivalTime)}
       </span>
     </Card>

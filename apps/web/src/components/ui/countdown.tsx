@@ -27,7 +27,7 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
     return () => clearInterval(interval);
   }, [secondsRemaining <= 0]);
 
-  if (secondsRemaining < 30) return <>Now</>;
+  if (secondsRemaining < 30) return <>Ara</>;
   if (secondsRemaining < 60 * 10) {
     const m = Math.floor(secondsRemaining / 60);
     const s = secondsRemaining % 60;
