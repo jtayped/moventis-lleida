@@ -13,6 +13,13 @@ function assertLine(code: string): Lines {
 }
 
 export const stopsRouter = createTRPCRouter({
+  getByRoute: publicProcedure
+    .input(z.object({ routeCode: z.enum(LINES) }))
+    .query(async ({ ctx, input }): Promise<Stop[]> => {
+      return ctx.db.stop.findMany({
+        where: { routes: { some: { code: input.routeCode } } },
+      });
+    }),
   getMany: publicProcedure
     .input(
       z.object({

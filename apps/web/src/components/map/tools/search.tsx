@@ -28,7 +28,7 @@ const SearchInput = () => {
             <Spinner />
           </>
         ) : (
-          (stops?.length ?? 0) > 0 && `${stops?.length ?? 0} parades`
+          stops.length > 0 && `${stops.length} parades`
         )}
       </InputGroupAddon>
     </InputGroup>
