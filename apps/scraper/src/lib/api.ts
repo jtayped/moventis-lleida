@@ -53,12 +53,20 @@ export async function fetchTrayectos(
   if (!res.ok) throw new Error(`GetTrayectos/${lineId} ${res.status}`);
   const data = (await res.json()) as unknown[];
   // Filter out stub responses like [{ numLinea: "xxx" }] that have no TrayectosDet
-  return data.filter(
-    (t): t is MoventisTrayecto =>
-      typeof t === "object" &&
-      t !== null &&
-      Array.isArray((t as MoventisTrayecto).TrayectosDet),
-  );
+  return data
+    .filter(
+      (t): t is MoventisTrayecto =>
+        typeof t === "object" &&
+        t !== null &&
+        Array.isArray((t as MoventisTrayecto).TrayectosDet),
+    )
+    .map((t) => ({
+      ...t,
+      // API occasionally returns a bare number instead of a single-element array
+      ID_TRAYECTO: Array.isArray(t.ID_TRAYECTO)
+        ? t.ID_TRAYECTO
+        : [t.ID_TRAYECTO as number],
+    }));
 }
 
 export async function fetchKml(

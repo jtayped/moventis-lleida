@@ -40,9 +40,53 @@ const getCachedPath = unstable_cache(
   { revalidate: 60 * 60 * 24 * 7 },
 );
 
+const getCachedVariantStops = unstable_cache(
+  async (code: Lines) => {
+    const route = await db.route.findFirst({
+      where: { code, deletedAt: null },
+      select: {
+        variants: {
+          orderBy: [{ isPrincipal: "desc" }, { direction: "asc" }],
+          select: {
+            direction: true,
+            description: true,
+            isPrincipal: true,
+            stops: {
+              orderBy: { sequence: "asc" },
+              select: {
+                sequence: true,
+                stop: { select: { id: true, name: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!route) return [];
+
+    return route.variants.map((v) => ({
+      direction: v.direction as "I" | "V",
+      description: v.description,
+      isPrincipal: v.isPrincipal,
+      stops: v.stops.map((s, idx) => ({
+        id: s.stop.id,
+        name: s.stop.name,
+        index: idx,
+        total: v.stops.length,
+      })),
+    }));
+  },
+  ["route-variant-stops"],
+  { revalidate: 60 * 60 * 24 * 7 },
+);
+
 export const routesRouter = createTRPCRouter({
   getAll: publicProcedure.query(() => getCachedRoutes()),
   getPath: publicProcedure
     .input(z.object({ code: z.enum(LINES) }))
     .query(({ input }) => getCachedPath(input.code)),
+  getVariantStops: publicProcedure
+    .input(z.object({ code: z.enum(LINES) }))
+    .query(({ input }) => getCachedVariantStops(input.code)),
 });

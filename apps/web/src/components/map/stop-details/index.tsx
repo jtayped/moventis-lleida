@@ -6,6 +6,7 @@ import StopDetailsSkeleton from "./loading";
 import StopDetailsError from "./error";
 import StopDetailsHeader from "./header";
 import StopScheduleLine from "./line-schedule";
+import StopSequence from "./stop-sequence";
 import { useBusFinder } from "@/context/buses";
 import { CheckCheck, ArrowRightLeft } from "lucide-react";
 import type { Journey, Schedules } from "@moventis/shared";
@@ -125,6 +126,8 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
         isFetching={isFetching}
         refetch={refetch}
       />
+
+      <StopSequence stopId={stop.id} />
 
       <ScrollArea className="h-100 pr-3">
         <div>
