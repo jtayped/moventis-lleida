@@ -1,23 +1,12 @@
 import cron from "node-cron";
-import { syncRoutes } from "./jobs/sync-routes.js";
-import { syncStops } from "./jobs/sync-stops.js";
+import { syncAll } from "./jobs/sync-all.js";
 
-async function runAll() {
-  await syncRoutes();
-  await syncStops();
-}
+// Run immediately on container start
+await syncAll().catch(console.error);
 
-// Run immediately on container start so the DB is populated without waiting
-await runAll().catch(console.error);
-
-// Sync routes daily at 03:00 — routes change infrequently
+// Re-sync daily at 03:00 — covers new stops, operating day changes, route changes
 cron.schedule("0 3 * * *", () => {
-  syncRoutes().catch(console.error);
+  syncAll().catch(console.error);
 });
 
-// Sync stops daily at 03:30 — depends on routes being up to date
-cron.schedule("30 3 * * *", () => {
-  syncStops().catch(console.error);
-});
-
-console.log("Scraper started — cron jobs scheduled.");
+console.log("Scraper started — daily sync scheduled at 03:00.");
