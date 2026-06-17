@@ -13,6 +13,9 @@ import {
 import { parseKmlPath } from "../lib/kml.js";
 import { normalizeName, normalizeLineCode } from "../lib/normalize.js";
 
+// Interurban and tourist lines excluded from this Lleida urban app
+const EXCLUDED_CODES = new Set(["bt", "120", "121", "122", "401"]);
+
 // Stop DB id cache to avoid re-querying stops seen in multiple trayectos
 const stopIdCache = new Map<string, string>();
 
@@ -209,6 +212,7 @@ export async function syncAll(): Promise<void> {
   const linesData = await fetchLleidaLines();
   const lineMap = new Map<string, { entry: MoventisLine; dates: string[] }>();
   for (const entry of linesData) {
+    if (EXCLUDED_CODES.has(normalizeLineCode(entry.COD_LINEA))) continue;
     const existing = lineMap.get(entry.ID_LINEA);
     if (!existing) {
       lineMap.set(entry.ID_LINEA, { entry, dates: [entry.DIAS_QUE_CIRCULA] });
@@ -233,6 +237,28 @@ export async function syncAll(): Promise<void> {
     where: { externalId: { notIn: activeExternalIds }, deletedAt: null },
     data: { deletedAt: new Date() },
   });
+
+  // Soft-delete stops that weren't seen in any active route variant this run
+  const seenStopExternalIds = [...stopIdCache.keys()];
+  await db.stop.updateMany({
+    where: { externalId: { notIn: seenStopExternalIds }, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+
+  // Hard-delete stops that have been soft-deleted for more than 28 days
+  const fourWeeksAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+  const { count: purgedCount } = await db.stop.deleteMany({
+    where: { deletedAt: { not: null, lt: fourWeeksAgo } },
+  });
+  if (purgedCount > 0) {
+    console.log(`[sync-all] Permanently removed ${purgedCount} stop(s) deleted >28 days ago.`);
+  }
+
+  // Hard-delete excluded routes that may still be in the DB, then orphaned stops.
+  // Routes cascade-delete their variants and operating days; the many-to-many join
+  // entries are also removed, leaving stops with no routes behind for the next step.
+  await db.route.deleteMany({ where: { code: { in: [...EXCLUDED_CODES] } } });
+  await db.stop.deleteMany({ where: { routes: { none: {} } } });
 
   console.log("[sync-all] Done.");
 }
