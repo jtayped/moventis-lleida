@@ -7,9 +7,9 @@ import { z } from "zod";
 if (typeof window === "undefined") {
   try {
     const dotenv = await import("dotenv");
-    const { resolve } = await import("path");
-    dotenv.config({ path: resolve(process.cwd(), "../../.env"), override: false });
-  } catch (_e) {
+    const path = await import("path");
+    dotenv.config({ path: path.resolve(process.cwd(), "../../.env"), override: false });
+  } catch {
     // ignore missing dotenv in production environments
   }
 }
