@@ -6,10 +6,12 @@ import { z } from "zod";
 // process.cwd() is apps/web/ when Turborepo runs the task, so ../../.env is the root.
 if (typeof window === "undefined") {
   try {
-    const { config } = await import("dotenv");
+    const dotenv = await import("dotenv");
     const { resolve } = await import("path");
-    config({ path: resolve(process.cwd(), "../../.env"), override: false });
-  } catch {}
+    dotenv.config({ path: resolve(process.cwd(), "../../.env"), override: false });
+  } catch (_e) {
+    // ignore missing dotenv in production environments
+  }
 }
 
 export const env = createEnv({
