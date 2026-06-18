@@ -20,12 +20,12 @@ const EXCLUDED_CODES = new Set(["bt", "120", "121", "122", "401"]);
 const stopIdCache = new Map<string, string>();
 
 async function upsertStop(
-  codParada: number,
+  idParada: number,
   descParada: string,
   lat: number,
   lng: number,
 ): Promise<string> {
-  const key = String(codParada);
+  const key = String(idParada);
   if (stopIdCache.has(key)) return stopIdCache.get(key)!;
 
   const stop = await db.stop.upsert({
@@ -95,9 +95,9 @@ async function syncVariant(
   const stopIds: string[] = [];
   for (const det of trayecto.TrayectosDet) {
     const p = det.Parada;
-    if (!p?.COD_PARADA) continue;
+    if (!p?.ID_PARADA) continue;
     const stopId = await upsertStop(
-      p.COD_PARADA,
+      p.ID_PARADA,
       p.DESC_PARADA,
       p.LATITUD,
       p.LONGITUD,
@@ -110,7 +110,7 @@ async function syncVariant(
     const variantStopData: { variantId: string; stopId: string; sequence: number }[] = [];
     let seqIdx = 0;
     for (const det of trayecto.TrayectosDet) {
-      if (!det.Parada?.COD_PARADA) continue;
+      if (!det.Parada?.ID_PARADA) continue;
       const stopId = stopIds[seqIdx++];
       if (!stopId) continue;
       variantStopData.push({

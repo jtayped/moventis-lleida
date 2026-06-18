@@ -9,7 +9,7 @@ export const stopsRouter = createTRPCRouter({
     .input(z.object({ routeCode: z.string() }))
     .query(async ({ ctx, input }): Promise<Stop[]> => {
       return ctx.db.stop.findMany({
-        where: { routes: { some: { code: input.routeCode } } },
+        where: { routes: { some: { code: input.routeCode } }, deletedAt: null },
       });
     }),
   getMany: publicProcedure
@@ -28,6 +28,7 @@ export const stopsRouter = createTRPCRouter({
 
       const stops = await ctx.db.stop.findMany({
         where: {
+          deletedAt: null,
           ...(routeCodes.length > 0 && {
             routes: {
               some: {
