@@ -1,4 +1,4 @@
-import { ClockAlert } from "lucide-react";
+import { ClockAlert, Accessibility } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import CountdownTimer from "../../ui/countdown";
 import { formatRelativeTime, formatAbsoluteTime } from "@/lib/time";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 interface ScheduledTime {
   arrivalTime: Date;
   isRealTime: boolean;
+  accessible: boolean | null;
 }
 
 interface ArrivalTimeCardProps {
@@ -45,6 +46,14 @@ export const ArrivalTimeCard = ({
             size={12}
             className="ml-1"
             aria-label="Hora estimada (no en temps real)"
+            role="img"
+          />
+        )}
+        {journey.accessible && (
+          <Accessibility
+            size={12}
+            className="ml-1"
+            aria-label="Vehicle accessible"
             role="img"
           />
         )}

@@ -6,18 +6,21 @@ import StopDetailsSkeleton from "./loading";
 import StopDetailsError from "./error";
 import StopDetailsHeader from "./header";
 import StopScheduleLine from "./line-schedule";
+import StopNavigation from "./stop-navigation";
 import { useBusFinder } from "@/context/buses";
-import { CheckCheck, ArrowRightLeft } from "lucide-react";
+import { CheckCheck, ArrowRightLeft, TriangleAlert } from "lucide-react";
 import type { Journey, Schedules } from "@moventis/shared";
 
 type ScheduledTime = Journey["scheduledTimes"][number];
 
 const ScheduleGroup = ({
   lines,
+  colorMap,
   closestScheduledTime,
   now,
 }: {
   lines: Schedules;
+  colorMap: Map<string, string>;
   closestScheduledTime: ScheduledTime | null;
   now: number;
 }) => (
@@ -26,6 +29,7 @@ const ScheduleGroup = ({
       <StopScheduleLine
         key={line.externalLineId}
         line={line}
+        color={colorMap.get(line.lineCode) ?? "#888888"}
         closestScheduledTime={closestScheduledTime}
         now={now}
       />
@@ -34,7 +38,12 @@ const ScheduleGroup = ({
 );
 
 const StopDetails = ({ stop }: { stop: Stop }) => {
-  const { selectedRoutes } = useBusFinder();
+  const { selectedRoutes, routes } = useBusFinder();
+
+  const colorMap = useMemo(
+    () => new Map(routes.map((r) => [r.code, r.color])),
+    [routes],
+  );
 
   const {
     data: details,
@@ -126,6 +135,17 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
         refetch={refetch}
       />
 
+      <StopNavigation stopId={stop.id} />
+
+      {stop.deletedAt && (
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+          <TriangleAlert size={16} className="mt-0.5 shrink-0" />
+          <span>
+            aquesta parada ja no es troba en servei. pot ser temporal per obres o canvis de ruta.
+          </span>
+        </div>
+      )}
+
       <ScrollArea className="h-100 pr-3">
         <div>
           {filteredSchedules.length === 0 ? (
@@ -142,6 +162,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
                   </div>
                   <ScheduleGroup
                     lines={selectedLines}
+                    colorMap={colorMap}
                     closestScheduledTime={closestScheduledTime}
                     now={now}
                   />
@@ -156,6 +177,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
                   </div>
                   <ScheduleGroup
                     lines={otherLines}
+                    colorMap={colorMap}
                     closestScheduledTime={closestScheduledTime}
                     now={now}
                   />
@@ -165,6 +187,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
           ) : (
             <ScheduleGroup
               lines={filteredSchedules}
+              colorMap={colorMap}
               closestScheduledTime={closestScheduledTime}
               now={now}
             />

@@ -18,7 +18,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ca" className={`${geist.variable}`}>
-      <body>
+      <body className="lowercase">
         <RootProviders>{children}</RootProviders>
       </body>
     </html>

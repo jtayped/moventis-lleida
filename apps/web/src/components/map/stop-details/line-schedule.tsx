@@ -1,32 +1,32 @@
 import { Badge } from "@/components/ui/badge";
 import ArrivalTimeCard from "./arrival-time-item";
 import type { Journey, Schedules } from "@moventis/shared";
-import { LINE_COLORS } from "@moventis/shared";
 import { getContrastTextColor } from "@/lib/contrast";
+import { TriangleAlert } from "lucide-react";
 
 type ScheduledTime = Journey["scheduledTimes"][number];
 
 interface StopScheduleLineProps {
   line: Schedules[number];
+  color: string;
   closestScheduledTime: ScheduledTime | null;
   now: number;
 }
 
 export const StopScheduleLine = ({
   line,
+  color,
   closestScheduledTime,
   now,
 }: StopScheduleLineProps) => {
-  const lineColor = LINE_COLORS[line.lineCode];
-
   return (
     <div className="py-3">
       <div className="flex items-center gap-3 pr-2 pb-2">
         <span
           className="flex size-8 items-center justify-center rounded-lg text-lg"
           style={{
-            backgroundColor: lineColor,
-            color: getContrastTextColor(lineColor),
+            backgroundColor: color,
+            color: getContrastTextColor(color),
           }}
         >
           {line.lineCode}
@@ -35,6 +35,13 @@ export const StopScheduleLine = ({
           {line.lineName}
         </span>
       </div>
+
+      {line.incidencias != null && (
+        <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+          <TriangleAlert size={14} className="mt-0.5 shrink-0" />
+          <span>incidència de servei en aquesta línia</span>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3">
         {line.journeys.length > 0 ? (

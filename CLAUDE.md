@@ -45,15 +45,16 @@ pnpm format:write # prettier write
 
 ## Environment Variables
 
-Copy `apps/web/.env.example` to `apps/web/.env`:
+All env vars live in a single `.env` at the monorepo root. Copy `.env.example` to `.env`:
 
 ```
-DATABASE_URL="postgresql://postgres:password@localhost:5432/db-name"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/moventis-lleida"
 NEXT_PUBLIC_MAPS_API_KEY=""   # Google Maps JavaScript API key
 NEXT_PUBLIC_MAPS_MAP_ID=""    # Google Cloud Map ID (required for AdvancedMarker)
+ANDROID_HOME=                 # Android SDK path (Expo only)
 ```
 
-Env is validated at startup via `@t3-oss/env-nextjs` in `apps/web/src/env.js`.
+Turbo loads the root `.env` automatically via `globalDotEnv` in `turbo.json`. Env is validated at startup via `@t3-oss/env-nextjs` in `apps/web/src/env.js`.
 
 ## Architecture
 

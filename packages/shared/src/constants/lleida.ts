@@ -10,11 +10,11 @@ export const INITIAL_BOUNDS = {
   west: 0.6,
 } as const;
 
-// ~3.9 km buffer so users can pan slightly outside the city boundary
-const padding = 0.035;
+// Covers all intercity lines: Alcarràs (NW), Torres de Segre (SE),
+// el Cogul & l'Albagés (S) — roughly 35 km from city centre.
 export const RESTRICTED_BOUNDS = {
-  north: 41.635 + padding,
-  south: 41.605 - padding,
-  east: 0.645 + padding,
-  west: 0.6 - padding,
+  north: 41.80,
+  south: 41.38,
+  east: 0.96,
+  west: 0.46,
 } as const;

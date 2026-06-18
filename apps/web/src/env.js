@@ -1,6 +1,19 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+// Load root .env on the server only. Dynamic imports prevent these Node.js modules
+// from appearing in the client bundle (fileURLToPath has no browser equivalent).
+// process.cwd() is apps/web/ when Turborepo runs the task, so ../../.env is the root.
+if (typeof window === "undefined") {
+  try {
+    const dotenv = await import("dotenv");
+    const path = await import("path");
+    dotenv.config({ path: path.resolve(process.cwd(), "../../.env"), override: false });
+  } catch {
+    // ignore missing dotenv in production environments
+  }
+}
+
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app

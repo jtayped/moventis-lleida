@@ -10,7 +10,7 @@ import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 
 interface BusFinderValue {
   routes: Line[];
@@ -19,20 +19,22 @@ interface BusFinderValue {
   isLoadingStops: boolean;
   toggleRoute: (routeId: Lines) => void;
   isRouteSelected: (routeId: Lines) => boolean;
+  /** Routes that have at least one operating day today. */
+  activeRouteCodes: Lines[];
   selectStop: (stop: Stop) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedStop: Stop | undefined;
+  /** Look up a full Stop object by id from the currently loaded route stops. */
+  findStop: (id: string) => Stop | undefined;
 }
 
 const BusFinderContext = createContext<BusFinderValue | undefined>(undefined);
 
 export const BusFinderProvider = ({
   children,
-  initialRoutes,
 }: {
   children: React.ReactNode;
-  initialRoutes: Line[];
 }) => {
   const [selectedRoutes, setSelectedRoutes] = useState<Lines[]>([]);
   const [selectedStop, setSelectedStop] = useState<Stop | undefined>(undefined);
@@ -41,8 +43,15 @@ export const BusFinderProvider = ({
   const debouncedQuery = useDebounce(searchQuery);
   const debouncedSelectedRoutes = useDebounce(selectedRoutes);
 
+  const { data: routes = [] } = api.routes.getAll.useQuery(undefined, {
+    staleTime: 24 * 60 * 60 * 1000, // treat as fresh for 24h; seeded by SSR prefetch
+  });
+
+  const { data: activeRouteCodes = [] } = api.routes.getTodayActive.useQuery(undefined, {
+    staleTime: 60 * 60 * 1000, // treat as fresh for 1 hour
+  });
+
   // One query per selected route so React Query caches each line independently.
-  // Adding line 9 when line 6 is already loaded only fires one new request.
   const routeQueries = api.useQueries((t) =>
     debouncedSelectedRoutes.map((code) =>
       t.stops.getByRoute({ routeCode: code }),
@@ -57,16 +66,18 @@ export const BusFinderProvider = ({
       { enabled: debouncedSelectedRoutes.length === 0 && debouncedQuery.trim().length > 0 },
     );
 
-  // Merge per-route results into a deduplicated pool keyed by stop ID.
-  const routeStops = useMemo(() => {
+  // All stops for selected routes, deduplicated — used for navigation lookups.
+  const allRouteStopsMap = useMemo(() => {
     const map = new Map<string, Stop>();
     for (const q of routeQueries) {
       for (const stop of q.data ?? []) {
         map.set(stop.id, stop);
       }
     }
-    return [...map.values()];
+    return map;
   }, [routeQueries]);
+
+  const routeStops = useMemo(() => [...allRouteStopsMap.values()], [allRouteStopsMap]);
 
   // Apply client-side name filter when routes are selected and a query is typed.
   const stops = useMemo(() => {
@@ -101,17 +112,24 @@ export const BusFinderProvider = ({
     setSelectedStop(stop);
   }
 
+  const findStop = useCallback(
+    (id: string): Stop | undefined => allRouteStopsMap.get(id),
+    [allRouteStopsMap],
+  );
+
   const value = {
-    routes: initialRoutes,
+    routes: routes as Line[],
     stops,
     selectedRoutes,
     isLoadingStops,
     toggleRoute,
     isRouteSelected,
+    activeRouteCodes,
     selectStop,
     searchQuery,
     setSearchQuery,
     selectedStop,
+    findStop,
   } satisfies BusFinderValue;
 
   return (

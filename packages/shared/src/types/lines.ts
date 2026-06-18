@@ -1,11 +1,9 @@
-import type { LINES } from "../constants/lines";
-
-export type Lines = (typeof LINES)[number];
+export type Lines = string;
 export type Line = {
   id: string;
   externalId: string;
   name: string;
-  code: Lines;
+  code: string;
   color: string;
   createdAt: Date;
   updatedAt: Date;

@@ -1,14 +1,19 @@
 import BusMap from "@/components/map";
 import { BusFinderProvider } from "@/context/buses";
-import { api } from "@/trpc/server";
+import { api, HydrateClient } from "@/trpc/server";
 import React from "react";
 
 const HomePage = async () => {
-  const routes = await api.routes.getAll();
+  await Promise.all([
+    api.routes.getAll.prefetch(),
+    api.routes.getTodayActive.prefetch(),
+  ]);
   return (
-    <BusFinderProvider initialRoutes={routes}>
-      <BusMap />
-    </BusFinderProvider>
+    <HydrateClient>
+      <BusFinderProvider>
+        <BusMap />
+      </BusFinderProvider>
+    </HydrateClient>
   );
 };
 
