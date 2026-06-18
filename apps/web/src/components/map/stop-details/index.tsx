@@ -15,10 +15,12 @@ type ScheduledTime = Journey["scheduledTimes"][number];
 
 const ScheduleGroup = ({
   lines,
+  colorMap,
   closestScheduledTime,
   now,
 }: {
   lines: Schedules;
+  colorMap: Map<string, string>;
   closestScheduledTime: ScheduledTime | null;
   now: number;
 }) => (
@@ -27,6 +29,7 @@ const ScheduleGroup = ({
       <StopScheduleLine
         key={line.externalLineId}
         line={line}
+        color={colorMap.get(line.lineCode) ?? "#888888"}
         closestScheduledTime={closestScheduledTime}
         now={now}
       />
@@ -35,7 +38,12 @@ const ScheduleGroup = ({
 );
 
 const StopDetails = ({ stop }: { stop: Stop }) => {
-  const { selectedRoutes } = useBusFinder();
+  const { selectedRoutes, routes } = useBusFinder();
+
+  const colorMap = useMemo(
+    () => new Map(routes.map((r) => [r.code, r.color])),
+    [routes],
+  );
 
   const {
     data: details,
@@ -154,6 +162,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
                   </div>
                   <ScheduleGroup
                     lines={selectedLines}
+                    colorMap={colorMap}
                     closestScheduledTime={closestScheduledTime}
                     now={now}
                   />
@@ -168,6 +177,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
                   </div>
                   <ScheduleGroup
                     lines={otherLines}
+                    colorMap={colorMap}
                     closestScheduledTime={closestScheduledTime}
                     now={now}
                   />
@@ -177,6 +187,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
           ) : (
             <ScheduleGroup
               lines={filteredSchedules}
+              colorMap={colorMap}
               closestScheduledTime={closestScheduledTime}
               now={now}
             />

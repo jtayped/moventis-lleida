@@ -3,7 +3,7 @@ import React from "react";
 import { api } from "@/trpc/react";
 import { getContrastTextColor } from "@/lib/contrast";
 import { ChevronRight } from "lucide-react";
-import type { Line, Lines } from "@moventis/shared";
+import type { Line } from "@moventis/shared";
 
 interface LineCardProps {
   route: Line;
@@ -11,7 +11,7 @@ interface LineCardProps {
   onClick: () => void;
 }
 
-const PathPreview = ({ code, color }: { code: Lines; color: string }) => {
+const PathPreview = ({ code, color }: { code: string; color: string }) => {
   const { data: pathData } = api.routes.getPath.useQuery({ code });
 
   if (!pathData?.paths.length) {

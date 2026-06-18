@@ -3,18 +3,10 @@ import { createTRPCRouter, publicProcedure } from "../trpc";
 import type { Stop } from "@moventis/db";
 import { getStopSchedule } from "../lib/stop-schedule";
 import { TRPCError } from "@trpc/server";
-import { LINES, type Lines } from "@moventis/shared";
-
-function assertLine(code: string): Lines {
-  if (!(LINES as readonly string[]).includes(code)) {
-    throw new Error(`Unknown route code in DB: "${code}"`);
-  }
-  return code as Lines;
-}
 
 export const stopsRouter = createTRPCRouter({
   getByRoute: publicProcedure
-    .input(z.object({ routeCode: z.enum(LINES) }))
+    .input(z.object({ routeCode: z.string() }))
     .query(async ({ ctx, input }): Promise<Stop[]> => {
       return ctx.db.stop.findMany({
         where: { routes: { some: { code: input.routeCode } } },
@@ -23,7 +15,7 @@ export const stopsRouter = createTRPCRouter({
   getMany: publicProcedure
     .input(
       z.object({
-        routeCodes: z.enum(LINES).array(),
+        routeCodes: z.string().array(),
         query: z.string().optional(),
       }),
     )
@@ -68,15 +60,10 @@ export const stopsRouter = createTRPCRouter({
       if (stop.routes.length === 0)
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const typedRoutes = stop.routes.map((r) => ({
-        ...r,
-        code: assertLine(r.code),
-      }));
-
       // Skip live schedule fetch for soft-deleted stops — the stop no longer
       // exists in the Moventis API and the request would fail or return stale data.
       if (stop.deletedAt) {
-        return { ...stop, routes: typedRoutes, schedules: [] };
+        return { ...stop, schedules: [] };
       }
 
       const scheduleResults = await Promise.all(
@@ -88,13 +75,15 @@ export const stopsRouter = createTRPCRouter({
         .filter((s): s is NonNullable<typeof s> => s !== null)
         .flat();
 
-      // Keep only Lleida lines — the Moventis API returns schedules for all cities
-      // it operates in (e.g. Palma de Mallorca lines 107, 123), and also deduplicates
-      // overlapping entries from fetching multiple routes at the same stop.
+      // Keep only schedules for routes this stop belongs to — the Moventis API
+      // returns schedules for all cities it operates in (e.g. Palma de Mallorca
+      // lines 107, 123), and also deduplicates overlapping entries from fetching
+      // multiple routes at the same stop.
+      const validCodes = new Set(stop.routes.map((r) => r.code));
       const schedules = [
         ...new Map(allSchedules.map((s) => [s.externalLineId, s])).values(),
-      ].filter((s) => (LINES as readonly string[]).includes(s.lineCode));
+      ].filter((s) => validCodes.has(s.lineCode));
 
-      return { ...stop, routes: typedRoutes, schedules };
+      return { ...stop, schedules };
     }),
 });

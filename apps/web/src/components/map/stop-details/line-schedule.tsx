@@ -1,32 +1,31 @@
 import { Badge } from "@/components/ui/badge";
 import ArrivalTimeCard from "./arrival-time-item";
 import type { Journey, Schedules } from "@moventis/shared";
-import { LINE_COLORS } from "@moventis/shared";
 import { getContrastTextColor } from "@/lib/contrast";
 
 type ScheduledTime = Journey["scheduledTimes"][number];
 
 interface StopScheduleLineProps {
   line: Schedules[number];
+  color: string;
   closestScheduledTime: ScheduledTime | null;
   now: number;
 }
 
 export const StopScheduleLine = ({
   line,
+  color,
   closestScheduledTime,
   now,
 }: StopScheduleLineProps) => {
-  const lineColor = LINE_COLORS[line.lineCode];
-
   return (
     <div className="py-3">
       <div className="flex items-center gap-3 pr-2 pb-2">
         <span
           className="flex size-8 items-center justify-center rounded-lg text-lg"
           style={{
-            backgroundColor: lineColor,
-            color: getContrastTextColor(lineColor),
+            backgroundColor: color,
+            color: getContrastTextColor(color),
           }}
         >
           {line.lineCode}

@@ -1,4 +1,3 @@
-export * from "./src/constants/lines";
 export * from "./src/constants/lleida";
 
 export * from "./src/schemas/schedule";

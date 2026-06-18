@@ -33,10 +33,8 @@ const BusFinderContext = createContext<BusFinderValue | undefined>(undefined);
 
 export const BusFinderProvider = ({
   children,
-  initialRoutes,
 }: {
   children: React.ReactNode;
-  initialRoutes: Line[];
 }) => {
   const [selectedRoutes, setSelectedRoutes] = useState<Lines[]>([]);
   const [selectedStop, setSelectedStop] = useState<Stop | undefined>(undefined);
@@ -44,6 +42,10 @@ export const BusFinderProvider = ({
 
   const debouncedQuery = useDebounce(searchQuery);
   const debouncedSelectedRoutes = useDebounce(selectedRoutes);
+
+  const { data: routes = [] } = api.routes.getAll.useQuery(undefined, {
+    staleTime: 24 * 60 * 60 * 1000, // treat as fresh for 24h; seeded by SSR prefetch
+  });
 
   const { data: activeRouteCodes = [] } = api.routes.getTodayActive.useQuery(undefined, {
     staleTime: 60 * 60 * 1000, // treat as fresh for 1 hour
@@ -116,7 +118,7 @@ export const BusFinderProvider = ({
   );
 
   const value = {
-    routes: initialRoutes,
+    routes: routes as Line[],
     stops,
     selectedRoutes,
     isLoadingStops,

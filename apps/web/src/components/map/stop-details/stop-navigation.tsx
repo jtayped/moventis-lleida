@@ -5,12 +5,11 @@ import { api } from "@/trpc/react";
 import { useBusFinder } from "@/context/buses";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LINE_COLORS, type Lines } from "@moventis/shared";
 import { getContrastTextColor } from "@/lib/contrast";
 
-function RouteNav({ routeCode, stopId }: { routeCode: Lines; stopId: string }) {
-  const { findStop, selectStop } = useBusFinder();
-  const color = LINE_COLORS[routeCode];
+function RouteNav({ routeCode, stopId }: { routeCode: string; stopId: string }) {
+  const { findStop, selectStop, routes } = useBusFinder();
+  const color = routes.find((r) => r.code === routeCode)?.color ?? "#888888";
 
   const { data: variants } = api.routes.getVariantStops.useQuery(
     { code: routeCode },

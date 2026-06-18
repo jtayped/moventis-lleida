@@ -1,26 +1,11 @@
 import z from "zod";
 import { db } from "@moventis/db";
-import {
-  LINES,
-  routePathSchema,
-  type Lines,
-  type RoutePath,
-} from "@moventis/shared";
+import { routePathSchema, type RoutePath } from "@moventis/shared";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import { unstable_cache } from "next/cache";
 
-function assertLine(code: string): Lines {
-  if (!(LINES as readonly string[]).includes(code)) {
-    throw new Error(`Unknown route code in DB: "${code}"`);
-  }
-  return code as Lines;
-}
-
 const getCachedRoutes = unstable_cache(
-  async () => {
-    const data = await db.route.findMany({ where: { deletedAt: null } });
-    return data.map((route) => ({ ...route, code: assertLine(route.code) }));
-  },
+  async () => db.route.findMany({ where: { deletedAt: null } }),
   ["all-bus-routes"],
   { revalidate: 60 * 60 * 24 * 7 },
 );
@@ -28,7 +13,7 @@ const getCachedRoutes = unstable_cache(
 // Route geometry is static and large, so it's fetched lazily (only when a line
 // is selected) and cached for a week, keyed by line code.
 const getCachedPath = unstable_cache(
-  async (code: Lines): Promise<RoutePath> => {
+  async (code: string): Promise<RoutePath> => {
     const route = await db.route.findFirst({
       where: { code, deletedAt: null },
       select: { path: true },
@@ -41,7 +26,7 @@ const getCachedPath = unstable_cache(
 );
 
 const getCachedVariantStops = unstable_cache(
-  async (code: Lines) => {
+  async (code: string) => {
     const route = await db.route.findFirst({
       where: { code, deletedAt: null },
       select: {
@@ -84,10 +69,10 @@ const getCachedVariantStops = unstable_cache(
 export const routesRouter = createTRPCRouter({
   getAll: publicProcedure.query(() => getCachedRoutes()),
   getPath: publicProcedure
-    .input(z.object({ code: z.enum(LINES) }))
+    .input(z.object({ code: z.string() }))
     .query(({ input }) => getCachedPath(input.code)),
   getVariantStops: publicProcedure
-    .input(z.object({ code: z.enum(LINES) }))
+    .input(z.object({ code: z.string() }))
     .query(({ input }) => getCachedVariantStops(input.code)),
   /** Returns the line codes of routes that have at least one operating day today. */
   getTodayActive: publicProcedure.query(async ({ ctx }) => {
@@ -97,13 +82,12 @@ export const routesRouter = createTRPCRouter({
 
     const active = await ctx.db.route.findMany({
       where: {
+        deletedAt: null,
         operatingDays: { some: { date: { gte: today, lt: tomorrow } } },
       },
       select: { code: true },
     });
 
-    return active
-      .map((r) => r.code)
-      .filter((c): c is Lines => (LINES as readonly string[]).includes(c));
+    return active.map((r) => r.code);
   }),
 });

@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, X } from "lucide-react";
 import { getContrastTextColor } from "@/lib/contrast";
 import { useBusFinder } from "@/context/buses";
-import type { Lines } from "@moventis/shared";
-
 interface LineStopListProps {
-  code: Lines;
+  code: string;
   onBack: () => void;
 }
 
