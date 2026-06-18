@@ -16,7 +16,7 @@ WORKDIR /app
 # Only package manifests + pruned lockfile — cached unless deps change
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # ── Builder: build Next.js ─────────────────────────────────────────────────────
 FROM base AS builder
@@ -24,6 +24,7 @@ WORKDIR /app
 COPY --from=installer /app/node_modules ./node_modules
 COPY --from=pruner /app/out/full/ .
 ENV SKIP_ENV_VALIDATION=1
+RUN pnpm --filter=@moventis/db db:generate
 RUN pnpm --filter=@moventis/web build
 
 # ── Runner: minimal image using Next.js standalone output ──────────────────────
