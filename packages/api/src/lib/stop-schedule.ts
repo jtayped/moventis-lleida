@@ -59,6 +59,7 @@ function buildJourneys(trayectos: ApiScheduleLine["trayectos"], now: Date): Jour
     const scheduledTimes = details.map((d) => ({
       isRealTime: d.real === "S",
       arrivalTime: parseArrivalTime(d, now),
+      accessible: d.adaptada === "S" ? true : d.adaptada === "N" ? false : null,
     }));
 
     const existing = map.get(name);
@@ -116,6 +117,7 @@ export async function getStopSchedule(
         lineCode: desc.slice(0, sepIdx) as Lines,
         lineName: desc.slice(sepIdx + 3),
         selected: line.selected,
+        incidencias: line.incidencias,
         journeys,
       };
     });
