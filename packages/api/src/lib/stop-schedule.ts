@@ -14,7 +14,7 @@ type ApiScheduleLine = z.infer<typeof apiScheduleSchema>[number];
 
 const realTimeRegex = /(?:(\d+)\s*h\s*)?(\d+)\s*min\s*(\d+)\s*s/;
 
-function normalizeText(text: string): string {
+export function normalizeText(text: string): string {
   return text
     .toLowerCase()
     .replace(/\s*-\s*/g, " - ")
@@ -78,12 +78,42 @@ function buildJourneys(trayectos: ApiScheduleLine["trayectos"], now: Date): Jour
   }));
 }
 
-async function fetchSchedules(
+function fetchSchedulesRaw(
   externalStopId: string,
   externalRouteId: string,
-): Promise<ApiScheduleLine[]> {
+): Promise<unknown> {
   const url = `https://www.moventis.es/api/json/GetTiemposParada/es/${externalStopId}/${externalRouteId}/0`;
-  const { data } = await axios.get(url);
+  return axios.get(url).then(({ data }) => data as unknown);
+}
+
+/** Map one validated API line to our internal {@link Schedules} entry. */
+function mapLine(line: ApiScheduleLine, now: Date): Schedules[number] {
+  const desc = normalizeText(line.desc_linea);
+  const sepIdx = desc.indexOf(" - ");
+  if (sepIdx === -1) throw new Error(`Line description separator not found: ${line.desc_linea}`);
+
+  const journeys = buildJourneys(line.trayectos, now);
+  journeys.sort((a, b) => a.name.localeCompare(b.name));
+
+  return {
+    externalLineId: String(line.idLinea),
+    lineCode: desc.slice(0, sepIdx) as Lines,
+    lineName: desc.slice(sepIdx + 3),
+    selected: line.selected,
+    incidencias: line.incidencias,
+    journeys,
+  };
+}
+
+/**
+ * Pure transform from a raw Moventis API response to {@link Schedules}. Filters the
+ * `{"idLinea":"N"}` sentinel (returned when no service exists for the route/stop),
+ * validates against {@link apiScheduleSchema}, then normalizes each line. `now` is
+ * injected so the relative→absolute arrival-time math is deterministic in tests.
+ *
+ * Throws `ZodError` if the response shape changed — callers decide how to react.
+ */
+export function parseSchedulesResponse(data: unknown, now: Date): Schedules {
   // The API returns {"idLinea":"N",...} as a sentinel when no service exists for this route/stop.
   const valid = Array.isArray(data)
     ? (data as unknown[]).filter(
@@ -93,7 +123,8 @@ async function fetchSchedules(
           (item as Record<string, unknown>).idLinea !== "N",
       )
     : data;
-  return apiScheduleSchema.parse(valid);
+  const lines = apiScheduleSchema.parse(valid);
+  return lines.map((line) => mapLine(line, now));
 }
 
 export async function getStopSchedule(
@@ -101,26 +132,8 @@ export async function getStopSchedule(
   externalRouteId: string,
 ): Promise<Schedules | null> {
   try {
-    const now = new Date();
-    const data = await fetchSchedules(externalStopId, externalRouteId);
-
-    return data.map((line) => {
-      const desc = normalizeText(line.desc_linea);
-      const sepIdx = desc.indexOf(" - ");
-      if (sepIdx === -1) throw new Error(`Line description separator not found: ${line.desc_linea}`);
-
-      const journeys = buildJourneys(line.trayectos, now);
-      journeys.sort((a, b) => a.name.localeCompare(b.name));
-
-      return {
-        externalLineId: String(line.idLinea),
-        lineCode: desc.slice(0, sepIdx) as Lines,
-        lineName: desc.slice(sepIdx + 3),
-        selected: line.selected,
-        incidencias: line.incidencias,
-        journeys,
-      };
-    });
+    const data = await fetchSchedulesRaw(externalStopId, externalRouteId);
+    return parseSchedulesResponse(data, new Date());
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error("ZodError:", JSON.stringify(error.issues, null, 2));
