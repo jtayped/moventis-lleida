@@ -11,7 +11,9 @@
     "dev:web": "turbo run dev --filter=@moventis/web",
     "dev:expo": "turbo run dev --filter=@moventis/expo",
     "dev:scraper": "turbo run dev --filter=@moventis/scraper",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:live": "turbo run test:live"
   },
   "devDependencies": {
     "globals": "^17.4.0",

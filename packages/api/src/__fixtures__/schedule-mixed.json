@@ -1,0 +1,71 @@
+[
+  {
+    "idLinea": 130,
+    "desc_linea": "2 - RONDA - HOSPITALS",
+    "trayectos": {
+      "RONDA HOSPITALS": {
+        "0": {
+          "minutos": "00 min 11 s",
+          "adaptada": null,
+          "real": "S"
+        },
+        "00437": {
+          "minutos": "37' 00''",
+          "adaptada": null,
+          "real": "N",
+          "hora": "06:52",
+          "tiempo": "04 h 37 min"
+        },
+        "00453": {
+          "minutos": "53' 00''",
+          "adaptada": null,
+          "real": "N",
+          "hora": "07:08",
+          "tiempo": "04 h 53 min"
+        },
+        "00510": {
+          "minutos": "10' 00''",
+          "adaptada": null,
+          "real": "N",
+          "hora": "07:25",
+          "tiempo": "05 h 10 min"
+        },
+        "00525": {
+          "minutos": "25' 00''",
+          "adaptada": null,
+          "real": "N",
+          "hora": "07:40",
+          "tiempo": "05 h 25 min"
+        }
+      }
+    },
+    "incidencias": null,
+    "selected": 0
+  },
+  {
+    "idLinea": 137,
+    "desc_linea": "9 - POLIGONS",
+    "trayectos": {
+      "POLIGONS - RONDA INICI": {
+        "00402": {
+          "minutos": "02' 00''",
+          "adaptada": null,
+          "real": "N",
+          "hora": "06:17",
+          "tiempo": "04 h 02 min"
+        }
+      },
+      "POLIGONS - RONDA": {
+        "00453": {
+          "minutos": "53' 00''",
+          "adaptada": null,
+          "real": "N",
+          "hora": "07:08",
+          "tiempo": "04 h 53 min"
+        }
+      }
+    },
+    "incidencias": null,
+    "selected": 1
+  }
+]

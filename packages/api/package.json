@@ -7,6 +7,10 @@
   "exports": {
     ".": "./index.ts"
   },
+  "scripts": {
+    "test": "vitest run",
+    "test:live": "vitest run --config vitest.live.config.ts"
+  },
   "dependencies": {
     "@moventis/db": "workspace:*",
     "@moventis/shared": "workspace:*",
@@ -18,6 +22,7 @@
   },
   "devDependencies": {
     "@moventis/eslint-config": "workspace:*",
-    "@moventis/tsconfig": "workspace:*"
+    "@moventis/tsconfig": "workspace:*",
+    "vitest": "^4.1.9"
   }
 }

@@ -1,0 +1,13 @@
+[
+  {
+    "idLinea": 137,
+    "desc_linea": "9 - POLIGONS",
+    "trayectos": {
+      "POLIGONS - RONDA": {
+        "0": { "minutos": "05 min 30 s", "adaptada": null, "real": "X" }
+      }
+    },
+    "incidencias": null,
+    "selected": 1
+  }
+]
