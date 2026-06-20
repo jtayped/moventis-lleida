@@ -8,6 +8,7 @@ import {
 import axios, { AxiosError } from "axios";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { moventisQueue } from "./throttle";
 
 type ApiJourneyDetail = z.infer<typeof scheduleSchema>;
 type ApiScheduleLine = z.infer<typeof apiScheduleSchema>[number];
@@ -83,7 +84,7 @@ function fetchSchedulesRaw(
   externalRouteId: string,
 ): Promise<unknown> {
   const url = `https://www.moventis.es/api/json/GetTiemposParada/es/${externalStopId}/${externalRouteId}/0`;
-  return axios.get(url).then(({ data }) => data as unknown);
+  return moventisQueue.schedule(() => axios.get(url).then(({ data }) => data as unknown));
 }
 
 /** Map one validated API line to our internal {@link Schedules} entry. */
