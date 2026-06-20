@@ -7,6 +7,7 @@ import StopDetailsError from "./error";
 import StopDetailsHeader from "./header";
 import StopScheduleLine from "./line-schedule";
 import StopNavigation from "./stop-navigation";
+import LiveBusStatus, { type LiveBusStatusValue } from "./live-bus-status";
 import { useBusFinder } from "@/context/buses";
 import { CheckCheck, ArrowRightLeft, TriangleAlert } from "lucide-react";
 import type { Journey, Schedules } from "@moventis/shared";
@@ -38,7 +39,8 @@ const ScheduleGroup = ({
 );
 
 const StopDetails = ({ stop }: { stop: Stop }) => {
-  const { selectedRoutes, routes } = useBusFinder();
+  const { selectedRoutes, routes, lineBusStatus, busPositions } =
+    useBusFinder();
 
   const colorMap = useMemo(
     () => new Map(routes.map((r) => [r.code, r.color])),
@@ -117,6 +119,26 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
 
   const showSections = selectedRoutes.length > 0;
 
+  // Live buses relevant to this stop: the selected lines that actually serve it.
+  const relevantLines = useMemo(() => {
+    const selected = new Set(selectedRoutes);
+    return (details?.routes ?? [])
+      .map((r) => r.code)
+      .filter((code) => selected.has(code));
+  }, [details, selectedRoutes]);
+
+  const liveCount = useMemo(
+    () => busPositions.filter((p) => relevantLines.includes(p.lineCode)).length,
+    [busPositions, relevantLines],
+  );
+
+  const liveStatus = useMemo<LiveBusStatusValue>(() => {
+    if (relevantLines.length === 0) return "idle";
+    if (relevantLines.some((c) => lineBusStatus[c] === "loading")) return "loading";
+    if (relevantLines.some((c) => lineBusStatus[c] === "done")) return "done";
+    return "error";
+  }, [relevantLines, lineBusStatus]);
+
   if (isLoading) {
     return <StopDetailsSkeleton />;
   }
@@ -136,6 +158,10 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
       />
 
       <StopNavigation stopId={stop.id} />
+
+      {!stop.deletedAt && (
+        <LiveBusStatus status={liveStatus} count={liveCount} />
+      )}
 
       {stop.deletedAt && (
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
