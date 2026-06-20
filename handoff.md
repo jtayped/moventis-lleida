@@ -1,955 +1,282 @@
-# Handoff — Codebase Issues
+# Handoff — Live Bus Tracking (line-level redesign)
 
-Findings from a full four-section parallel code review. Each entry includes the exact file, the current code, and what to change. Ordered by severity within each section.
+Feature branch: `feat/bus-position-prediction`
 
-> **Maintenance note:** Add new issues here only when they are concrete, actionable, and not already covered by `SYSTEM_DESIGN.md`. Do not add stylistic preferences, hypothetical improvements, or issues that are too vague to act on. Remove entries as they are resolved. This file should shrink over time, not grow.
-
----
-
-## 1. Critical Bugs
-
-### 1.1 `selectStop.name` renders the function name instead of the stop name
-
-**File:** `apps/web/src/context/buses.tsx:127–129`
-
-**Current:**
-```tsx
-<DrawerTitle className="sr-only">{selectStop.name}</DrawerTitle>
-<DrawerDescription className="sr-only">
-  hores d&apos;arribada per la parada {selectStop.name}
-</DrawerDescription>
-```
-
-`selectStop` is the setter function defined at line 93, not the `selectedStop` state variable. Every function in JavaScript has a read-only `.name` property equal to its declared identifier, so both strings silently render `"selectStop"` instead of the actual stop name. The `{selectedStop && ...}` guard above guarantees `selectedStop` is defined at this point.
-
-**Fix:**
-```tsx
-<DrawerTitle className="sr-only">{selectedStop.name}</DrawerTitle>
-<DrawerDescription className="sr-only">
-  hores d&apos;arribada per la parada {selectedStop.name}
-</DrawerDescription>
-```
-
-This is also an accessibility bug — screen readers announce `"selectStop"` on every drawer open.
+> **This plan supersedes the original per-stop prediction plan.** That first version shipped and
+> works (back-projection from the *open stop's* ETAs), but it has a fatal UX flaw: bus markers only
+> appear while a stop **drawer** is open, and the drawer (a bottom sheet) covers most of the
+> viewport — so the user can't actually see the buses it predicts. This redesign **decouples bus
+> display from the drawer**: live buses render on the open map whenever a **line is selected**.
+>
+> Decisions locked with the user (2026-06-19):
+> 1. **Show live buses for every *selected* line** (each in its line colour), not just when exactly
+>    one line is selected.
+> 2. **Fully replace** the per-stop prediction trigger with the line-level one (one code path).
+> 3. **Two-probe self-calibration** for placement accuracy (derive each line's real speed from the
+>    API instead of a fixed guessed speed).
 
 ---
 
-### 1.2 Real-time arrival offset arithmetic is broken near day boundaries
+## 1. Why this is feasible (validated against the live API, 2026-06-19, 17:00)
 
-**File:** `packages/api/src/lib/stop-schedule.ts:53–55`
+The worry was cost: lines 7 and n1 are long (~34–38 stops per variant; ~70 across both directions).
+Probing every stop would be far too many calls. **It isn't necessary.** Empirical probe results
+(`GetTiemposParada/es/{stop}/{route}/0`, counting `real:"S"` arrivals for the line's own `idLinea`):
 
-**Current:**
-```ts
-arrivalDate.setHours(now.getHours() + hours);
-arrivalDate.setMinutes(now.getMinutes() + minutes);
-arrivalDate.setSeconds(now.getSeconds() + seconds);
-```
+| Line | externalId | Variants | Terminal probe | Midpoint probe |
+|---|---|---|---|---|
+| **7** | 135 | I: 34 stops, V: 38 | I→**5** (ETAs 17→67 min), V→5(+) | 5 / 0 |
+| **1** (loop) | 129 | 1: 14 stops | **0** (loop terminal quirk) | **5** |
+| **2** | 130 | 2 variants (~28) | **5** each | 5 |
+| **n1** (night) | 717 | 2: 34 stops | **0** (night bus — not running daytime) | 0 |
 
-`setHours`, `setMinutes`, and `setSeconds` operate independently on the same object with no carry-over logic between fields. `setHours(23 + 1)` silently wraps back to `00:xx` of the **same calendar day** instead of advancing to the next day. A bus due at 00:05 when the current time is 23:58 would therefore appear to be 25 hours in the past.
+**Key facts learned:**
 
-**Fix — replace all three lines with:**
-```ts
-const totalMs = (hours * 3600 + minutes * 60 + seconds) * 1000;
-return new Date(now.getTime() + totalMs);
-```
+- **One probe of a variant's destination terminal returns up to ~5 buses whose ETAs span the whole
+  route** (e.g. 17→67 min ⇒ one bus near the end, one near the start). Back-projecting those ETAs
+  spreads buses across the entire line. **Cost is per-variant, not per-stop** — a 70-stop line costs
+  the same as a 14-stop one.
+- **The API caps at ~5 `real:"S"` arrivals per journey.** So we can show at most ~5 buses per
+  direction (the 5 nearest to the terminal). Fine for Lleida headways; document the limit.
+- **Loop terminals can return 0** (line 1: the turnaround stop reports nothing, but a midpoint
+  reports 5). Need a loop fallback to a midpoint anchor.
+- **Night lines (n1) report nothing during the day** — correct behaviour, render nothing.
 
----
-
-### 1.3 `stops.get` queries only `routes[0]` — multi-route stops return incomplete schedules
-
-**File:** `packages/api/src/routers/stops.ts:57–61`
-
-**Current:**
-```ts
-const schedules = await getStopSchedule(
-  stop.externalId,
-  stop.routes[0]!.externalId,
-);
-```
-
-The Moventis API endpoint is per-route (`/es/{stopId}/{routeId}/0`). A stop that appears on routes L2 and L4 returns only L2's data.
-
-**Fix — call the API for every route and merge results:**
-```ts
-const scheduleResults = await Promise.all(
-  stop.routes.map((route) =>
-    getStopSchedule(stop.externalId, route.externalId),
-  ),
-);
-const schedules = scheduleResults
-  .filter((s): s is NonNullable<typeof s> => s !== null)
-  .flat();
-```
+**Net cost per line: ~2–3 probes per variant (terminal + 1 calibration anchor, +1 loop fallback),
+so ~2–6 calls per line per refresh, independent of stop count.** With per-request caching of shared
+stops (e.g. line 7's "mangraners" is terminal of V *and* first of I) it's often fewer.
 
 ---
 
-### 1.4 `CountdownTimer` interval is never cleared — counts into negative infinity
+## 2. What already exists and is REUSED (do not rebuild)
 
-**File:** `apps/web/src/components/ui/countdown.tsx:14–22`
+The first implementation left clean, tested primitives. Keep them:
 
-**Current:**
-```tsx
-const interval = setInterval(() => {
-  setSecondsRemaining((prevSeconds) => prevSeconds - 1);
-}, 1000);
-```
+- **`packages/shared/src/lib/geo.ts`** — pure polyline math: `cumulativeArcLengths`,
+  `projectToPolyline`, `pointAtArc`, `distanceMeters`, `flattenPaths`. Tested. **Reuse as-is.**
+- **`packages/shared/src/{schemas,types}/bus-position.ts`** — the `BusPosition` DTO + Zod schema.
+  **Extend** it with a `lineCode` field (needed now that multiple lines render at once — the marker
+  must know which line's colour to use). Validate before sending over the wire.
+- **`packages/api/src/lib/bus-locator.ts`** — the **back-projection** core. Its `backProject()` places
+  a bus `etaSeconds × speed` of arc back from an anchor stop along the geometry, wraps on closed
+  loops, clamps on linear routes, and returns `{lat,lng,fromIdx,toIdx,fraction,confidence}`. Its
+  `matchVariant()` (exact + diacritic-folded) maps an API journey key to a stored variant. **Reuse
+  and generalise** (see §4): the anchor becomes the *terminal*, not the user's stop, and the speed
+  becomes a *calibrated per-variant value*, not the fixed `AVG_SPEED_MPS`.
+- **`packages/api/src/lib/probe.ts`** — `toProbeResult(schedules, routeExtId, now)` reduces a stop's
+  schedule to per-journey real-time ETAs (filters `real:"S"`, drops past). `toGeometry()` parses
+  variant geometry. **Reuse both.**
+- **`packages/api/src/lib/stop-schedule.ts`** — `getStopSchedule` / `parseSchedulesResponse` /
+  `normalizeText`. **Reuse.**
+- **`apps/web/.../bus-markers-renderer.tsx`** — the distinct **white "live vehicle" pill** marker
+  (green pulsing live-dot + halo, line-coloured border) that reads as a moving bus, not a stop pin.
+  **Reuse**; it already takes `positions/lineCode/color`. Will be driven by the aggregated multi-line
+  positions.
+- **`apps/web/.../stop-details/live-bus-status.tsx`** — the drawer status row (searching / N live /
+  none / error). **Reuse**, but feed it from the line-level positions filtered to the open stop's line.
+- **The journey↔variant match rule** (validated earlier): match the API `trayectos` key to
+  `RouteVariant.description` via `normalizeText` + diacritic-folded fallback. **Terminal-stop-name
+  matching does NOT work** (destinations are area names, not stop names). Keep using `matchVariant`.
 
-No `clearInterval` is called when `secondsRemaining` reaches zero. The component keeps re-rendering every second forever and always shows `"Now"`.
+### What is REMOVED / changed
 
-**Fix:**
-```tsx
-useEffect(() => {
-  if (secondsRemaining <= 0) return;
-  const interval = setInterval(() => {
-    setSecondsRemaining((prev) => {
-      if (prev <= 1) {
-        clearInterval(interval);
-        return 0;
-      }
-      return prev - 1;
-    });
-  }, 1000);
-  return () => clearInterval(interval);
-}, [secondsRemaining <= 0]); // only re-registers when crossing zero
-```
-
----
-
-## 2. High-Priority Bugs
-
-### 2.1 Scheduled-time "day wrap" compares against a different `now` reference
-
-**File:** `packages/api/src/lib/stop-schedule.ts:62–80`
-
-**Current:**
-```ts
-const now = new Date(); // line 41 — captured once
-
-// ...later in parseArrivalTime:
-const arrivalDate = new Date(); // fresh Date — NOT the same as `now`
-arrivalDate.setHours(hours, minutes, 0, 0);
-
-if (arrivalDate < now) {
-  arrivalDate.setDate(arrivalDate.getDate() + 1);
-}
-```
-
-Two separate `new Date()` calls can straddle a millisecond boundary. More critically, if the bus is due exactly at the current hour and minute, `arrivalDate` has `0` milliseconds while `now` has non-zero milliseconds, making `arrivalDate < now` true even though the bus is due "right now" — causing it to be shown as tomorrow.
-
-**Fix — pass `now` as a parameter to `parseArrivalTime`:**
-```ts
-function parseArrivalTime(scheduleDetails: ApiJourneyDetail, now: Date): Date {
-  if (scheduleDetails.real === "S") {
-    // ... existing real-time logic using now.getTime() + totalMs
-  } else {
-    const arrivalDate = new Date(now); // copy, not a fresh Date
-    arrivalDate.setHours(hours, minutes, 0, 0);
-    if (arrivalDate.getTime() < now.getTime()) {
-      arrivalDate.setDate(arrivalDate.getDate() + 1);
-    }
-    return arrivalDate;
-  }
-}
-```
+- **`apps/web/src/hooks/use-bus-positions.ts`** (the stop-coupled async-generator consumer) — remove;
+  replaced by a per-selected-line query hook (§5).
+- **`packages/api/src/routers/buses.ts` `locate`** — replace the `{stopId, routeCode}` stop-anchored
+  generator with a `{routeCode}` line-anchored query (§4). The user-stop fetch/`userArrivals` path
+  goes away.
+- **`BusFinderContext`** — `busPositions`/`busStatus`/`singleLine` (single-line, stop-gated) become a
+  multi-line aggregation gated only on `selectedRoutes` (§5).
+- The `locateBuses` generator's `userArrivals`/`userStopExternalId` inputs are replaced by terminal
+  anchoring; `MAX_BUSES_PER_JOURNEY` becomes "API returns ≤5" naturally.
 
 ---
 
-### 2.2 Past arrivals are rendered as `"arribant"`
+## 3. New behaviour (the goal)
 
-**File:** `apps/web/src/components/map/stop-details/arrival-time-item.tsx:20–21`
+When the user selects one or more lines, the map shows that line's **live buses** (`real:"S"` only)
+as moving-vehicle markers, **without needing a stop drawer open**. Markers refresh on an interval
+(~25 s) while the line stays selected. Selecting a stop is now orthogonal — the drawer still shows
+the timetable and a "N autobusos en directe" status, but it no longer *gates* the buses.
 
-**Current:**
-```tsx
-const diffInSeconds = Math.round(
-  (journey.arrivalTime.getTime() - Date.now()) / 1000,
-);
-```
+### Constraints retained
 
-This value is computed once at render and never updated. `formatRelativeTime` treats any value `< 30` as `"arribant"`, which includes all negative values — so a bus that left 20 minutes ago still reads as arriving.
-
-**Fix — filter past arrivals before rendering, and refresh `diffInSeconds` via an interval for non-closest cards:**
-```tsx
-// In stop-details/index.tsx — filter before passing to render:
-const futureScheduledTimes = journey.scheduledTimes.filter(
-  (t) => t.arrivalTime.getTime() > Date.now(),
-);
-
-// In arrival-time-item.tsx — use a live value:
-const [diffInSeconds, setDiffInSeconds] = useState(() =>
-  Math.round((journey.arrivalTime.getTime() - Date.now()) / 1000),
-);
-useEffect(() => {
-  const id = setInterval(() => {
-    setDiffInSeconds(Math.round((journey.arrivalTime.getTime() - Date.now()) / 1000));
-  }, 30_000);
-  return () => clearInterval(id);
-}, [journey.arrivalTime]);
-```
+- **Real-time only** (`real:"S"`); never place `real:"N"` scheduled times.
+- **Timetable independence** — `stops.get` stays fast/unchanged; a failing bus query never affects it.
+- **Bounded cost** — anchor on terminals (≤2–3 probes/variant), cache shared stops per request,
+  refresh on a timer, only for *selected* lines.
 
 ---
 
-### 2.3 Soft-delete fields are defined but never filtered — "deleted" rows appear in every query
+## 4. Server: line-level locator + calibration
 
-**File:** `packages/db/prisma/schema.prisma:26, 51`
+### 4.1 New procedure — `buses.byLine`
 
-Both `Route` and `Stop` have `deletedAt DateTime?`, but no Prisma middleware or `$extends` adds `where: { deletedAt: null }`. Every `findMany` across the codebase returns soft-deleted records.
+`packages/api/src/routers/buses.ts`:
 
-**Fix — add a Prisma Client extension in `packages/db/index.ts`:**
-```ts
-const createPrismaClient = () =>
-  new PrismaClient({ ... }).$extends({
-    query: {
-      route: {
-        async findMany({ args, query }) {
-          args.where = { deletedAt: null, ...args.where };
-          return query(args);
-        },
-      },
-      stop: {
-        async findMany({ args, query }) {
-          args.where = { deletedAt: null, ...args.where };
-          return query(args);
-        },
-      },
-    },
-  });
-```
+- `byLine: publicProcedure.input(z.object({ routeCode: z.string() })).query(...) → BusPosition[]`
+  (a **plain query**, not a generator — calibration needs ≥2 probes before placing, and the client
+  refetches on an interval; streaming per-bus adds no value here).
+- Load the route + variants (ordered stops with `id/externalId/lat/lng`, `geometry`, `direction`,
+  `description`) exactly as the old `locate` did.
+- For **each variant**, run the locator (§4.2); concatenate results. Tag each `BusPosition` with
+  `lineCode = input.routeCode`. Validate each with `busPositionSchema` before returning.
+- Per-request cache: wrap `getStopSchedule` in a `Map` keyed by `${stopExtId}:${routeExtId}` so a
+  stop shared between variants is fetched once.
 
-Or switch to hard deletes — the `onDelete: Cascade` on `OperatingDay` already handles cascading, and hard deletes are simpler to reason about at this scale.
+### 4.2 Per-variant locator (`packages/api/src/lib/bus-locator.ts`, generalised)
 
----
+Ordered stops `S = [s₀ … s_{n-1}]`, destination terminal `s_{n-1}`. Let `arc(i)` = arc-length of
+`sᵢ` projected onto the variant polyline (via `projectToPolyline`); `total` = polyline length;
+`loop` = `isClosedLoop(polyline)`.
 
-### 2.4 Wrong import alias in `packages/api`
+**Step A — choose the anchor and read buses.**
+1. Primary anchor `A = n-1` (terminal). Probe `s_{n-1}`; via `toProbeResult` + `matchVariant`, take
+   journey `J`'s real-time ETAs `E = [e₀<e₁<…]` (each a bus *heading to the terminal*).
+2. If `E` is empty **and** `loop` → set `A = floor(n/2)` (midpoint) and re-probe (handles the line-1
+   loop-terminal-returns-0 quirk; loops wrap correctly in back-projection).
+3. If still empty → this variant has no live buses; yield nothing.
 
-**File:** `packages/api/src/routers/routes.ts:1`
+**Step B — calibrate speed (two-probe).**
+- Pick a **calibration anchor** `A₂` upstream of `A` (e.g. `floor(n/2)` when `A` is the terminal; if
+  `A` is already the midpoint, use `floor(n/4)`). Probe it → ETAs `E₂` for journey `J`.
+- Buses appearing at `A₂` are a subset of those at `A` (only the ones upstream of `A₂`). For a bus in
+  both, `eta_A − eta_{A₂} = T(A₂→A)`, a constant. Pair `A₂`'s buses with `A`'s largest-ETA buses
+  (sorted ascending, align tails); take the **median** difference `T`.
+- `speed_v = arcBetween(A₂, A) / T`, where `arcBetween = |arc(A) − arc(A₂)|` (use the wrapped arc on
+  loops). Sanity-clamp `speed_v` to e.g. `[1.5, 12]` m/s; on too-few matches or nonsense, fall back to
+  the existing `AVG_SPEED_MPS` constant (≈4 m/s) → mark those positions `confidence:"medium"`.
 
-**Current:**
-```ts
-import type { Lines } from "@/types/lines";
-```
+**Step C — place each bus (reuse `backProject`, generalised).**
+- For each `eᵢ` in `E` (buses at anchor `A`): target arc = `arc(A) − eᵢ × speed_v`; on `loop`,
+  `((targetArc % total) + total) % total`; else `max(0, targetArc)`. `pointAtArc` → lat/lng;
+  `segmentAtArc` → `{fromIdx,toIdx,fraction}`.
+- `confidence`: `"high"` when calibrated + geometry present; `"medium"` when fixed-speed fallback or
+  no geometry; `"low"` when clamped at origin (linear, ETA predates route start).
+- Emit `BusPosition { journeyName: J, direction, lat, lng, segment, fraction, etaSeconds: eᵢ,
+  confidence, lineCode }`. **`etaSeconds` now means "ETA to the terminal,"** not to a user stop —
+  rename the doc comment accordingly (the field is still just "seconds until this bus reaches its
+  reference anchor"; keep it for the marker tooltip / future use).
 
-The `@/` alias resolves to `apps/web/src/` in the web app's tsconfig. `packages/api` has no such alias and has no `src/types/lines.ts`. This compiles only because Next.js injects the web app's tsconfig paths at build time — a fragile, implicit coupling.
+**Probes per variant:** terminal + calibration (+ loop fallback) = **2–3**, cached.
 
-**Fix:**
-```ts
-import type { Lines } from "@moventis/shared";
-```
+### 4.3 Tests (`bus-locator.test.ts`, rewrite/extend — all pure, faked probe)
 
-This matches what `stops.ts` already does correctly.
-
----
-
-## 3. Medium-Priority Bugs
-
-### 3.1 `unstable_cache` wrapper is recreated on every tRPC request
-
-**File:** `packages/api/src/routers/routes.ts:7–25`
-
-**Current:**
-```ts
-getAll: publicProcedure.query(async ({ ctx }) => {
-  const getCachedRoutes = unstable_cache(
-    async () => {
-      const data = await ctx.db.route.findMany({});
-      // ...
-    },
-    ["all-bus-routes"],
-    { revalidate: 60 * 60 * 24 * 7 },
-  );
-  const routes = await getCachedRoutes();
-  return routes;
-}),
-```
-
-The cached function wrapper is rebuilt on every incoming request, capturing a per-request `ctx.db` reference inside a long-lived cached closure.
-
-**Fix — hoist to module scope using the db singleton:**
-```ts
-import { db } from "@moventis/db";
-import type { Lines } from "@moventis/shared";
-
-const getCachedRoutes = unstable_cache(
-  async () => {
-    const data = await db.route.findMany({ where: { deletedAt: null } });
-    return data.map((route) => ({ ...route, code: route.code as Lines }));
-  },
-  ["all-bus-routes"],
-  { revalidate: 60 * 60 * 24 * 7 },
-);
-
-export const routesRouter = createTRPCRouter({
-  getAll: publicProcedure.query(() => getCachedRoutes()),
-});
-```
+- Calibration: two synthetic anchors with a known segment time ⇒ recovered `speed_v` within ε;
+  median rejects an outlier bus.
+- Placement on a linear variant: terminal anchor, several ETAs ⇒ buses spread at expected segments;
+  far bus (ETA > route time) clamps to origin `confidence:"low"`.
+- Loop variant: terminal returns empty ⇒ midpoint fallback used; large ETA wraps onto the closing
+  segment (no pile-up at origin — the bug this whole effort fixed).
+- Fallbacks: <2 matched buses ⇒ `AVG_SPEED_MPS`, `confidence:"medium"`; geometry null ⇒ straight
+  stop-lines.
+- `matchVariant` exact + diacritic-folded (kept from current suite).
+- Contract/fixture + mocked-`getStopSchedule` tiers (`schedule-contract`, `get-stop-schedule`,
+  `probe`, `stop-schedule` tests) are unaffected — keep green.
 
 ---
 
-### 3.2 `stops.getMany` fires a network request on every page load with empty inputs
+## 5. Frontend: decouple from the drawer, render all selected lines
 
-**File:** `apps/web/src/context/buses.tsx:74–79`
+### 5.1 Data hook — `apps/web/src/hooks/use-line-buses.ts` (replaces `use-bus-positions.ts`)
 
-**Current:**
-```ts
-const { data: stops, isLoading: isLoadingStops } = api.stops.getMany.useQuery({
-  routeCodes: debouncedSelectedRoutes,
-  query: debouncedQuery,
-});
-```
+- Use `api.useQueries` over `selectedRoutes` (the **raw** selection, mirroring the existing
+  `routeQueries` pattern in `context/buses.tsx`): one `buses.byLine({ routeCode })` per selected line.
+- `refetchInterval: 25_000`, `refetchOnWindowFocus: true`, `enabled: selectedRoutes.length > 0`.
+  Stagger is unnecessary at this volume.
+- Aggregate: flatten all results into `BusPosition[]` (each already carries `lineCode`). Expose a
+  per-line status map (`loading | done | error`) for the drawer indicator.
 
-On initial render both inputs are empty. The server returns `[]` immediately, but the round-trip fires unconditionally.
+### 5.2 Context — `BusFinderContext`
 
-**Fix:**
-```ts
-const { data: stops, isLoading: isLoadingStops } = api.stops.getMany.useQuery(
-  { routeCodes: debouncedSelectedRoutes, query: debouncedQuery },
-  {
-    enabled:
-      debouncedSelectedRoutes.length > 0 || debouncedQuery.trim().length > 0,
-  },
-);
-```
+- Replace `busPositions` (single line) with the aggregated multi-line `BusPosition[]`, and
+  `busStatus`/`singleLine` with a `lineBusStatus: Record<Lines, "loading"|"done"|"error">`.
+- Call `useLineBuses(selectedRoutes)` here (single source of truth; map + drawer both read it).
+- **Gating changes: no longer requires `selectedStop` or `selectedRoutes.length === 1`.** Any
+  selected line predicts.
 
----
+### 5.3 Map — `apps/web/src/components/map/index.tsx`
 
-### 3.3 `getStopSchedule` swallows all errors silently
+- Render `<BusMarkersRenderer positions={...} />` for the aggregated positions whenever
+  `busPositions.length > 0`, regardless of drawer state. Group by `lineCode` (or pass each marker its
+  colour) so each line's buses use that line's colour (`routes.find(r => r.code === pos.lineCode)?.color`).
+- `BusMarkersRenderer` already keys uniquely and styles the distinct white pill; just feed it the
+  full set and resolve colour per `pos.lineCode`.
 
-**File:** `packages/api/src/lib/stop-schedule.ts:235–254`
+### 5.4 Drawer — `stop-details/*`
 
-**Current:**
-```ts
-} catch (error) {
-  handleError(error); // logs to console, discards
-  return null;
-}
-```
+- `LiveBusStatus` now derives from the aggregated positions filtered to **this stop's selected line(s)**
+  (count of live buses on the line), or simply the per-line status. It no longer owns a stream.
+- Remove the old `singleLine && !deletedAt` gate that referenced the stop-coupled hook.
 
-A Zod parse failure (API schema changed) is indistinguishable from a healthy stop with no upcoming buses — both return `null`. The caller in `stops.get` returns `schedules: null` to the client with no explanation.
+### 5.5 UX / a11y
 
-**Fix — differentiate error classes:**
-```ts
-} catch (error) {
-  if (error instanceof z.ZodError) {
-    // Schema contract broken — not a transient fault
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Moventis API response shape changed.",
-      cause: error,
-    });
-  }
-  if (error instanceof AxiosError) {
-    console.error(`Moventis API network error: ${error.message}`);
-    return null; // transient — return null so UI shows empty state
-  }
-  console.error("Unexpected error in getStopSchedule:", error);
-  return null;
-}
-```
+- Marker tooltip Catalan: `"Bus línia {code} — posició aproximada"` (+ "(poc precisa)" for
+  low/medium confidence). Existing copy is fine.
+- Loading: subtle; never blocks the timetable. Night/no-bus lines simply render no markers (+ the
+  drawer's "cap autobús en directe ara mateix").
+- Consider a small map legend/ް note that positions are approximate.
 
 ---
 
-### 3.4 `mapId="lleida"` is not a real Google Cloud Map ID
+## 6. Failure modes & handling
 
-**File:** `apps/web/src/components/map/index.tsx:24`
-
-**Current:**
-```tsx
-<MapComponent mapId="lleida" ...>
-```
-
-`mapId` must be a UUID-format identifier configured in Google Cloud Console. It is required for `AdvancedMarker` to render correctly in production. The string `"lleida"` is not valid.
-
-**Fix — add to env vars:**
-```
-# apps/web/.env
-NEXT_PUBLIC_MAPS_MAP_ID="your-cloud-map-id-here"
-```
-
-```ts
-// apps/web/src/env.js
-client: {
-  NEXT_PUBLIC_MAPS_API_KEY: z.string(),
-  NEXT_PUBLIC_MAPS_MAP_ID: z.string(),
-},
-```
-
-```tsx
-<MapComponent mapId={env.NEXT_PUBLIC_MAPS_MAP_ID} ...>
-```
+| # | Mode | Handling |
+|---|------|----------|
+| 1 | Loop terminal returns 0 (line 1) | Fallback to midpoint anchor when `isClosedLoop` and terminal empty. |
+| 2 | API caps at ~5 buses/journey | Accept; show the ~5 nearest-to-terminal. Document limit. |
+| 3 | Night line (n1) — all `real:"N"` | Render nothing. Never place scheduled times. |
+| 4 | Calibration: <2 matchable buses / nonsense speed | Clamp speed; else fall back to `AVG_SPEED_MPS`, `confidence:"medium"`. |
+| 5 | Journey↔variant string mismatch | `matchVariant` (description + diacritic-fold); log & skip unmatched sub-variants. |
+| 6 | Shared terminal lists 2 journeys (line 7 "mangraners" → 10) | Filter probe result to the variant's own journey `J`; per-request cache the fetch. |
+| 7 | Far bus (ETA > route traversal) on linear line | Clamp at origin, `confidence:"low"`. On loops, wrap. |
+| 8 | Geometry missing | Back-project along straight stop-lines; `confidence:"medium"`. |
+| 9 | Probe network failure | `getStopSchedule` returns null → treat variant/anchor as no-data; never break the line query or the timetable. |
+| 10 | Many lines selected → many calls | Cost = Σ variants × ~2–3, every 25 s. Acceptable; optional future cap or viewport-gating (§8). |
+| 11 | Clock/latency skew | One `now` per request; ETAs relative to server `now`. |
 
 ---
 
-### 3.5 Redundant dead-code status check after `axios.get`
+## 7. Implementation order
 
-**File:** `packages/api/src/lib/stop-schedule.ts:99–104`
-
-**Current:**
-```ts
-const res = await axios.get(url);
-
-if (res.status !== 200) {
-  throw new AxiosError("The schedule API returned a non-200 status.", res.status.toString());
-}
-```
-
-Axios throws automatically on any non-2xx response. This block is unreachable dead code.
-
-**Fix — delete lines 100–104.** If you genuinely need to handle non-error HTTP codes like 204, configure `validateStatus` on the axios call explicitly.
-
----
-
-## 4. Type Safety
-
-### 4.1 `selected: 0 | 1` in Zod schema vs `boolean` in `Schedule` interface
-
-**File:** `packages/shared/src/schemas/schedule.ts:42`, `packages/shared/src/types/schedule.ts:6`
-
-**Current schema:**
-```ts
-selected: z.union([z.literal(0), z.literal(1)]),
-```
-**Current interface:**
-```ts
-selected: boolean;
-```
-
-The Zod-inferred type is `0 | 1` but the hand-written type uses `boolean`. No transform bridges them.
-
-**Fix — add a transform to the schema:**
-```ts
-selected: z.union([z.literal(0), z.literal(1)]).transform((v) => v === 1),
-```
+1. **`packages/shared`** — add `lineCode: string` to `BusPosition` type + Zod schema; re-export.
+2. **`packages/api/src/lib/bus-locator.ts`** — generalise: terminal/midpoint anchor selection,
+   two-probe `calibrateSpeed()`, anchor-based `backProject`. Keep `matchVariant`, `isClosedLoop`,
+   `segmentAtArc`. Update unit tests (§4.3).
+3. **`packages/api/src/routers/buses.ts`** — replace `locate` with `byLine` query; per-request cache;
+   tag `lineCode`; validate. Update `buses.test.ts` (fake `ctx.db` + stubbed `getStopSchedule`:
+   linear two-variant line, loop fallback, night→empty).
+4. **`apps/web`** — `use-line-buses.ts` (replace `use-bus-positions.ts`); rewire `BusFinderContext`;
+   update `map/index.tsx` to render aggregated positions colour-per-line; update `LiveBusStatus`;
+   delete dead stop-coupled paths.
+5. **Verify** — `pnpm test`, `tsc --noEmit` (api + web), `pnpm lint`; then live-drive in the browser:
+   select line 7 (and a second line) **without** opening a stop → distinct coloured pills spread
+   along each route; select line 1 (loop) → buses spread, none piled at the terminal; select n1 →
+   none (daytime). Confirm markers refresh after ~25 s.
 
 ---
 
-### 4.2 `Schedule` interface is not exported
+## 8. Out of scope (for now)
 
-**File:** `packages/shared/src/types/schedule.ts:11`
-
-**Current:**
-```ts
-interface Schedule { ... }
-export type Schedules = Schedule[];
-```
-
-Consumers can only reference the element type via the awkward `Schedules[number]`.
-
-**Fix:**
-```ts
-export interface Schedule { ... }
-```
+- Continuous background tracking / workers / sockets — still on-demand (interval refetch only while a
+  line is selected).
+- Showing >5 buses/direction (API-capped) or buses beyond the terminal's arrival window.
+- Predicting `real:"N"` scheduled times.
+- Viewport-gated refresh or a hard cap on simultaneously-tracked lines (revisit if many-line
+  selection proves heavy).
+- Multi-snapshot temporal smoothing of positions.
 
 ---
 
-### 4.3 `route.code as Lines` cast has no runtime guard
-
-**File:** `packages/api/src/routers/routes.ts:12`, `packages/api/src/routers/stops.ts:64`
-
-**Current:**
-```ts
-code: route.code as Lines,
-```
-
-If the database contains a `code` value not in the `LINES` tuple, `LINE_COLORS[route.code]` silently returns `undefined`.
-
-**Fix — add a guard at the DB boundary:**
-```ts
-import { LINES } from "@moventis/shared";
-
-function toLine(route: Route): Line {
-  if (!LINES.includes(route.code as Lines)) {
-    throw new Error(`Unknown route code in DB: "${route.code}"`);
-  }
-  return { ...route, code: route.code as Lines };
-}
-```
-
----
-
-### 4.4 `adaptada` is typed `z.unknown().nullable()` — contributes no type safety
-
-**File:** `packages/shared/src/schemas/schedule.ts:6`
-
-**Current:**
-```ts
-adaptada: z.unknown().nullable(),
-```
-
-If `adaptada` is always `null` in the current API, use `z.null()`. If it has a known shape (accessibility data), type it explicitly. As written it accepts anything silently.
-
----
-
-## 5. Database Schema
-
-### 5.1 `OperatingDay.date` should be `@db.Date`, not `DateTime`
-
-**File:** `packages/db/prisma/schema.prisma:30`
-
-**Current:**
-```prisma
-date DateTime
-```
-
-`DateTime` maps to PostgreSQL `TIMESTAMP WITH TIME ZONE`. An operating day is a calendar date; storing it as a timestamp makes the composite PK `[routeId, date]` timezone-sensitive.
-
-**Fix:**
-```prisma
-date DateTime @db.Date
-```
-
----
-
-### 5.2 Implicit M2M join table cannot carry stop ordering
-
-**File:** `packages/db/prisma/schema.prisma:21, 47`
-
-The auto-generated `_RouteToStop` table has no `order` column. For displaying route paths or ordered stop lists, this is a structural limitation.
-
-**Fix — convert to an explicit join model:**
-```prisma
-model RouteStop {
-  routeId String
-  stopId  String
-  order   Int
-
-  route Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
-  stop  Stop  @relation(fields: [stopId], references: [id], onDelete: Cascade)
-
-  @@id([routeId, stopId])
-  @@index([routeId, order])
-}
-```
-
-Remove the implicit `stops Stop[]` / `routes Route[]` fields and replace with `RouteStop[]` on each model.
-
----
-
-### 5.3 `Route.code` is unconstrained `String` at the DB level
-
-**File:** `packages/db/prisma/schema.prisma:18`
-
-Any string is accepted; invalid codes pass silently through to the TypeScript cast layer.
-
-**Fix — define a Prisma enum:**
-```prisma
-enum LineCode {
-  L1
-  L2
-  L3
-  // ...
-}
-
-model Route {
-  code LineCode
-  // ...
-}
-```
-
-Or if the code values are not valid Prisma enum identifiers (e.g. `"n1"`), add a raw SQL `CHECK` constraint in a migration:
-```sql
-ALTER TABLE "Route" ADD CONSTRAINT "route_code_valid"
-CHECK (code IN ('1','2','3','4','5','6','7','8','9','10','20','70','n1','16'));
-```
-
----
-
-### 5.4 Missing index on `OperatingDay.date` for date-based lookups
-
-**File:** `packages/db/prisma/schema.prisma:35`
-
-**Current:**
-```prisma
-@@id([routeId, date])
-```
-
-The composite PK index is efficient for `WHERE routeId = ? AND date = ?`, but not for "which routes operate on date X" queries.
-
-**Fix:**
-```prisma
-@@id([routeId, date])
-@@index([date])
-```
-
----
-
-## 6. Performance
-
-### 6.1 `MapPinsRenderer` is not memoized
-
-**File:** `apps/web/src/components/map/pins/pins-renderer.tsx:16`
-
-`MapPin` is `React.memo`'d but its parent is not. Any `BusFinderContext` update (typing in search, toggling a route) re-renders `MapPinsRenderer` and forces React to re-evaluate every child memo.
-
-**Fix:**
-```tsx
-const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
-  // ...
-});
-```
-
----
-
-### 6.2 All pins re-evaluate `isSelected` on every stop selection
-
-**File:** `apps/web/src/components/map/pins/pins-renderer.tsx:62`
-
-When `selectedStopId` changes every pin receives a new `isSelected` prop value. With hundreds of stops this is a synchronous evaluation pass on every click.
-
-**Fix — move the read inside `MapPin` using a context selector, or pass `selectedStopId` and compute inside the memoized child:**
-```tsx
-// pins-renderer.tsx — pass selectedStopId once
-<MapPin
-  key={stop.id}
-  stop={stop}
-  selectedStopId={selectedStopId}
-  onClick={handlePinClick}
-/>
-
-// pin.tsx — compute isSelected inside the memo
-const isSelected = stop.id === selectedStopId;
-```
-
-This way `React.memo` can use a custom equality check that skips re-render when neither `stop` nor `selectedStopId` changes.
-
----
-
-### 6.3 Route sort runs on every render without memoization
-
-**File:** `apps/web/src/components/map/tools/routes.tsx:12–18`
-
-**Current:**
-```tsx
-const sortedRoutes = [...routes].sort((a, b) => { ... });
-```
-
-**Fix:**
-```tsx
-const sortedRoutes = useMemo(
-  () => [...routes].sort((a, b) => { ... }),
-  [routes, selectedRoutes],
-);
-```
-
----
-
-### 6.4 `closestScheduledTime` never recalculates against the live clock
-
-**File:** `apps/web/src/components/map/stop-details/index.tsx:30–51`
-
-The "closest" time is computed once at fetch time. After the drawer is open for a few minutes the highlighted card is stale.
-
-**Fix — add a periodic refresh:**
-```tsx
-const [now, setNow] = useState(() => Date.now());
-useEffect(() => {
-  const id = setInterval(() => setNow(Date.now()), 30_000);
-  return () => clearInterval(id);
-}, []);
-
-const closestScheduledTime = useMemo(() => {
-  // ... existing logic, but use `now` instead of `Date.now()`
-}, [details, now]);
-```
-
----
-
-## 7. Accessibility & UX
-
-### 7.1 Stop pins have no `title` — not keyboard-accessible
-
-**File:** `apps/web/src/components/map/pins/pin.tsx`
-
-The small-bucket branch (`pins < 10`) renders an `AdvancedMarker` with no `title` prop. Google Maps adds markers to the tab order only when `title` is set.
-
-**Fix — add `title={stop.name}` to all three render branches consistently.**
-
----
-
-### 7.2 `ClockAlert` icon has no label — invisible to screen readers
-
-**File:** `apps/web/src/components/map/stop-details/arrival-time-item.tsx:32–33`
-
-**Current:**
-```tsx
-{!journey.isRealTime && <ClockAlert size={12} className="ml-1" />}
-```
-
-**Fix:**
-```tsx
-{!journey.isRealTime && (
-  <ClockAlert
-    size={12}
-    className="ml-1"
-    aria-label="Hora estimada (no en temps real)"
-    role="img"
-  />
-)}
-```
-
-Also add a visible tooltip or legend somewhere in the UI explaining the icon.
-
----
-
-### 7.3 Drawer has no visible close button
-
-**File:** `apps/web/src/context/buses.tsx:124–135`
-
-Drag-to-close and `Escape` are non-obvious, especially on desktop.
-
-**Fix — add a `DrawerClose` button inside `StopDetailsHeader`:**
-```tsx
-import { DrawerClose } from "@/components/ui/drawer";
-import { X } from "lucide-react";
-
-// In the header:
-<DrawerClose asChild>
-  <Button variant="ghost" size="icon" aria-label="Tanca">
-    <X className="h-4 w-4" />
-  </Button>
-</DrawerClose>
-```
-
----
-
-### 7.4 Fake progress bar in the stop details skeleton
-
-**File:** `apps/web/src/components/map/stop-details/loading.tsx:7–15`
-
-A `setInterval` increments progress on a fixed timer completely unrelated to actual fetch state. It stalls at 90% and never reaches 100%.
-
-**Fix — replace with an indeterminate skeleton or spinner:**
-```tsx
-const StopDetailsSkeleton = () => (
-  <div className="mt-4 flex flex-col gap-4 p-4 md:mx-auto md:w-lg">
-    <Skeleton className="h-6 w-48" />
-    <Skeleton className="h-4 w-32" />
-    <Skeleton className="h-24 w-full" />
-    <Skeleton className="h-24 w-full" />
-  </div>
-);
-```
-
----
-
-### 7.5 "correspondències" shown even when no routes are selected
-
-**File:** `apps/web/src/components/map/stop-details/index.tsx:53–71`
-
-When `selectedRoutes` is empty, every line falls into `otherLines` and is labelled as a "transfer" even though there is no primary selection.
-
-**Fix:**
-```tsx
-const showSections = selectedRoutes.length > 0;
-
-{showSections ? (
-  <>
-    {/* selected / other sections */}
-  </>
-) : (
-  <div className="divide-y divide-gray-300">
-    {details.schedules.map((line) => (
-      <StopScheduleLine key={line.externalLineId} line={line} closestScheduledTime={closestScheduledTime} />
-    ))}
-  </div>
-)}
-```
-
----
-
-## 8. Code Quality
-
-### 8.1 `console.log` in `timingMiddleware` fires unconditionally in production
-
-**File:** `packages/api/src/trpc.ts:94`
-
-**Current:**
-```ts
-console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
-```
-
-**Fix:**
-```ts
-if (t._config.isDev) {
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
-}
-```
-
----
-
-### 8.2 Two identical debounce `useEffect`s — extract a `useDebounce` hook
-
-**File:** `apps/web/src/context/buses.tsx:44–64`
-
-**Fix — create `apps/web/src/hooks/use-debounce.ts`:**
-```ts
-import { useState, useEffect } from "react";
-
-export function useDebounce<T>(value: T, delay = 300): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
-```
-
-**Replace in `buses.tsx`:**
-```ts
-const debouncedQuery = useDebounce(searchQuery);
-const debouncedSelectedRoutes = useDebounce(selectedRoutes);
-```
-
-Eliminates four state variables and two effects.
-
----
-
-### 8.3 `selectedStop` not cleared when its route is deselected
-
-**File:** `apps/web/src/context/buses.tsx`
-
-If a user selects a stop then toggles off the route it belongs to, the drawer stays open showing a stop no longer on the map.
-
-**Fix:**
-```ts
-function toggleRoute(routeCode: Lines) {
-  setSelectedRoutes((current) =>
-    current.includes(routeCode)
-      ? current.filter((id) => id !== routeCode)
-      : [...current, routeCode],
-  );
-  setSelectedStop(undefined);
-}
-```
-
----
-
-### 8.4 `interface` declared inside a function body
-
-**File:** `packages/api/src/lib/stop-schedule.ts:174`
-
-**Current:**
-```ts
-interface ScheduledTime { arrivalTime: Date; isRealTime: boolean };
-```
-
-Flagged by most linters (`no-inner-declarations`). The type already exists as `Journey["scheduledTimes"][number]`.
-
-**Fix:**
-```ts
-type ScheduledTime = Journey["scheduledTimes"][number];
-```
-
-Or inline the type annotation directly.
-
----
-
-### 8.5 `export * from "@prisma/client"` leaks the entire Prisma namespace
-
-**File:** `packages/db/index.ts:19`
-
-Re-exporting the entire Prisma client namespace gives consumers internal utility types they don't need.
-
-**Fix — export only what consumers actually use:**
-```ts
-export type { Route, Stop, OperatingDay } from "@prisma/client";
-```
-
----
-
-### 8.6 Stray `key` prop on a non-list element
-
-**File:** `apps/web/src/components/map/stop-details/line-schedule.tsx:21`
-
-**Current:**
-```tsx
-<div key={line.externalLineId} className="py-3">
-```
-
-This `<div>` is the root element of `StopScheduleLine`. `key` on a component's own root is ignored by React — keys only apply to elements in an iterator. The correct `key` is already on the `<StopScheduleLine>` call sites in `index.tsx`. Remove the stray `key`.
-
----
-
-### 8.7 `lastUpdated.tsx` has a redundant `setDisplayTime` call in `useEffect`
-
-**File:** `apps/web/src/components/map/stop-details/last-updated.tsx:8–16`
-
-**Current:**
-```tsx
-const [displayTime, setDisplayTime] = useState(formatTimeAgo(timestamp));
-
-useEffect(() => {
-  setDisplayTime(formatTimeAgo(timestamp)); // redundant — useState already did this
-  const id = setInterval(() => setDisplayTime(formatTimeAgo(timestamp)), 1000);
-  return () => clearInterval(id);
-}, [timestamp]);
-```
-
-**Fix:**
-```tsx
-const [displayTime, setDisplayTime] = useState(() => formatTimeAgo(timestamp));
-
-useEffect(() => {
-  const id = setInterval(() => setDisplayTime(formatTimeAgo(timestamp)), 1000);
-  return () => clearInterval(id);
-}, [timestamp]);
-```
-
----
-
-### 8.8 `scheduleSchema` has no fallback for unknown `real` values
-
-**File:** `packages/shared/src/schemas/schedule.ts:22–25`
-
-If the Moventis API ever returns a `real` value other than `"S"` or `"N"`, `z.discriminatedUnion` throws a hard parse error and `getStopSchedule` returns `null` for the entire stop — silently. Add a comment documenting this as an intentional strict boundary, or add a passthrough arm:
-
-```ts
-// Intentionally strict: unknown `real` values throw to surface API contract changes early.
-export const scheduleSchema = z.discriminatedUnion("real", [
-  realTimeScheduleSchema,
-  scheduledTimeSchema,
-]);
-```
-
----
-
-### 8.9 `Line` type exposes Prisma relation fields that are `undefined` at runtime in DTO contexts
-
-**File:** `packages/shared/src/types/lines.ts:5`
-
-**Current:**
-```ts
-export type Line = Omit<Route, "code"> & { code: Lines };
-```
-
-`Route` includes `stops`, `operatingDays` — relation fields that are `undefined` unless explicitly included in the Prisma query. TypeScript says they exist; at runtime they may not.
-
-**Fix — define an explicit DTO:**
-```ts
-export type Line = {
-  id: string;
-  externalId: string;
-  name: string;
-  code: Lines;
-  color: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt: Date | null;
-};
-```
-
----
-
-### 8.10 `RESTRICTED_BOUNDS` padding value is undocumented
-
-**File:** `packages/shared/src/constants/lleida.ts:13`
-
-**Current:**
-```ts
-const padding = 0.035;
-```
-
-`0.035°` is approximately 3.9 km latitude / 2.7 km longitude at Lleida's position. Add a comment:
-```ts
-// ~3.9 km buffer so users can pan slightly outside the city boundary
-const padding = 0.035;
-```
+## 9. Testing checklist
+
+- [ ] `BusPosition.lineCode` added (type + schema + exports).
+- [ ] Locator: calibration recovers known speed (+ outlier rejection); linear spread; loop
+      midpoint-fallback + wrap (no origin pile-up); fixed-speed & no-geometry fallbacks; `matchVariant`.
+- [ ] `buses.byLine` router test (fake db + stubbed schedule): two-variant linear, loop fallback,
+      night→[], shared-terminal journey filtering, per-request cache (one fetch for a shared stop).
+- [ ] Contract/fixture + mocked-I/O tiers stay green.
+- [ ] `apps/web` typecheck + repo lint clean.
+- [ ] Manual (daytime): line 7 + a second line, no drawer → coloured pills along both routes;
+      line 1 loop → spread not piled; n1 → none; markers refresh ~25 s; opening a stop still shows
+      the timetable + "N autobusos en directe".
