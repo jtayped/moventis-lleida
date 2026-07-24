@@ -25,4 +25,8 @@ COPY --from=installer /app/node_modules ./node_modules
 COPY --from=pruner /app/out/full/ .
 # Generate Prisma client for the target OS (Alpine Linux)
 RUN pnpm --filter=@moventis/db db:generate
+# No HTTP server here, so health is a heartbeat file the process touches every 30s —
+# a stale file means the event loop is hung, not just "between syncs".
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "process.exit(Date.now() - require('fs').statSync('/tmp/heartbeat').mtimeMs > 120000 ? 1 : 0)"
 CMD ["pnpm", "--filter=@moventis/scraper", "start"]

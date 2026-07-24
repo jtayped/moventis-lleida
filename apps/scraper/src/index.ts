@@ -1,5 +1,13 @@
+import { writeFileSync } from "fs";
 import cron from "node-cron";
 import { syncAll } from "./jobs/sync-all.js";
+
+// Heartbeat file for the Docker HEALTHCHECK — proves the event loop is alive,
+// independent of the (infrequent) sync schedule.
+const HEARTBEAT_PATH = "/tmp/heartbeat";
+const touchHeartbeat = () => writeFileSync(HEARTBEAT_PATH, String(Date.now()));
+touchHeartbeat();
+setInterval(touchHeartbeat, 30_000);
 
 // Run immediately on container start
 await syncAll().catch(console.error);
