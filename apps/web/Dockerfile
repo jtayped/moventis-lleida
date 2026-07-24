@@ -23,6 +23,12 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=installer /app/node_modules ./node_modules
 COPY --from=pruner /app/out/full/ .
+# NEXT_PUBLIC_* vars are inlined into the client bundle at build time, so they
+# must arrive as build args here — setting them only at container runtime is too late.
+ARG NEXT_PUBLIC_MAPS_API_KEY
+ARG NEXT_PUBLIC_MAPS_MAP_ID
+ENV NEXT_PUBLIC_MAPS_API_KEY=$NEXT_PUBLIC_MAPS_API_KEY
+ENV NEXT_PUBLIC_MAPS_MAP_ID=$NEXT_PUBLIC_MAPS_MAP_ID
 ENV SKIP_ENV_VALIDATION=1
 RUN pnpm --filter=@moventis/db db:generate
 RUN pnpm --filter=@moventis/web build
@@ -42,4 +48,6 @@ USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
 CMD ["node", "apps/web/server.js"]
