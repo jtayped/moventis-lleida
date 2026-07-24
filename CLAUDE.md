@@ -36,6 +36,8 @@ pnpm db:push      # push schema to DB without migration
 pnpm db:studio    # open Prisma Studio
 ```
 
+`apps/scraper`'s production `start` script also runs `db:push` before launching, so schema changes in `schema.prisma` apply automatically on every deploy — no manual push step needed. It runs without `--accept-data-loss`, so a destructive change (e.g. a column drop/retype) makes the scraper container exit non-zero instead of silently applying — resolve those manually with `pnpm db:push --accept-data-loss` once you've confirmed the loss is intended.
+
 Web app only (from `apps/web`):
 ```bash
 pnpm typecheck    # tsc --noEmit

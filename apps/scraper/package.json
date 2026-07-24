@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --env-file=../../.env watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "start": "pnpm --filter=@moventis/db db:push --skip-generate && tsx src/index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
