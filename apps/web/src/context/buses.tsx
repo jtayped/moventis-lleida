@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/drawer";
 import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
-import type { Lines, Line } from "@moventis/shared";
+import { useLineBuses, type BusLineStatus } from "@/hooks/use-line-buses";
+import type { BusPosition, Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 
@@ -27,6 +28,14 @@ interface BusFinderValue {
   selectedStop: Stop | undefined;
   /** Look up a full Stop object by id from the currently loaded route stops. */
   findStop: (id: string) => Stop | undefined;
+  /**
+   * Inferred live bus positions across all selected lines (each tagged with its
+   * `lineCode`). Populated whenever ≥1 line is selected; independent of any open
+   * stop or drawer.
+   */
+  busPositions: BusPosition[];
+  /** Per-line fetch status of the live bus prediction, for loading/empty/error UI. */
+  lineBusStatus: Record<string, BusLineStatus>;
 }
 
 const BusFinderContext = createContext<BusFinderValue | undefined>(undefined);
@@ -117,6 +126,12 @@ export const BusFinderProvider = ({
     [allRouteStopsMap],
   );
 
+  // Live bus prediction runs for every selected line, independent of any open
+  // stop. Lifted here so both the map markers and the stop drawer read one source
+  // (aggregated positions + per-line status).
+  const { positions: busPositions, statusByLine: lineBusStatus } =
+    useLineBuses(selectedRoutes);
+
   const value = {
     routes: routes as Line[],
     stops,
@@ -130,6 +145,8 @@ export const BusFinderProvider = ({
     setSearchQuery,
     selectedStop,
     findStop,
+    busPositions,
+    lineBusStatus,
   } satisfies BusFinderValue;
 
   return (

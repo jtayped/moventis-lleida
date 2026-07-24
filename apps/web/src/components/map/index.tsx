@@ -4,9 +4,10 @@ import SearchInput from "@/components/map/tools/search";
 import MapComponent from "@/components/ui/map";
 import { INITIAL_BOUNDS, RESTRICTED_BOUNDS } from "@moventis/shared";
 import { useBusFinder } from "@/context/buses";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import MapPinsRenderer from "@/components/map/pins/pins-renderer";
 import RoutePaths from "@/components/map/route-paths";
+import BusMarkersRenderer from "@/components/map/bus-markers-renderer";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { env } from "@/env";
@@ -17,9 +18,14 @@ import UserLocationLayer from "@/components/map/user-location-layer";
 import { cn } from "@/lib/utils";
 
 const BusMap = () => {
-  const { stops } = useBusFinder();
+  const { stops, routes, busPositions } = useBusFinder();
   const [linesOpen, setLinesOpen] = useState(false);
   const { status, position, shouldPan, requestLocation, onPanned } = useGeolocation();
+
+  const colorByLine = useMemo(
+    () => Object.fromEntries(routes.map((r) => [r.code, r.color])),
+    [routes],
+  );
 
   const locateTitle =
     status === "error"
@@ -42,6 +48,9 @@ const BusMap = () => {
       >
         <RoutePaths />
         {stops.length > 0 && <MapPinsRenderer stops={stops} />}
+        {busPositions.length > 0 && (
+          <BusMarkersRenderer positions={busPositions} colorByLine={colorByLine} />
+        )}
         <UserLocationLayer position={position} shouldPan={shouldPan} onPanned={onPanned} />
       </MapComponent>
       <div className="pointer-events-none absolute bottom-0 z-10 flex w-full items-end justify-between p-4 md:p-6">

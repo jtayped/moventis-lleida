@@ -43,6 +43,22 @@ pnpm check        # lint + typecheck together
 pnpm format:write # prettier write
 ```
 
+## Testing
+
+Vitest, in `packages/api` and `packages/shared` (run from root via Turbo):
+```bash
+pnpm test       # default suite — deterministic, no network/DB
+pnpm test:live  # opt-in Moventis API contract canary (needs DATABASE_URL + internet)
+```
+
+The suite is tiered to keep the non-deterministic live API at the edge:
+- **Contract layer** (`packages/api/src/lib/schedule-contract.test.ts`) validates recorded fixtures in `packages/api/src/__fixtures__/` against the Zod schemas — answers "did the API shape change?" before any logic test.
+- **Logic** tests are pure: `stop-schedule.ts` parsing, `probe.ts`, `bus-locator.ts`, `geo.ts`. `now` is injected so arrival-time math never depends on the wall clock.
+- **Mocked-I/O**: `getStopSchedule` with a mocked axios; `buses.byLine` via `createCaller` with a fake `ctx.db` + stubbed `getStopSchedule` (the locator's probe is injected, so `bus-locator.ts` tests stay pure).
+- **Live canary** (`*.live.test.ts`, excluded from `pnpm test`) discovers a valid stop/route pair from the DB at runtime so it survives stop/route churn, and asserts only that the live response still parses — never values.
+
+When a live test and a logic test fail together, fix the contract/fixtures first. The pure seams (`parseSchedulesResponse`, `toProbeResult`, `toGeometry`) exist to be tested without HTTP — keep I/O injected.
+
 ## Environment Variables
 
 All env vars live in a single `.env` at the monorepo root. Copy `.env.example` to `.env`:
