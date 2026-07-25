@@ -41,22 +41,28 @@ const PreferidesBadge = () => {
     : "mostra les parades preferides";
 
   return (
+    // A real `button` via `asChild`, not the bare `span` the line badges settle for.
+    // Dropping the caption left no text node at all, so without this the control
+    // would be absent from the accessibility tree rather than merely unlabelled —
+    // and `aria-pressed` only means anything on something that is really a button.
+    // `badgeVariants` already styles a `focus-visible` ring for precisely this.
     <Badge
+      asChild
       variant={showPreferides ? "default" : "outline"}
-      onClick={togglePreferides}
       className="cursor-pointer gap-1.5 px-2.5 py-1.5"
-      // Without a caption there is no text node, so the badge would otherwise be
-      // absent from the accessibility tree entirely — the line badges at least
-      // expose their code. `Badge` renders a bare `span`, hence the explicit role.
-      role="button"
-      aria-pressed={showPreferides}
-      aria-label={label}
-      title={label}
     >
-      {showPreferides ? <Check /> : <Plus />}
-      <span className="flex size-5 items-center justify-center rounded-sm bg-amber-400 text-zinc-900">
-        <Star size={12} className="fill-current" />
-      </span>
+      <button
+        type="button"
+        onClick={togglePreferides}
+        aria-pressed={showPreferides}
+        aria-label={label}
+        title={label}
+      >
+        {showPreferides ? <Check /> : <Plus />}
+        <span className="flex size-5 items-center justify-center rounded-sm bg-amber-400 text-zinc-900">
+          <Star size={12} className="fill-current" />
+        </span>
+      </button>
     </Badge>
   );
 };

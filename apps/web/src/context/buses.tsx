@@ -6,6 +6,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useLineBuses, type BusLineStatus } from "@/hooks/use-line-buses";
 import { usePreferides } from "@/hooks/use-preferides";
 import { useUrlSelection } from "@/hooks/use-url-selection";
+import { keepPreviousData } from "@tanstack/react-query";
 import type { BusPosition, Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
 import React, {
@@ -161,9 +162,17 @@ export const BusFinderProvider = ({
 
   // Resolves the saved ids to stops. Cached for an hour: a stop's coordinates and
   // name barely move, and this runs on every page load for every saved stop.
+  //
+  // Every save changes the id set, and so the query key. Holding the previous
+  // result keeps the other saved pins on the map while the new set resolves,
+  // instead of blanking the whole layer to add one stop to it.
   const { data: savedStops = [] } = api.stops.getByExternalIds.useQuery(
     { externalIds: preferidesIds },
-    { enabled: preferidesIds.length > 0, staleTime: 60 * 60 * 1000 },
+    {
+      enabled: preferidesIds.length > 0,
+      staleTime: 60 * 60 * 1000,
+      placeholderData: keepPreviousData,
+    },
   );
 
   // Kept out of `isLoadingStops` on purpose. That flag drives the search field's
