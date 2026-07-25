@@ -19,7 +19,7 @@ import UserLocationLayer from "@/components/map/user-location-layer";
 import { cn } from "@/lib/utils";
 
 const BusMap = () => {
-  const { stops, routes, busPositions } = useBusFinder();
+  const { stops, routes, busPositions, preferidesStops } = useBusFinder();
   const [linesOpen, setLinesOpen] = useState(false);
   const { status, position, shouldPan, requestLocation, onPanned } = useGeolocation();
 
@@ -50,6 +50,11 @@ const BusMap = () => {
         <InitialStopFocus />
         <RoutePaths />
         {stops.length > 0 && <MapPinsRenderer stops={stops} />}
+        {/* Saved stops that no selected line already draws — the context has
+            removed the overlap, so nothing here doubles up on `stops`. */}
+        {preferidesStops.length > 0 && (
+          <MapPinsRenderer stops={preferidesStops} />
+        )}
         {busPositions.length > 0 && (
           <BusMarkersRenderer positions={busPositions} colorByLine={colorByLine} />
         )}

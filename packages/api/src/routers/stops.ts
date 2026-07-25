@@ -50,6 +50,26 @@ export const stopsRouter = createTRPCRouter({
       return stops;
     }),
   /**
+   * Bare stops for the saved-stops list (`preferides`), which the client holds as
+   * `externalId`s in localStorage and has to resolve to coordinates on every load.
+   *
+   * Deliberately database-only. `get` fires one live Moventis request per route
+   * serving the stop, so resolving N saved stops through it would push ~3N calls
+   * through the 5 req/s outbound throttle before the map can draw a single pin.
+   *
+   * Soft-deleted stops are included, unlike every other stop query here: a saved
+   * stop that leaves the network still has to render, or its pin becomes
+   * unremovable — the unsave control lives in the drawer that pin opens.
+   */
+  getByExternalIds: publicProcedure
+    .input(z.object({ externalIds: z.string().array().max(200) }))
+    .query(async ({ ctx, input }): Promise<Stop[]> => {
+      if (input.externalIds.length === 0) return [];
+      return ctx.db.stop.findMany({
+        where: { externalId: { in: input.externalIds } },
+      });
+    }),
+  /**
    * Keyed by `externalId` rather than the internal cuid: this id is what the
    * frontend puts in the `?stop=` URL param, so it has to stay stable across
    * database rebuilds (the scraper upserts stops by `externalId`).

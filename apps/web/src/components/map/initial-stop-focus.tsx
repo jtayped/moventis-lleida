@@ -22,7 +22,7 @@ const FOCUS_ZOOM = 16;
  */
 const InitialStopFocus = () => {
   const map = useMap();
-  const { selectedStopId, stops } = useBusFinder();
+  const { selectedStopId, stops, preferidesStops } = useBusFinder();
 
   // The selection at mount is the one that came from the URL.
   const externalId = useRef(selectedStopId).current;
@@ -44,7 +44,13 @@ const InitialStopFocus = () => {
     if (zoom === undefined || zoom < FOCUS_ZOOM) map.setZoom(FOCUS_ZOOM);
   }, [map, stop]);
 
-  if (!stop || stops.some((s) => s.externalId === stop.externalId)) return null;
+  // Both layers, since either can already be drawing this stop: a `?stop=` link to
+  // a saved stop would otherwise stack two markers on identical coordinates, which
+  // React has no reason to warn about and the map renders as one slightly-wrong pin.
+  const alreadyDrawn = [...stops, ...preferidesStops].some(
+    (s) => s.externalId === stop?.externalId,
+  );
+  if (!stop || alreadyDrawn) return null;
 
   // Delegated rather than rendering a `MapPin` directly, to inherit the
   // zoom-bucket sizing every other pin on the map follows.

@@ -60,7 +60,7 @@ const SrLabels = ({ name }: { name?: string }) => (
 );
 
 const StopDetails = ({ externalId }: { externalId: string }) => {
-  const { selectedRoutes, routes, lineBusStatus, busPositions } =
+  const { selectedRoutes, routes, lineBusStatus, busPositions, isPreferida } =
     useBusFinder();
 
   const colorMap = useMemo(
@@ -172,7 +172,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     return (
       <>
         <SrLabels />
-        <StopDetailsError refetch={refetch} />
+        <StopDetailsError externalId={externalId} refetch={refetch} />
       </>
     );
   }
@@ -181,6 +181,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     <div className="mt-4 flex flex-col p-4 md:mx-auto md:w-lg">
       <SrLabels name={details.name} />
       <StopDetailsHeader
+        externalId={externalId}
         name={details.name}
         lines={details.routes}
         dataUpdatedAt={dataUpdatedAt}
@@ -200,6 +201,10 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
           <span>
             aquesta parada ja no es troba en servei. pot ser temporal per obres
             o canvis de ruta.
+            {/* Answers the question a dead pin on your own map raises: why is
+                this still here, and how do I get rid of it? */}
+            {isPreferida(externalId) &&
+              " la tens a preferides, i per això segueix al mapa — treu-la amb l'estrella de dalt."}
           </span>
         </div>
       )}

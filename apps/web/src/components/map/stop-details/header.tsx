@@ -5,8 +5,10 @@ import type { Line } from "@moventis/shared";
 import { Badge } from "@/components/ui/badge";
 import { DrawerClose } from "@/components/ui/drawer";
 import { getContrastTextColor } from "@/lib/contrast";
+import PreferidaToggle from "@/components/map/stop-details/preferida-toggle";
 
 interface StopDetailsHeaderProps {
+  externalId: string;
   name: string;
   lines: Line[];
   dataUpdatedAt: number | null;
@@ -15,6 +17,7 @@ interface StopDetailsHeaderProps {
 }
 
 export const StopDetailsHeader = ({
+  externalId,
   name,
   lines,
   dataUpdatedAt,
@@ -39,6 +42,7 @@ export const StopDetailsHeader = ({
         <LastUpdated timestamp={dataUpdatedAt} />
       </div>
       <div className="flex items-center gap-1">
+        <PreferidaToggle externalId={externalId} />
         <Button
           onClick={() => refetch()}
           variant="ghost"

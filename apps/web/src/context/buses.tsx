@@ -4,6 +4,7 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useLineBuses, type BusLineStatus } from "@/hooks/use-line-buses";
+import { usePreferides } from "@/hooks/use-preferides";
 import { useUrlSelection } from "@/hooks/use-url-selection";
 import type { BusPosition, Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
@@ -38,6 +39,33 @@ interface BusFinderValue {
   busPositions: BusPosition[];
   /** Per-line fetch status of the live bus prediction, for loading/empty/error UI. */
   lineBusStatus: Record<string, BusLineStatus>;
+
+  /*
+   * Saved stops (`preferides`). A device-local list held in localStorage that
+   * behaves like a line in the UI — one toggleable badge in the same strip — but
+   * is plumbed entirely separately from `selectedRoutes`, which feeds per-line
+   * stop queries, the live bus prediction, the drawer's selected/correspondence
+   * split and the `?lines=` param. A synthetic code in that array would poison
+   * all five, and preferides have no line to poison them with.
+   */
+  /**
+   * Saved stops as they should be drawn: empty while hidden, and with anything
+   * already on the map through a selected line removed, so no stop gets two
+   * markers stacked at identical coordinates.
+   */
+  preferidesStops: Stop[];
+  /** How many stops are saved, whether or not they're being shown. */
+  preferidesCount: number;
+  /** Whether saved stops are drawn on the map. */
+  showPreferides: boolean;
+  /**
+   * Unlike `toggleRoute`, this leaves an open drawer alone — hiding the list
+   * changes nothing about what that drawer is showing.
+   */
+  togglePreferides: () => void;
+  /** True saved state, ungated by visibility — the drawer's star needs the truth. */
+  isPreferida: (externalId: string) => boolean;
+  togglePreferida: (externalId: string) => void;
 }
 
 const BusFinderContext = createContext<BusFinderValue | undefined>(undefined);
@@ -123,6 +151,30 @@ export const BusFinderProvider = ({
     routeQueries.some((q) => q.isLoading) ||
     (debouncedSelectedRoutes.length === 0 && isSearchLoading);
 
+  const {
+    ids: preferidesIds,
+    visible: showPreferides,
+    isPreferida,
+    togglePreferida,
+    toggleVisible: togglePreferides,
+  } = usePreferides();
+
+  // Resolves the saved ids to stops. Cached for an hour: a stop's coordinates and
+  // name barely move, and this runs on every page load for every saved stop.
+  const { data: savedStops = [] } = api.stops.getByExternalIds.useQuery(
+    { externalIds: preferidesIds },
+    { enabled: preferidesIds.length > 0, staleTime: 60 * 60 * 1000 },
+  );
+
+  // Kept out of `isLoadingStops` on purpose. That flag drives the search field's
+  // spinner, which is about the query the user just typed; a background resolve
+  // of the saved list has nothing to do with it.
+  const preferidesStops = useMemo(() => {
+    if (!showPreferides) return [];
+    const onMap = new Set(stops.map((s) => s.externalId));
+    return savedStops.filter((s) => !onMap.has(s.externalId));
+  }, [showPreferides, savedStops, stops]);
+
   function toggleRoute(routeCode: Lines) {
     setSelectedRoutes((currentRoutes) =>
       currentRoutes.includes(routeCode)
@@ -161,6 +213,12 @@ export const BusFinderProvider = ({
     selectedStopId,
     busPositions,
     lineBusStatus,
+    preferidesStops,
+    preferidesCount: preferidesIds.length,
+    showPreferides,
+    togglePreferides,
+    isPreferida,
+    togglePreferida,
   } satisfies BusFinderValue;
 
   return (

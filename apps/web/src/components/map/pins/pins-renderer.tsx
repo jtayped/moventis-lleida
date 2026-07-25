@@ -12,10 +12,28 @@ const getZoomBucket = (zoom: number): ZoomBucket => {
   return "large";
 };
 
+/**
+ * One step up the ladder, for pins that have to stay findable at any zoom.
+ *
+ * The `small` bucket is a 10px dot with nowhere to hang a shoulder mark, and the
+ * default bounds are the whole city — so that is precisely the zoom at which a
+ * saved stop would otherwise dissolve into the same faint speck as every stop the
+ * user never asked for.
+ */
+const promote = (bucket: ZoomBucket): ZoomBucket =>
+  bucket === "small" ? "medium" : bucket;
+
 const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
   const map = useMap();
 
-  const { selectStop, selectedStopId, routes, selectedRoutes } = useBusFinder();
+  const {
+    selectStop,
+    selectedStopId,
+    routes,
+    selectedRoutes,
+    isPreferida,
+    showPreferides,
+  } = useBusFinder();
 
   const handleClick = useCallback(
     (stop: Stop) => selectStop(stop.externalId),
@@ -52,16 +70,23 @@ const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
 
   return (
     <>
-      {stops.map((stop) => (
-        <MapPin
-          key={stop.id}
-          stop={stop}
-          zoomBucket={zoomBucket}
-          isSelected={stop.externalId === selectedStopId}
-          onClick={handleClick}
-          pinColor={primaryPinColor}
-        />
-      ))}
+      {stops.map((stop) => {
+        // Decided per stop rather than per list. A saved stop that also sits on a
+        // selected line arrives here through that line's own pins, and it still has
+        // to look saved — so the star can't be a property of which list drew it.
+        const preferida = showPreferides && isPreferida(stop.externalId);
+        return (
+          <MapPin
+            key={stop.id}
+            stop={stop}
+            zoomBucket={preferida ? promote(zoomBucket) : zoomBucket}
+            isSelected={stop.externalId === selectedStopId}
+            onClick={handleClick}
+            pinColor={primaryPinColor}
+            isPreferida={preferida}
+          />
+        );
+      })}
     </>
   );
 });

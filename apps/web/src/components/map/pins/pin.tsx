@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import type { Stop } from "@moventis/db";
-import { Bus, Sparkle, X } from "lucide-react";
+import { Bus, Sparkle, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getContrastTextColor } from "@/lib/contrast";
 import { isNewStop } from "@/lib/stops";
@@ -12,6 +12,8 @@ interface MapPinProps {
   isSelected: boolean;
   onClick: (stop: Stop) => void;
   pinColor?: string;
+  /** Saved stop: gets a star on its free shoulder, and stays clickable when deleted. */
+  isPreferida?: boolean;
 }
 
 /**
@@ -39,8 +41,36 @@ function StopMark({ kind }: { kind: "new" | "deleted" }) {
   );
 }
 
+/**
+ * The saved-stop mark, on the shoulder opposite `StopMark`. A stop can be both new
+ * and saved, so the two marks need separate corners — and the right one was taken
+ * first.
+ *
+ * Gold on a light casing, inverting the network marks' dark one. That inversion is
+ * the point: every other mark reports something the network did, this one reports
+ * a choice the person looking at it made. Dark glyph on gold rather than the
+ * reverse, because amber is too light to carry white text.
+ */
+function PreferidaMark() {
+  return (
+    <span
+      className="pointer-events-none absolute -top-0.5 -left-0.5 z-20 flex size-3.5 items-center justify-center rounded-full bg-amber-400 text-zinc-900 ring-2 ring-white"
+      aria-hidden
+    >
+      <Star size={8} className="fill-current" />
+    </span>
+  );
+}
+
 const MapPin = React.memo(
-  ({ stop, zoomBucket, isSelected, onClick, pinColor }: MapPinProps) => {
+  ({
+    stop,
+    zoomBucket,
+    isSelected,
+    onClick,
+    pinColor,
+    isPreferida,
+  }: MapPinProps) => {
     const isDeleted = !!stop.deletedAt;
     const isNew = useMemo(
       () => !isDeleted && isNewStop(stop.createdAt),
@@ -49,11 +79,19 @@ const MapPin = React.memo(
 
     const mark = isNew ? "new" : isDeleted ? "deleted" : null;
 
+    // A deleted stop is normally inert — there is nothing live to show. A saved one
+    // has to stay open-able even so, because the control that unsaves it lives in
+    // the drawer behind it; without this, a stop leaving the network would strand a
+    // star on the map that nothing could remove.
+    const clickable = !isDeleted || !!isPreferida;
+
     if (zoomBucket === "small") {
+      // No mark slot at 10px, and none needed: `MapPinsRenderer` promotes a saved
+      // stop out of this bucket before it gets here.
       return (
         <AdvancedMarker
           position={{ lat: stop.latitude, lng: stop.longitude }}
-          onClick={isDeleted ? undefined : () => onClick(stop)}
+          onClick={clickable ? () => onClick(stop) : undefined}
           title={stop.name}
           zIndex={isSelected ? 10 : 1}
         >
@@ -73,23 +111,24 @@ const MapPin = React.memo(
       return (
         <AdvancedMarker
           position={{ lat: stop.latitude, lng: stop.longitude }}
-          onClick={isDeleted ? undefined : () => onClick(stop)}
+          onClick={clickable ? () => onClick(stop) : undefined}
           title={stop.name}
-          zIndex={isSelected ? 10 : mark ? 3 : 1}
+          zIndex={isSelected ? 10 : isPreferida ? 4 : mark ? 3 : 1}
         >
-          {/* The mark is a sibling of the circle, not a child: a deleted stop dims
-              its marker, and the mark on its shoulder has to stay legible. */}
+          {/* The marks are siblings of the circle, not children: a deleted stop dims
+              its marker, and the marks on its shoulders have to stay legible. */}
           <div className="relative size-7">
             <div
               className={cn(
                 "flex size-7 items-center justify-center rounded-full border-2 border-white shadow-lg transition-all",
-                !isDeleted && "hover:scale-110",
+                clickable && "hover:scale-110",
                 !pinColor &&
                   (isDeleted
                     ? "bg-muted text-muted-foreground"
                     : "bg-primary text-white"),
                 isSelected && "ring-primary/40 scale-105 ring-4",
-                isDeleted && "cursor-not-allowed opacity-50",
+                isDeleted && "opacity-50",
+                !clickable && "cursor-not-allowed",
               )}
               style={
                 pinColor && !isDeleted
@@ -103,6 +142,7 @@ const MapPin = React.memo(
               <Bus size={16} />
             </div>
             {mark && <StopMark kind={mark} />}
+            {isPreferida && <PreferidaMark />}
           </div>
         </AdvancedMarker>
       );
@@ -111,9 +151,9 @@ const MapPin = React.memo(
     return (
       <AdvancedMarker
         position={{ lat: stop.latitude, lng: stop.longitude }}
-        onClick={isDeleted ? undefined : () => onClick(stop)}
+        onClick={clickable ? () => onClick(stop) : undefined}
         title={stop.name}
-        zIndex={isSelected ? 10 : mark ? 3 : 1}
+        zIndex={isSelected ? 10 : isPreferida ? 4 : mark ? 3 : 1}
       >
         <div
           className="absolute"
@@ -122,9 +162,9 @@ const MapPin = React.memo(
           <div
             className={cn(
               "group relative flex flex-col items-center transition-transform",
-              isDeleted
-                ? "cursor-not-allowed"
-                : "cursor-pointer hover:scale-110!",
+              clickable
+                ? "cursor-pointer hover:scale-110!"
+                : "cursor-not-allowed",
               isSelected ? "scale-105" : "scale-100",
             )}
           >
@@ -163,9 +203,10 @@ const MapPin = React.memo(
                   : undefined
               }
             />
-            {/* Anchors to the group's top-right, which is the circle's corner —
-                the tail hanging below it doesn't enter into the position. */}
+            {/* Anchor to the group's top corners, which are the circle's — the tail
+                hanging below it doesn't enter into the position. */}
             {mark && <StopMark kind={mark} />}
+            {isPreferida && <PreferidaMark />}
           </div>
         </div>
       </AdvancedMarker>
