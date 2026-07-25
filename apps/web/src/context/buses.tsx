@@ -1,17 +1,19 @@
 "use client";
 import StopDetails from "@/components/map/stop-details";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useLineBuses, type BusLineStatus } from "@/hooks/use-line-buses";
+import { useUrlSelection } from "@/hooks/use-url-selection";
 import type { BusPosition, Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 interface BusFinderValue {
   routes: Line[];
@@ -22,12 +24,12 @@ interface BusFinderValue {
   isRouteSelected: (routeId: Lines) => boolean;
   /** Routes that have at least one operating day today. */
   activeRouteCodes: Lines[];
-  selectStop: (stop: Stop) => void;
+  /** Opens the stop drawer. Takes a `Stop.externalId` (the `?stop=` param). */
+  selectStop: (externalId: string) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  selectedStop: Stop | undefined;
-  /** Look up a full Stop object by id from the currently loaded route stops. */
-  findStop: (id: string) => Stop | undefined;
+  /** `externalId` of the stop whose drawer is open, if any. */
+  selectedStopId: string | null;
   /**
    * Inferred live bus positions across all selected lines (each tagged with its
    * `lineCode`). Populated whenever ≥1 line is selected; independent of any open
@@ -42,12 +44,24 @@ const BusFinderContext = createContext<BusFinderValue | undefined>(undefined);
 
 export const BusFinderProvider = ({
   children,
+  initialLines = [],
+  initialStopId = null,
 }: {
   children: React.ReactNode;
+  /** Line codes from `?lines=`, already validated against existing routes. */
+  initialLines?: Lines[];
+  /** `Stop.externalId` from `?stop=`. */
+  initialStopId?: string | null;
 }) => {
-  const [selectedRoutes, setSelectedRoutes] = useState<Lines[]>([]);
-  const [selectedStop, setSelectedStop] = useState<Stop | undefined>(undefined);
+  const [selectedRoutes, setSelectedRoutes] = useState<Lines[]>(initialLines);
+  const [selectedStopId, setSelectedStopId] = useState<string | null>(
+    initialStopId,
+  );
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Written from the undebounced selection: a refresh within the debounce
+  // window would otherwise drop the most recent toggle.
+  useUrlSelection(selectedRoutes, selectedStopId);
 
   const debouncedQuery = useDebounce(searchQuery);
   const debouncedSelectedRoutes = useDebounce(selectedRoutes);
@@ -56,9 +70,12 @@ export const BusFinderProvider = ({
     staleTime: 24 * 60 * 60 * 1000, // treat as fresh for 24h; seeded by SSR prefetch
   });
 
-  const { data: activeRouteCodes = [] } = api.routes.getTodayActive.useQuery(undefined, {
-    staleTime: 60 * 60 * 1000, // treat as fresh for 1 hour
-  });
+  const { data: activeRouteCodes = [] } = api.routes.getTodayActive.useQuery(
+    undefined,
+    {
+      staleTime: 60 * 60 * 1000, // treat as fresh for 1 hour
+    },
+  );
 
   // One query per selected route so React Query caches each line independently.
   const routeQueries = api.useQueries((t) =>
@@ -72,21 +89,23 @@ export const BusFinderProvider = ({
   const { data: searchStops, isLoading: isSearchLoading } =
     api.stops.getMany.useQuery(
       { routeCodes: [], query: debouncedQuery },
-      { enabled: debouncedSelectedRoutes.length === 0 && debouncedQuery.trim().length > 0 },
+      {
+        enabled:
+          debouncedSelectedRoutes.length === 0 &&
+          debouncedQuery.trim().length > 0,
+      },
     );
 
-  // All stops for selected routes, deduplicated — used for navigation lookups.
-  const allRouteStopsMap = useMemo(() => {
+  // Stops of all selected routes, deduplicated (lines share stops).
+  const routeStops = useMemo(() => {
     const map = new Map<string, Stop>();
     for (const q of routeQueries) {
       for (const stop of q.data ?? []) {
         map.set(stop.id, stop);
       }
     }
-    return map;
+    return [...map.values()];
   }, [routeQueries]);
-
-  const routeStops = useMemo(() => [...allRouteStopsMap.values()], [allRouteStopsMap]);
 
   // Apply client-side name filter when routes are selected and a query is typed.
   const stops = useMemo(() => {
@@ -110,21 +129,17 @@ export const BusFinderProvider = ({
         ? currentRoutes.filter((id) => id !== routeCode)
         : [...currentRoutes, routeCode],
     );
-    setSelectedStop(undefined);
+    setSelectedStopId(null);
   }
 
   function isRouteSelected(routeCode: Lines): boolean {
     return selectedRoutes.includes(routeCode);
   }
 
-  function selectStop(stop: Stop) {
-    setSelectedStop(stop);
-  }
-
-  const findStop = useCallback(
-    (id: string): Stop | undefined => allRouteStopsMap.get(id),
-    [allRouteStopsMap],
-  );
+  // Stable so the memoized map pins don't re-render on every provider update.
+  const selectStop = useCallback((externalId: string) => {
+    setSelectedStopId(externalId);
+  }, []);
 
   // Live bus prediction runs for every selected line, independent of any open
   // stop. Lifted here so both the map markers and the stop drawer read one source
@@ -143,8 +158,7 @@ export const BusFinderProvider = ({
     selectStop,
     searchQuery,
     setSearchQuery,
-    selectedStop,
-    findStop,
+    selectedStopId,
     busPositions,
     lineBusStatus,
   } satisfies BusFinderValue;
@@ -153,23 +167,15 @@ export const BusFinderProvider = ({
     <BusFinderContext.Provider value={value}>
       {children}
       <Drawer
-        open={!!selectedStop}
+        open={!!selectedStopId}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
-            setSelectedStop(undefined);
+            setSelectedStopId(null);
           }
         }}
       >
         <DrawerContent>
-          {selectedStop && (
-            <>
-              <DrawerTitle className="sr-only">{selectedStop.name}</DrawerTitle>
-              <DrawerDescription className="sr-only">
-                hores d&apos;arribada per la parada {selectedStop.name}
-              </DrawerDescription>
-              <StopDetails stop={selectedStop} />
-            </>
-          )}
+          {selectedStopId && <StopDetails externalId={selectedStopId} />}
         </DrawerContent>
       </Drawer>
     </BusFinderContext.Provider>

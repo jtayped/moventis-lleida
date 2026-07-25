@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
 import MapPin from "./pin";
 import type { Stop } from "@moventis/db";
@@ -15,8 +15,12 @@ const getZoomBucket = (zoom: number): ZoomBucket => {
 const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
   const map = useMap();
 
-  const { selectStop, selectedStop, routes, selectedRoutes } = useBusFinder();
-  const selectedStopId = selectedStop?.id;
+  const { selectStop, selectedStopId, routes, selectedRoutes } = useBusFinder();
+
+  const handleClick = useCallback(
+    (stop: Stop) => selectStop(stop.externalId),
+    [selectStop],
+  );
 
   const [zoom, setZoom] = useState<number>(() => map?.getZoom() ?? 12);
   const zoomBucket = useMemo(() => getZoomBucket(zoom), [zoom]);
@@ -53,8 +57,8 @@ const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
           key={stop.id}
           stop={stop}
           zoomBucket={zoomBucket}
-          selectedStopId={selectedStopId}
-          onClick={selectStop}
+          isSelected={stop.externalId === selectedStopId}
+          onClick={handleClick}
           pinColor={primaryPinColor}
         />
       ))}

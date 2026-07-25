@@ -49,11 +49,16 @@ export const stopsRouter = createTRPCRouter({
 
       return stops;
     }),
+  /**
+   * Keyed by `externalId` rather than the internal cuid: this id is what the
+   * frontend puts in the `?stop=` URL param, so it has to stay stable across
+   * database rebuilds (the scraper upserts stops by `externalId`).
+   */
   get: publicProcedure
-    .input(z.object({ stopId: z.string() }))
+    .input(z.object({ externalId: z.string() }))
     .query(async ({ input, ctx }) => {
       const stop = await ctx.db.stop.findUnique({
-        where: { id: input.stopId },
+        where: { externalId: input.externalId },
         include: { routes: true },
       });
 

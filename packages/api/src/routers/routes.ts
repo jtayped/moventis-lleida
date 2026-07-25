@@ -40,7 +40,7 @@ const getCachedVariantStops = unstable_cache(
               orderBy: { sequence: "asc" },
               select: {
                 sequence: true,
-                stop: { select: { id: true, name: true } },
+                stop: { select: { id: true, externalId: true, name: true } },
               },
             },
           },
@@ -56,13 +56,16 @@ const getCachedVariantStops = unstable_cache(
       isPrincipal: v.isPrincipal,
       stops: v.stops.map((s, idx) => ({
         id: s.stop.id,
+        externalId: s.stop.externalId,
         name: s.stop.name,
         index: idx,
         total: v.stops.length,
       })),
     }));
   },
-  ["route-variant-stops"],
+  // Key is versioned: `unstable_cache` does not invalidate on payload shape
+  // changes, so week-old entries would be served without newly added fields.
+  ["route-variant-stops-v2"],
   { revalidate: 60 * 60 * 24 * 7 },
 );
 

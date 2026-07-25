@@ -8,6 +8,7 @@ import React, { useMemo, useState } from "react";
 import MapPinsRenderer from "@/components/map/pins/pins-renderer";
 import RoutePaths from "@/components/map/route-paths";
 import BusMarkersRenderer from "@/components/map/bus-markers-renderer";
+import InitialStopFocus from "@/components/map/initial-stop-focus";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { env } from "@/env";
@@ -46,6 +47,7 @@ const BusMap = () => {
         restrictions={{ latLngBounds: RESTRICTED_BOUNDS, strictBounds: false }}
         className="h-screen w-full"
       >
+        <InitialStopFocus />
         <RoutePaths />
         {stops.length > 0 && <MapPinsRenderer stops={stops} />}
         {busPositions.length > 0 && (

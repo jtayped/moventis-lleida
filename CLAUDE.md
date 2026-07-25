@@ -87,7 +87,7 @@ Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.t
 
 - `routes.getAll` — returns all routes from DB (weekly cached)
 - `stops.getMany` — filters stops by route codes and/or search query
-- `stops.get` — fetches a single stop + live schedules from Moventis API
+- `stops.get` — fetches a single stop + live schedules from Moventis API, keyed by `Stop.externalId` (not the internal cuid) because that id is public in the URL
 
 ### Real-time Schedule Parsing
 
@@ -100,8 +100,6 @@ Both are normalized into `Date` objects. The `trayectos` field is a map of journ
 ### Shared Package
 
 `packages/shared` exports:
-- `LINES` — tuple of valid line code strings (`"1"–"10"`, `"16"`, `"20"`, `"70"`, `"n1"`)
-- `LINE_COLORS` — hex color per line
 - `INITIAL_BOUNDS` / `RESTRICTED_BOUNDS` / `COORDINATES` — Lleida map bounds
 - `Lines` / `Line` types, `Journey` / `Schedules` types
 - `apiScheduleSchema` / `scheduleSchema` — Zod schemas for validating the Moventis API response
@@ -111,9 +109,19 @@ Both are normalized into `Date` objects. The `trayectos` field is a map of journ
 `BusFinderContext` (`apps/web/src/context/buses.tsx`) is the central state manager. It is initialized server-side with routes (avoiding a client round-trip) and handles:
 - Selected route filtering (debounced 300ms)
 - Stop search query (debounced 300ms)
-- Selected stop (opens a Drawer with `StopDetails`)
+- Selected stop, held as a `Stop.externalId` (opens a Drawer with `StopDetails`, which fetches the stop itself)
 
 The map renders via `@vis.gl/react-google-maps`. Pins are rendered by `MapPinsRenderer`; clicking a pin calls `selectStop`, which triggers the Drawer.
+
+### URL State
+
+Selection is shareable: `/?lines=1,4&stop=10211`. `lines` is a comma-separated list of route `code`s, `stop` is a `Stop.externalId` — both public ids, chosen over internal cuids so links stay short and survive a database rebuild (the scraper upserts by `externalId`).
+
+`InitialStopFocus` centres the map on the `?stop=` stop once and renders its pin when no selected line already does — without it a bare `?stop=` link opens the drawer over city-wide bounds with nothing on the map behind it.
+
+The flow is one-directional. `apps/web/src/app/page.tsx` reads `searchParams` server-side and seeds `BusFinderProvider` (no `useSearchParams`, so no Suspense boundary and no hydration flash); unknown line codes are filtered out against `routes.getAll`, while an unknown `stop` is left to `stops.get` and surfaces as the drawer's error state. `useUrlSelection` (`apps/web/src/hooks/use-url-selection.ts`) then only ever *writes*, via `window.history.replaceState` — `router.replace` would re-run the server render on every badge tap, and `replaceState` keeps toggles out of the history stack. Nothing reads the URL after mount, so back/forward does not restore a previous selection.
+
+Search query is deliberately not in the URL.
 
 ### Database Schema
 
