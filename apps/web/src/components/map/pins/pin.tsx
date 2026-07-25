@@ -1,32 +1,53 @@
 import React, { useMemo } from "react";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import type { Stop } from "@moventis/db";
-import { Bus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Bus, Sparkle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getContrastTextColor } from "@/lib/contrast";
+import { isNewStop } from "@/lib/stops";
 
 interface MapPinProps {
   stop: Stop;
   zoomBucket: "small" | "medium" | "large";
-  selectedStopId: string | undefined;
+  isSelected: boolean;
   onClick: (stop: Stop) => void;
   pinColor?: string;
 }
 
+/**
+ * Small mark stuck to the pin's shoulder, in place of the word that used to float
+ * beside it. When a whole new branch of the network appears at once, a dozen loose
+ * labels read as scattered noise; at this size the mark stays attached to the stop
+ * it belongs to. The word itself lives in the drawer, on the stop it describes.
+ *
+ * Dark on a white casing, so it holds against both the near-black default pin and
+ * the pale line colours. Always light-themed: it sits on the map, not on an app
+ * surface. A new stop is not an alarm, so it stays out of the destructive red.
+ */
+function StopMark({ kind }: { kind: "new" | "deleted" }) {
+  return (
+    <span
+      className="pointer-events-none absolute -top-0.5 -right-0.5 z-20 flex size-3.5 items-center justify-center rounded-full bg-zinc-900 text-white ring-2 ring-white"
+      aria-hidden
+    >
+      {kind === "new" ? (
+        <Sparkle size={8} className="fill-current" />
+      ) : (
+        <X size={9} strokeWidth={3.5} />
+      )}
+    </span>
+  );
+}
+
 const MapPin = React.memo(
-  ({ stop, zoomBucket, selectedStopId, onClick, pinColor }: MapPinProps) => {
-    const isSelected = stop.id === selectedStopId;
+  ({ stop, zoomBucket, isSelected, onClick, pinColor }: MapPinProps) => {
     const isDeleted = !!stop.deletedAt;
-    // Check if the stop is newer than 14 days
-    const isNew = useMemo(() => {
-      if (isDeleted || !stop.createdAt) return false;
+    const isNew = useMemo(
+      () => !isDeleted && isNewStop(stop.createdAt),
+      [isDeleted, stop.createdAt],
+    );
 
-      const fourteenDaysInMs = 14 * 24 * 60 * 60 * 1000;
-      const ageInMs = Date.now() - new Date(stop.createdAt).getTime();
-
-      return ageInMs < fourteenDaysInMs;
-    }, [isDeleted, stop.createdAt]);
+    const mark = isNew ? "new" : isDeleted ? "deleted" : null;
 
     if (zoomBucket === "small") {
       return (
@@ -54,36 +75,34 @@ const MapPin = React.memo(
           position={{ lat: stop.latitude, lng: stop.longitude }}
           onClick={isDeleted ? undefined : () => onClick(stop)}
           title={stop.name}
-          zIndex={isSelected ? 10 : 1}
+          zIndex={isSelected ? 10 : mark ? 3 : 1}
         >
-          <div
-            className={cn(
-              "relative flex size-7 items-center justify-center rounded-full border-2 border-white shadow-lg transition-all",
-              !isDeleted && "hover:scale-110",
-              !pinColor && (isDeleted ? "bg-muted text-muted-foreground" : "bg-primary text-white"),
-              isSelected && "scale-105 ring-4 ring-primary/40",
-              isDeleted && "opacity-50 cursor-not-allowed",
-            )}
-            style={
-              pinColor && !isDeleted
-                ? {
-                    backgroundColor: pinColor,
-                    color: getContrastTextColor(pinColor),
-                  }
-                : undefined
-            }
-          >
-            {isNew && (
-              <Badge className="absolute -top-4 left-1/2 z-20 flex h-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 text-xs font-extrabold text-white shadow-sm hover:bg-red-600">
-                nova
-              </Badge>
-            )}
-            {isDeleted && (
-              <Badge className="absolute -top-4 left-1/2 z-20 flex h-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-zinc-500 px-1.5 text-xs font-extrabold text-white shadow-sm">
-                eliminada
-              </Badge>
-            )}
-            <Bus size={16} />
+          {/* The mark is a sibling of the circle, not a child: a deleted stop dims
+              its marker, and the mark on its shoulder has to stay legible. */}
+          <div className="relative size-7">
+            <div
+              className={cn(
+                "flex size-7 items-center justify-center rounded-full border-2 border-white shadow-lg transition-all",
+                !isDeleted && "hover:scale-110",
+                !pinColor &&
+                  (isDeleted
+                    ? "bg-muted text-muted-foreground"
+                    : "bg-primary text-white"),
+                isSelected && "ring-primary/40 scale-105 ring-4",
+                isDeleted && "cursor-not-allowed opacity-50",
+              )}
+              style={
+                pinColor && !isDeleted
+                  ? {
+                      backgroundColor: pinColor,
+                      color: getContrastTextColor(pinColor),
+                    }
+                  : undefined
+              }
+            >
+              <Bus size={16} />
+            </div>
+            {mark && <StopMark kind={mark} />}
           </div>
         </AdvancedMarker>
       );
@@ -94,7 +113,7 @@ const MapPin = React.memo(
         position={{ lat: stop.latitude, lng: stop.longitude }}
         onClick={isDeleted ? undefined : () => onClick(stop)}
         title={stop.name}
-        zIndex={isSelected ? 10 : 1}
+        zIndex={isSelected ? 10 : mark ? 3 : 1}
       >
         <div
           className="absolute"
@@ -103,25 +122,23 @@ const MapPin = React.memo(
           <div
             className={cn(
               "group relative flex flex-col items-center transition-transform",
-              isDeleted ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:scale-110!",
+              isDeleted
+                ? "cursor-not-allowed"
+                : "cursor-pointer hover:scale-110!",
               isSelected ? "scale-105" : "scale-100",
             )}
           >
-            {isNew && (
-              <Badge className="absolute -top-3 left-1/2 z-20 flex h-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 font-bold tracking-wider text-white shadow-sm hover:bg-red-600">
-                nova
-              </Badge>
-            )}
-            {isDeleted && (
-              <Badge className="absolute -top-3 left-1/2 z-20 flex h-5 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-zinc-500 px-1.5 font-bold tracking-wider text-white shadow-sm">
-                eliminada
-              </Badge>
-            )}
             <div
               className={cn(
                 "z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white shadow-lg",
-                !pinColor && (isDeleted ? "bg-muted text-muted-foreground" : "bg-primary text-white"),
-                isSelected && "ring-4 ring-primary/40",
+                !pinColor &&
+                  (isDeleted
+                    ? "bg-muted text-muted-foreground"
+                    : "bg-primary text-white"),
+                isSelected && "ring-primary/40 ring-4",
+                // Dims the marker rather than the whole group, so the mark on its
+                // shoulder keeps its contrast.
+                isDeleted && "opacity-50",
               )}
               style={
                 pinColor && !isDeleted
@@ -138,9 +155,17 @@ const MapPin = React.memo(
               className={cn(
                 "z-0 h-4 w-4 -translate-y-2.5 rotate-45 transform",
                 !pinColor && (isDeleted ? "bg-muted" : "bg-primary"),
+                isDeleted && "opacity-50",
               )}
-              style={pinColor && !isDeleted ? { backgroundColor: pinColor } : undefined}
+              style={
+                pinColor && !isDeleted
+                  ? { backgroundColor: pinColor }
+                  : undefined
+              }
             />
+            {/* Anchors to the group's top-right, which is the circle's corner —
+                the tail hanging below it doesn't enter into the position. */}
+            {mark && <StopMark kind={mark} />}
           </div>
         </div>
       </AdvancedMarker>

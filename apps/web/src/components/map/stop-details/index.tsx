@@ -1,5 +1,5 @@
 import { api } from "@/trpc/react";
-import type { Stop } from "@moventis/db";
+import { DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useMemo, useState, useEffect } from "react";
 import StopDetailsSkeleton from "./loading";
@@ -9,7 +9,13 @@ import StopScheduleLine from "./line-schedule";
 import StopNavigation from "./stop-navigation";
 import LiveBusStatus, { type LiveBusStatusValue } from "./live-bus-status";
 import { useBusFinder } from "@/context/buses";
-import { CheckCheck, ArrowRightLeft, TriangleAlert } from "lucide-react";
+import {
+  CheckCheck,
+  ArrowRightLeft,
+  TriangleAlert,
+  Sparkle,
+} from "lucide-react";
+import { isNewStop } from "@/lib/stops";
 import type { Journey, Schedules } from "@moventis/shared";
 
 type ScheduledTime = Journey["scheduledTimes"][number];
@@ -38,7 +44,22 @@ const ScheduleGroup = ({
   </div>
 );
 
-const StopDetails = ({ stop }: { stop: Stop }) => {
+/**
+ * The drawer's screen-reader labels. They live here rather than at the `Drawer`
+ * because the stop name is only known once this query resolves — and Radix warns
+ * about a drawer with no title, so they have to render in every branch, including
+ * loading, where there is no name yet.
+ */
+const SrLabels = ({ name }: { name?: string }) => (
+  <>
+    <DrawerTitle className="sr-only">{name ?? "parada"}</DrawerTitle>
+    <DrawerDescription className="sr-only">
+      {name ? `hores d'arribada per la parada ${name}` : "hores d'arribada"}
+    </DrawerDescription>
+  </>
+);
+
+const StopDetails = ({ externalId }: { externalId: string }) => {
   const { selectedRoutes, routes, lineBusStatus, busPositions } =
     useBusFinder();
 
@@ -54,9 +75,7 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
     isError,
     dataUpdatedAt,
     refetch,
-  } = api.stops.get.useQuery({
-    stopId: stop.id,
-  });
+  } = api.stops.get.useQuery({ externalId });
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -134,21 +153,33 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
 
   const liveStatus = useMemo<LiveBusStatusValue>(() => {
     if (relevantLines.length === 0) return "idle";
-    if (relevantLines.some((c) => lineBusStatus[c] === "loading")) return "loading";
+    if (relevantLines.some((c) => lineBusStatus[c] === "loading"))
+      return "loading";
     if (relevantLines.some((c) => lineBusStatus[c] === "done")) return "done";
     return "error";
   }, [relevantLines, lineBusStatus]);
 
   if (isLoading) {
-    return <StopDetailsSkeleton />;
+    return (
+      <>
+        <SrLabels />
+        <StopDetailsSkeleton />
+      </>
+    );
   }
 
   if (isError || !details) {
-    return <StopDetailsError refetch={refetch} />;
+    return (
+      <>
+        <SrLabels />
+        <StopDetailsError refetch={refetch} />
+      </>
+    );
   }
 
   return (
     <div className="mt-4 flex flex-col p-4 md:mx-auto md:w-lg">
+      <SrLabels name={details.name} />
       <StopDetailsHeader
         name={details.name}
         lines={details.routes}
@@ -157,18 +188,27 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
         refetch={refetch}
       />
 
-      <StopNavigation stopId={stop.id} />
+      <StopNavigation externalId={externalId} />
 
-      {!stop.deletedAt && (
+      {!details.deletedAt && (
         <LiveBusStatus status={liveStatus} count={liveCount} />
       )}
 
-      {stop.deletedAt && (
+      {details.deletedAt && (
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
           <TriangleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
-            aquesta parada ja no es troba en servei. pot ser temporal per obres o canvis de ruta.
+            aquesta parada ja no es troba en servei. pot ser temporal per obres
+            o canvis de ruta.
           </span>
+        </div>
+      )}
+
+      {/* Says in words what the sparkle on the map pin means. */}
+      {isNewStop(details.createdAt) && (
+        <div className="text-muted-foreground border-border bg-muted/40 mt-3 flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm">
+          <Sparkle size={16} className="mt-0.5 shrink-0 fill-current" />
+          <span>aquesta parada s&apos;ha afegit a la xarxa fa poc.</span>
         </div>
       )}
 
@@ -196,7 +236,9 @@ const StopDetails = ({ stop }: { stop: Stop }) => {
               )}
               {otherLines.length > 0 && (
                 <div className="py-2">
-                  {selectedLines.length > 0 && <hr className="my-2 border-gray-200" />}
+                  {selectedLines.length > 0 && (
+                    <hr className="my-2 border-gray-200" />
+                  )}
                   <div className="my-4 mb-2 flex items-center gap-2 px-1">
                     <ArrowRightLeft className="h-5 w-5" />
                     <h3 className="text-lg font-bold">correspondències</h3>
