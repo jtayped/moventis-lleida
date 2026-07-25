@@ -25,17 +25,21 @@ interface MapPinProps {
  * Dark on a white casing, so it holds against both the near-black default pin and
  * the pale line colours. Always light-themed: it sits on the map, not on an app
  * surface. A new stop is not an alarm, so it stays out of the destructive red.
+ *
+ * Offset far enough to clear the circle's edge rather than straddle it. A stop can
+ * carry two of these at once, and two marks sitting half-on the circle leave very
+ * little of the bus showing — which is the glyph that says what the pin is.
  */
 function StopMark({ kind }: { kind: "new" | "deleted" }) {
   return (
     <span
-      className="pointer-events-none absolute -top-0.5 -right-0.5 z-20 flex size-3.5 items-center justify-center rounded-full bg-zinc-900 text-white ring-2 ring-white"
+      className="pointer-events-none absolute -top-1 -right-1 z-20 flex size-3 items-center justify-center rounded-full bg-zinc-900 text-white ring-2 ring-white"
       aria-hidden
     >
       {kind === "new" ? (
-        <Sparkle size={8} className="fill-current" />
+        <Sparkle size={7} className="fill-current" />
       ) : (
-        <X size={9} strokeWidth={3.5} />
+        <X size={8} strokeWidth={3.5} />
       )}
     </span>
   );
@@ -54,10 +58,10 @@ function StopMark({ kind }: { kind: "new" | "deleted" }) {
 function PreferidaMark() {
   return (
     <span
-      className="pointer-events-none absolute -top-0.5 -left-0.5 z-20 flex size-3.5 items-center justify-center rounded-full bg-amber-400 text-zinc-900 ring-2 ring-white"
+      className="pointer-events-none absolute -top-1 -left-1 z-20 flex size-3 items-center justify-center rounded-full bg-amber-400 text-zinc-900 ring-2 ring-white"
       aria-hidden
     >
-      <Star size={8} className="fill-current" />
+      <Star size={7} className="fill-current" />
     </span>
   );
 }

@@ -28,27 +28,35 @@ const Divider = () => (
  * code; this holds a star. That shape difference is what separates it at a glance,
  * and it has to be, because line 1's own colour is `#FFFF18` and sits a few chips
  * to the right — no shade of gold would win that argument on hue alone.
+ *
+ * No caption, so the footprint matches a line badge exactly. The word would make
+ * the one non-line entry the widest thing in a strip that has to stay scannable,
+ * and the star is already the drawer's own control — whoever put a stop here has
+ * met it.
  */
 const PreferidesBadge = () => {
   const { showPreferides, togglePreferides } = useBusFinder();
+  const label = showPreferides
+    ? "amaga les parades preferides"
+    : "mostra les parades preferides";
 
   return (
     <Badge
       variant={showPreferides ? "default" : "outline"}
       onClick={togglePreferides}
       className="cursor-pointer gap-1.5 px-2.5 py-1.5"
+      // Without a caption there is no text node, so the badge would otherwise be
+      // absent from the accessibility tree entirely — the line badges at least
+      // expose their code. `Badge` renders a bare `span`, hence the explicit role.
+      role="button"
       aria-pressed={showPreferides}
-      title={
-        showPreferides
-          ? "amaga les parades preferides"
-          : "mostra les parades preferides"
-      }
+      aria-label={label}
+      title={label}
     >
       {showPreferides ? <Check /> : <Plus />}
       <span className="flex size-5 items-center justify-center rounded-sm bg-amber-400 text-zinc-900">
         <Star size={12} className="fill-current" />
       </span>
-      preferides
     </Badge>
   );
 };
