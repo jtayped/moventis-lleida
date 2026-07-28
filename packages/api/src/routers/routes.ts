@@ -2,6 +2,7 @@ import z from "zod";
 import { db } from "@moventis/db";
 import { routePathSchema, type RoutePath } from "@moventis/shared";
 import { createTRPCRouter, publicProcedure } from "../trpc";
+import { utcStartOfLocalDay } from "../lib/zoned-time";
 import { unstable_cache } from "next/cache";
 
 const getCachedRoutes = unstable_cache(
@@ -79,8 +80,10 @@ export const routesRouter = createTRPCRouter({
     .query(({ input }) => getCachedVariantStops(input.code)),
   /** Returns the line codes of routes that have at least one operating day today. */
   getTodayActive: publicProcedure.query(async ({ ctx }) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // "Today" means today in Lleida, not on the (UTC) host: between midnight and
+    // 02:00 CEST the two are different calendar days, and this would answer with
+    // yesterday's active lines.
+    const today = utcStartOfLocalDay(new Date());
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
     const active = await ctx.db.route.findMany({
