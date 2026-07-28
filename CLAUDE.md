@@ -98,6 +98,8 @@ Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.t
 
 Both are normalized into `Date` objects. The `trayectos` field is a map of journey names to arrival times, where the value can be either an array or an object (handled by the Zod union in `packages/shared/src/schemas/schedule.ts`).
 
+**Every clock time from Moventis is a `Europe/Madrid` wall clock, and servers run in UTC.** Never resolve one with `Date#setHours`/`getHours` or `new Date(y, m, d)` — those read the host's zone and silently shift every scheduled arrival by the offset (+2h in summer). Go through `toWallClock` / `fromWallClock` in `packages/api/src/lib/zoned-time.ts`. The same trap applies to any "today" boundary: `utcStartOfLocalDay` exists because `OperatingDay.date` is stored at midnight UTC but the day it refers to is Lleida's. This class of bug is invisible on a developer machine in Spain and only appears in production.
+
 ### Shared Package
 
 `packages/shared` exports:

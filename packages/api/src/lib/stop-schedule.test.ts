@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { ZodError } from "zod";
 import { normalizeText, parseSchedulesResponse } from "./stop-schedule";
+import { toWallClock } from "./zoned-time";
 import { loadFixture } from "../__fixtures__/load";
 
-// A fixed wall clock so relative→absolute arrival math is deterministic. Set
-// before the morning scheduled times in the fixtures so they stay "today".
-const NOW = new Date(2026, 5, 19, 5, 0, 0); // 2026-06-19 05:00 local
+// A fixed instant so relative→absolute arrival math is deterministic. Written as
+// UTC and asserted through `toWallClock`, never through `Date#getHours`, so the
+// suite means the same thing on a UTC host as on a developer's CEST laptop —
+// that gap is the bug these tests cover. 03:00 UTC is 05:00 in Lleida, before the
+// morning scheduled times in the fixtures, so they stay "today".
+const NOW = new Date("2026-06-19T03:00:00Z"); // 2026-06-19 05:00 in Lleida
 
 describe("parseSchedulesResponse", () => {
   it("parses the real multi-line capture into both lines", () => {
@@ -31,9 +35,12 @@ describe("parseSchedulesResponse", () => {
 
     const scheduled = journey!.scheduledTimes.filter((t) => !t.isRealTime);
     expect(scheduled.length).toBeGreaterThan(0);
-    // "06:52" → an absolute clock time later today (after NOW=05:00).
-    expect(scheduled[0]!.arrivalTime.getHours()).toBe(6);
-    expect(scheduled[0]!.arrivalTime.getMinutes()).toBe(52);
+    // "06:52" → that same clock time later today in Lleida (NOW is 05:00 there).
+    const clock = toWallClock(scheduled[0]!.arrivalTime);
+    expect(clock).toMatchObject({ year: 2026, month: 6, day: 19, hour: 6, minute: 52 });
+    // And as an instant: 06:52 CEST is 04:52Z, 1h52m after NOW — not 3h52m, which
+    // is what reading `hora` in a UTC host's own zone would have produced.
+    expect(scheduled[0]!.arrivalTime.getTime() - NOW.getTime()).toBe(112 * 60 * 1000);
   });
 
   it("keeps each journey's arrivals sorted ascending", () => {
@@ -63,6 +70,59 @@ describe("parseSchedulesResponse", () => {
     const allTimes = schedules.flatMap((s) => s.journeys.flatMap((j) => j.scheduledTimes));
     expect(allTimes.length).toBeGreaterThan(0);
     expect(allTimes.some((t) => t.isRealTime)).toBe(false);
+  });
+
+  it("agrees with the countdown Moventis itself reported at capture time", () => {
+    // Every scheduled entry in the mixed capture pairs an `hora` with Moventis' own
+    // `tiempo` countdown, and all four agree the response was captured at 02:15 in
+    // Lleida. Replaying it at that instant must reproduce those countdowns exactly —
+    // this is the assertion the site's own display was failing, by a flat +2h.
+    const capturedAt = new Date("2026-06-19T00:15:00Z"); // 02:15 CEST
+    const schedules = parseSchedulesResponse(loadFixture("schedule-mixed.json"), capturedAt);
+    const journey = schedules.find((s) => s.externalLineId === "130")!.journeys[0]!;
+
+    const countdowns = journey.scheduledTimes
+      .filter((t) => !t.isRealTime)
+      .map((t) => (t.arrivalTime.getTime() - capturedAt.getTime()) / 60_000);
+
+    // "04 h 37 min", "04 h 53 min", "05 h 10 min", "05 h 25 min".
+    expect(countdowns).toEqual([277, 293, 310, 325]);
+  });
+
+  it("rolls a scheduled time long past into tomorrow's service", () => {
+    // 23:00 in Lleida: the fixture's 06:17 and 07:08 are next morning's departures.
+    const lateNight = new Date("2026-06-19T21:00:00Z");
+    const schedules = parseSchedulesResponse(
+      loadFixture("schedule-scheduled-night.json"),
+      lateNight,
+    );
+    const first = schedules[0]!.journeys[0]!.scheduledTimes[0]!.arrivalTime;
+
+    expect(first.getTime()).toBeGreaterThan(lateNight.getTime());
+    expect(toWallClock(first)).toMatchObject({ day: 20, hour: 6, minute: 17 });
+  });
+
+  it("keeps a just-missed departure in the past instead of pushing it a day out", () => {
+    // 06:30 in Lleida, 13 minutes after the fixture's 06:17 — stale data, not tomorrow.
+    const justAfter = new Date("2026-06-19T04:30:00Z");
+    const schedules = parseSchedulesResponse(
+      loadFixture("schedule-scheduled-night.json"),
+      justAfter,
+    );
+    const first = schedules[0]!.journeys[0]!.scheduledTimes[0]!.arrivalTime;
+
+    expect(first.getTime()).toBeLessThan(justAfter.getTime());
+    expect(toWallClock(first)).toMatchObject({ day: 19, hour: 6, minute: 17 });
+  });
+
+  it("resolves scheduled times against the winter offset too", () => {
+    // 05:00 CET is 04:00Z; 06:17 CET is 05:17Z, so the gap is 77 min, not 2h17m.
+    const winter = new Date("2026-01-15T04:00:00Z");
+    const schedules = parseSchedulesResponse(loadFixture("schedule-scheduled-night.json"), winter);
+    const first = schedules[0]!.journeys[0]!.scheduledTimes[0]!.arrivalTime;
+
+    expect(toWallClock(first)).toMatchObject({ month: 1, day: 15, hour: 6, minute: 17 });
+    expect(first.getTime() - winter.getTime()).toBe(77 * 60 * 1000);
   });
 
   it("accepts the array-form trayectos edge case", () => {

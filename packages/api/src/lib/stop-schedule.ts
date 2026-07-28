@@ -9,11 +9,21 @@ import axios, { AxiosError } from "axios";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { moventisQueue } from "./throttle";
+import { fromWallClock, toWallClock } from "./zoned-time";
 
 type ApiJourneyDetail = z.infer<typeof scheduleSchema>;
 type ApiScheduleLine = z.infer<typeof apiScheduleSchema>[number];
 
 const realTimeRegex = /(?:(\d+)\s*h\s*)?(\d+)\s*min\s*(\d+)\s*s/;
+
+/**
+ * How far into the past a scheduled `hora` may sit before it is read as tomorrow's
+ * service instead of a departure that just passed. Night lines list post-midnight
+ * times before midnight, so a rollover is real — but so is a response captured a
+ * minute after a bus left, and no line runs on a ~23h headway, so anything this
+ * recent is staleness, not tomorrow.
+ */
+const STALE_SCHEDULE_TOLERANCE_MS = 60 * 60 * 1000;
 
 export function normalizeText(text: string): string {
   return text
@@ -44,10 +54,15 @@ function parseArrivalTime(detail: ApiJourneyDetail, now: Date): Date {
     console.warn("Could not parse scheduled time:", detail.hora);
     return now;
   }
-  const arrival = new Date(now);
-  arrival.setHours(hours, minutes, 0, 0);
-  if (arrival < now) arrival.setDate(arrival.getDate() + 1);
-  return arrival;
+
+  // `hora` is a Lleida wall-clock time, so it has to be resolved against Lleida's
+  // calendar day and offset. Reading it in the host's zone shifts every scheduled
+  // arrival by the UTC offset — a permanent +2h (CEST) on the UTC servers this
+  // deploys to, which is why nothing scheduled ever counted down below two hours.
+  const { year, month, day } = toWallClock(now);
+  const arrival = fromWallClock(year, month, day, hours, minutes);
+  if (arrival.getTime() >= now.getTime() - STALE_SCHEDULE_TOLERANCE_MS) return arrival;
+  return fromWallClock(year, month, day + 1, hours, minutes);
 }
 
 function buildJourneys(trayectos: ApiScheduleLine["trayectos"], now: Date): Journey[] {

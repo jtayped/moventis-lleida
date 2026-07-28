@@ -1,3 +1,9 @@
+/**
+ * The zone every Moventis clock time is expressed in. Servers run in UTC, so this
+ * can never be left to the host's local zone — see `packages/api/src/lib/zoned-time.ts`.
+ */
+export const TIME_ZONE = "Europe/Madrid";
+
 export const COORDINATES = {
   lat: 41.6176,
   lng: 0.62,
