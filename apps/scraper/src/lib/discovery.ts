@@ -240,6 +240,14 @@ export async function discoverLines(): Promise<Discovery> {
     // Soft-deleted routes are included on purpose: the 2026-08-02 regression
     // soft-deleted every one of them, and this query is what lets a run find
     // them again and clear the flag.
+    //
+    // `deletedAt: undefined` is load-bearing, not noise. The client extension in
+    // `packages/db` injects `{ deletedAt: null, ...args.where }` into every
+    // `route.findMany`, so *omitting* the key does not mean "no filter" here —
+    // it means "only live routes", and this fallback would find nothing at the
+    // exact moment it is needed. Spreading an explicit `undefined` over the
+    // injected `null` is what restores "no filter".
+    where: { deletedAt: undefined },
     select: { externalId: true, code: true, name: true, color: true },
   });
   const eligible = knownRoutes.filter((r) => !EXCLUDED_CODES.has(r.code));
