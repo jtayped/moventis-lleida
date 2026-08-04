@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx --env-file=../../.env watch src/index.ts",
     "start": "pnpm --filter=@moventis/db db:push --skip-generate && tsx src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@moventis/db": "workspace:*",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@moventis/tsconfig": "workspace:*",
     "@types/node": "^20.14.10",
-    "@types/node-cron": "^3.0.11"
+    "@types/node-cron": "^3.0.11",
+    "vitest": "^4.1.9"
   }
 }

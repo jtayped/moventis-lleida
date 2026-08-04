@@ -38,11 +38,25 @@ export interface MoventisTrayecto {
   TrayectosDet: MoventisVariantStop[];
 }
 
-export async function fetchLleidaLines(): Promise<MoventisLine[]> {
+/**
+ * Fetches the line feed and keeps the Lleida rows.
+ *
+ * A row qualifies either by sitting in the Lleida zone, or by being a line we
+ * already track. The second test exists because the zone is not a stable key:
+ * `ID_ZONA === "2"` matched every Lleida line until 2026-08-02, when the zone
+ * vanished from the feed. Matching known `ID_LINEA`s as well means a
+ * renumbering upstream is picked up automatically, and only a line genuinely
+ * absent from the feed falls through to the database fallback.
+ */
+export async function fetchLleidaLines(
+  knownLineIds: ReadonlySet<string> = new Set(),
+): Promise<MoventisLine[]> {
   const res = await fetch(`${BASE}/es/moventis/es/lines`);
   if (!res.ok) throw new Error(`/lines ${res.status}`);
   const all = (await res.json()) as MoventisLine[];
-  return all.filter((l) => l.ID_ZONA === LLEIDA_ZONE);
+  return all.filter(
+    (l) => l.ID_ZONA === LLEIDA_ZONE || knownLineIds.has(l.ID_LINEA),
+  );
 }
 
 export async function fetchTrayectos(
@@ -84,6 +98,26 @@ export function toYyyymmdd(date: Date): string {
 
 export function parseDateStr(s: string): Date {
   return new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`);
+}
+
+/**
+ * `count` `YYYYMMDD` dates starting at `from` (inclusive), `stepDays` apart.
+ *
+ * Used to probe which days a line runs when the feed carries no calendar. A step
+ * of 1 walks consecutive days (an exact calendar); a larger step samples further
+ * ahead cheaply, which is how a line dormant for the whole near horizon is told
+ * apart from one that has been withdrawn.
+ */
+export function nextDates(from: Date, count: number, stepDays = 1): string[] {
+  const start = Date.UTC(
+    from.getUTCFullYear(),
+    from.getUTCMonth(),
+    from.getUTCDate(),
+  );
+  const dayMs = 24 * 60 * 60 * 1000;
+  return Array.from({ length: count }, (_, i) =>
+    toYyyymmdd(new Date(start + i * stepDays * dayMs)),
+  );
 }
 
 /**

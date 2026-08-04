@@ -90,6 +90,19 @@ Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.t
 - `stops.get` — fetches a single stop + live schedules from Moventis API, keyed by `Stop.externalId` (not the internal cuid) because that id is public in the URL
 - `stops.getByExternalIds` — bare stops for the saved-stops list. Database-only and includes soft-deleted stops, unlike every other stop query. `stops.get` would fire one live Moventis request per route on the stop, so resolving N saved ids through it would push ~3N calls through the 5 req/s throttle before the map could draw anything.
 
+### Scraper Line Discovery (`apps/scraper`)
+
+The line feed (`/es/moventis/es/lines`) **stopped listing the Lleida zone on 2026-08-02** while every per-line endpoint kept serving Lleida data. Do not treat the feed as the authority on whether the network exists.
+
+`src/lib/discovery.ts` therefore has two sources: the feed (matched by `ID_ZONA === "2"` *and* by `ID_LINEA` against stored routes, so a zone renumber reconnects itself), falling back to the routes already in the database. In fallback mode the calendar is rebuilt by probing `GetTrayectos/{line}/{date}` per day — it returns a bare `[{ numLinea }]` stub on a non-operating date, which makes it a reliable operating-day oracle.
+
+Lines go dormant for a season (line 10 serves nothing in August, resumes in September). `src/lib/resolution.ts` keeps three outcomes apart, and the distinction is load-bearing:
+- **resolved** — running, or dormant but alive further out. Keeps stops/geometry; a dormant line reports an empty calendar so the line strip stops claiming it runs today.
+- **withdrawn** — every probe answered, none served. Pruning may act on it.
+- **unreachable** — a request errored. Blocks pruning entirely.
+
+Pruning is the only destructive step and runs **only on a provably complete run** (`src/lib/prune.ts`). Prisma reads `notIn: []` as *match every row*, so a run that discovers nothing does not prune nothing — it prunes everything. That is what soft-deleted the whole network for three nights in August 2026. Never call `prune()` without `shouldPrune()` approving.
+
 ### Real-time Schedule Parsing
 
 `packages/api/src/lib/stop-schedule.ts` handles all Moventis API interaction. The API returns two kinds of arrival data distinguished by `real`:
