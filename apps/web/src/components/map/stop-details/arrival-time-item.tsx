@@ -1,6 +1,7 @@
-import { ClockAlert, Accessibility } from "lucide-react";
+import { Accessibility } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import CountdownTimer from "../../ui/countdown";
+import TimeSourceBadge from "./time-source-badge";
 import { formatRelativeTime, formatAbsoluteTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ export const ArrivalTimeCard = ({
   return (
     <Card
       className={cn(
-        "flex h-auto flex-col items-center p-2",
+        "flex h-auto flex-col items-center gap-0.5 p-2",
         isClosest && "border-foreground/20 bg-foreground/[0.04] py-4",
       )}
     >
@@ -40,14 +41,6 @@ export const ArrivalTimeCard = ({
           <CountdownTimer targetDate={journey.arrivalTime} />
         ) : (
           formatRelativeTime(diffInSeconds)
-        )}
-        {!journey.isRealTime && (
-          <ClockAlert
-            size={12}
-            className="ml-1"
-            aria-label="Hora estimada (no en temps real)"
-            role="img"
-          />
         )}
         {journey.accessible && (
           <Accessibility
@@ -66,6 +59,10 @@ export const ArrivalTimeCard = ({
       >
         {formatAbsoluteTime(journey.arrivalTime)}
       </span>
+      <TimeSourceBadge
+        isRealTime={journey.isRealTime}
+        className={isClosest ? "mt-0.5 text-xs" : "text-[10px]"}
+      />
     </Card>
   );
 };

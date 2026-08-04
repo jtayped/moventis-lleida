@@ -1,12 +1,19 @@
-import { Bus, Loader2, WifiOff } from "lucide-react";
+import { Loader2, MapPinOff, Radar } from "lucide-react";
 
 export type LiveBusStatusValue = "idle" | "loading" | "done" | "error";
 
 /**
- * Compact status row for the live bus prediction, shown in the stop drawer when
- * at least one line is selected. Mirrors the four states of `buses.byLine`
- * aggregated across the selected lines: searching, found (with count), none right
- * now, and unavailable.
+ * Status of the *bus pins on the map* — not of this stop's arrival times.
+ *
+ * Keeping those two apart is the whole job of this component. It reports on
+ * `buses.byLine`, which infers where each bus physically is and draws it on the
+ * map; the timetable below is a separate request that keeps working when this
+ * one fails. The old copy ("no s'ha pogut localitzar els autobusos", under a
+ * crossed-out wifi icon) read as a total outage, so a failure here looked like
+ * the arrival times had died too.
+ *
+ * So every branch names the map explicitly, and the failure branch says outright
+ * that the times are unaffected.
  */
 export default function LiveBusStatus({
   status,
@@ -18,25 +25,28 @@ export default function LiveBusStatus({
   if (status === "idle") return null;
 
   const base =
-    "mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm";
+    "mt-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm";
+  const muted = `${base} text-muted-foreground border-border bg-muted/40`;
 
   if (status === "loading") {
     return (
-      <div
-        className={`${base} text-muted-foreground border-border bg-muted/40`}
-        aria-live="polite"
-      >
-        <Loader2 size={16} className="shrink-0 animate-spin" />
-        <span>cercant autobusos en directe…</span>
+      <div className={muted} aria-live="polite">
+        <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin" />
+        <span>situant els autobusos al mapa…</span>
       </div>
     );
   }
 
   if (status === "error") {
     return (
-      <div className={`${base} text-muted-foreground border-border bg-muted/40`}>
-        <WifiOff size={16} className="shrink-0" />
-        <span>no s&apos;ha pogut localitzar els autobusos.</span>
+      <div className={muted}>
+        <MapPinOff size={16} className="mt-0.5 shrink-0" />
+        <span>
+          no podem situar els autobusos al mapa ara mateix.
+          <span className="block text-xs opacity-80">
+            les hores d&apos;arribada d&apos;aquí sota segueixen funcionant.
+          </span>
+        </span>
       </div>
     );
   }
@@ -44,19 +54,24 @@ export default function LiveBusStatus({
   // status === "done"
   if (count === 0) {
     return (
-      <div className={`${base} text-muted-foreground border-border bg-muted/40`}>
-        <Bus size={16} className="shrink-0" />
-        <span>cap autobús en directe en aquesta línia ara mateix.</span>
+      <div className={muted}>
+        <Radar size={16} className="mt-0.5 shrink-0" />
+        <span>
+          cap autobús d&apos;aquesta línia envia la seva posició ara mateix.
+          <span className="block text-xs opacity-80">
+            per això no en veuràs cap al mapa.
+          </span>
+        </span>
       </div>
     );
   }
 
   return (
     <div
-      className={`${base} border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300`}
+      className={`${base} items-center border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300`}
       aria-live="polite"
     >
-      <span className="relative flex size-2.5 shrink-0">
+      <span aria-hidden className="relative flex size-2.5 shrink-0">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
         <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
       </span>
