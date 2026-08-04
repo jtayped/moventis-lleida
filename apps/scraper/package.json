@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tsx --env-file=../../.env watch src/index.ts",
     "start": "pnpm --filter=@moventis/db db:push --skip-generate && tsx src/index.ts",
+    "sync": "tsx src/sync-once.ts",
+    "sync:dev": "tsx --env-file=../../.env src/sync-once.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
