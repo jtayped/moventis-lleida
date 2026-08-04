@@ -8,6 +8,7 @@ import StopDetailsHeader from "./header";
 import StopScheduleLine from "./line-schedule";
 import StopNavigation from "./stop-navigation";
 import LiveBusStatus, { type LiveBusStatusValue } from "./live-bus-status";
+import ScheduleLegend from "./schedule-legend";
 import { useBusFinder } from "@/context/buses";
 import {
   CheckCheck,
@@ -116,6 +117,17 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     }));
   }, [details, now]);
 
+  // Only worth explaining the two badges when a timetable-only time is on screen.
+  const hasTimetableOnlyTime = useMemo(
+    () =>
+      filteredSchedules.some((line) =>
+        line.journeys.some((journey) =>
+          journey.scheduledTimes.some((t) => !t.isRealTime),
+        ),
+      ),
+    [filteredSchedules],
+  );
+
   const { selectedLines, otherLines } = useMemo(() => {
     if (!filteredSchedules.length) {
       return { selectedLines: [], otherLines: [] };
@@ -216,6 +228,8 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
           <span>aquesta parada s&apos;ha afegit a la xarxa fa poc.</span>
         </div>
       )}
+
+      {hasTimetableOnlyTime && <ScheduleLegend />}
 
       <ScrollArea className="h-100 pr-3">
         <div>
