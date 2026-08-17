@@ -6,6 +6,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useLineBuses, type BusLineStatus } from "@/hooks/use-line-buses";
 import { usePreferides } from "@/hooks/use-preferides";
 import { useUrlSelection } from "@/hooks/use-url-selection";
+import { env } from "@/env";
 import { keepPreviousData } from "@tanstack/react-query";
 import type { BusPosition, Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
@@ -40,6 +41,12 @@ interface BusFinderValue {
   busPositions: BusPosition[];
   /** Per-line fetch status of the live bus prediction, for loading/empty/error UI. */
   lineBusStatus: Record<string, BusLineStatus>;
+  /**
+   * Whether live bus prediction is turned on (`NEXT_PUBLIC_ENABLE_BUS_LOCATION`).
+   * Off by default. Consumers must gate any live-bus UI on this directly rather
+   * than inferring it from `lineBusStatus` being empty, which reads as "error".
+   */
+  isBusLocationEnabled: boolean;
 
   /*
    * Saved stops (`preferides`). A device-local list held in localStorage that
@@ -222,6 +229,7 @@ export const BusFinderProvider = ({
     selectedStopId,
     busPositions,
     lineBusStatus,
+    isBusLocationEnabled: env.NEXT_PUBLIC_ENABLE_BUS_LOCATION,
     preferidesStops,
     preferidesCount: preferidesIds.length,
     showPreferides,

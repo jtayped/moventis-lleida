@@ -34,6 +34,11 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_MAPS_API_KEY: z.string(),
     NEXT_PUBLIC_MAPS_MAP_ID: z.string().optional().default(""),
+    NEXT_PUBLIC_ENABLE_BUS_LOCATION: z
+      .enum(["true", "false"])
+      .optional()
+      .default("false")
+      .transform((v) => v === "true"),
   },
 
   /**
@@ -45,6 +50,8 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_MAPS_API_KEY: process.env.NEXT_PUBLIC_MAPS_API_KEY,
     NEXT_PUBLIC_MAPS_MAP_ID: process.env.NEXT_PUBLIC_MAPS_MAP_ID,
+    NEXT_PUBLIC_ENABLE_BUS_LOCATION:
+      process.env.NEXT_PUBLIC_ENABLE_BUS_LOCATION,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

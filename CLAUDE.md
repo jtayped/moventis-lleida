@@ -69,6 +69,7 @@ All env vars live in a single `.env` at the monorepo root. Copy `.env.example` t
 DATABASE_URL="postgresql://postgres:password@localhost:5432/moventis-lleida"
 NEXT_PUBLIC_MAPS_API_KEY=""   # Google Maps JavaScript API key
 NEXT_PUBLIC_MAPS_MAP_ID=""    # Google Cloud Map ID (required for AdvancedMarker)
+NEXT_PUBLIC_ENABLE_BUS_LOCATION="false"  # client-only toggle for live bus position prediction (`buses.byLine`); off by default, still being tuned
 ANDROID_HOME=                 # Android SDK path (Expo only)
 ```
 

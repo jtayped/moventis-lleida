@@ -61,8 +61,14 @@ const SrLabels = ({ name }: { name?: string }) => (
 );
 
 const StopDetails = ({ externalId }: { externalId: string }) => {
-  const { selectedRoutes, routes, lineBusStatus, busPositions, isPreferida } =
-    useBusFinder();
+  const {
+    selectedRoutes,
+    routes,
+    lineBusStatus,
+    busPositions,
+    isBusLocationEnabled,
+    isPreferida,
+  } = useBusFinder();
 
   const colorMap = useMemo(
     () => new Map(routes.map((r) => [r.code, r.color])),
@@ -203,7 +209,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
 
       <StopNavigation externalId={externalId} />
 
-      {!details.deletedAt && (
+      {isBusLocationEnabled && !details.deletedAt && (
         <LiveBusStatus status={liveStatus} count={liveCount} />
       )}
 

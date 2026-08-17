@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { api } from "@/trpc/react";
+import { env } from "@/env";
 import type { BusPosition, Lines } from "@moventis/shared";
 
 export type BusLineStatus = "loading" | "done" | "error";
@@ -22,8 +23,13 @@ export interface LineBuses {
  * others (or the timetable).
  */
 export function useLineBuses(selectedRoutes: Lines[]): LineBuses {
+  // Off by default (NEXT_PUBLIC_ENABLE_BUS_LOCATION): the prediction is still
+  // being tuned, so deployed builds fire zero buses.byLine requests unless
+  // explicitly turned on.
+  const linesToQuery = env.NEXT_PUBLIC_ENABLE_BUS_LOCATION ? selectedRoutes : [];
+
   const queries = api.useQueries((t) =>
-    selectedRoutes.map((code) =>
+    linesToQuery.map((code) =>
       t.buses.byLine(
         { routeCode: code },
         {
@@ -39,7 +45,7 @@ export function useLineBuses(selectedRoutes: Lines[]): LineBuses {
     const positions: BusPosition[] = [];
     const statusByLine: Record<string, BusLineStatus> = {};
 
-    selectedRoutes.forEach((code, i) => {
+    linesToQuery.forEach((code, i) => {
       const q = queries[i];
       if (!q) return;
       if (q.data) positions.push(...q.data);
@@ -51,6 +57,6 @@ export function useLineBuses(selectedRoutes: Lines[]): LineBuses {
     });
 
     return { positions, statusByLine };
-    // queries identities change each render; selectedRoutes + the query states drive it.
-  }, [selectedRoutes, queries]);
+    // queries identities change each render; linesToQuery + the query states drive it.
+  }, [linesToQuery, queries]);
 }
