@@ -12,7 +12,11 @@ const SearchInput = () => {
   const { stops, searchQuery, setSearchQuery, isLoadingStops } = useBusFinder();
 
   return (
-    <InputGroup className="bg-card">
+    // `InputGroup` carries `dark:bg-input/30` and no unprefixed background of
+    // its own, so in dark mode this field is a translucent pane over the map
+    // tiles. The `dark:`-scoped copy is what displaces it — see the note in
+    // `components/map/index.tsx` for why a plain `bg-card` alone can't.
+    <InputGroup className="bg-card dark:bg-card">
       <InputGroupInput
         placeholder="busca la teva parada"
         value={searchQuery}

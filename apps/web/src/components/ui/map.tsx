@@ -20,6 +20,7 @@ interface MapComponentProps {
   defaultCenter?: Coordinates;
   defaultZoom?: number;
   mapId?: string;
+  colorScheme?: "LIGHT" | "DARK";
   restrictions?: google.maps.MapRestriction | undefined | null;
   className?: string;
   children?: React.ReactNode;
@@ -47,6 +48,7 @@ const MINIMAL_MAP_STYLES: google.maps.MapTypeStyle[] = [
 const MapComponent = ({
   bounds,
   mapId,
+  colorScheme,
   className,
   restrictions,
   defaultZoom = 1,
@@ -59,6 +61,13 @@ const MapComponent = ({
     <div className={className}>
       <APIProvider apiKey={apiKey}>
         <Map
+          // `colorScheme` (like `mapId` and `renderingType`) is fixed at
+          // creation time in the underlying Maps JS SDK — changing the prop in
+          // place doesn't restyle a live map. Keying on it forces React to
+          // unmount and recreate the map instead, which is the only way
+          // switching between the light/dark styles Cloud Console associates
+          // with this one Map ID actually applies.
+          key={colorScheme}
           style={{ width: "100%", height: "100%" }}
           defaultBounds={bounds}
           restriction={restrictions}
@@ -67,6 +76,11 @@ const MapComponent = ({
           gestureHandling="greedy"
           disableDefaultUI
           mapId={mapId}
+          colorScheme={mapId ? colorScheme : undefined}
+          // A Map ID's dark-mode style only combines with `colorScheme` under
+          // vector rendering — the default raster (`<div>`-based) map ignores
+          // the dark slot entirely and falls back to plain default colors.
+          renderingType={mapId ? "VECTOR" : undefined}
           styles={!mapId ? MINIMAL_MAP_STYLES : undefined}
         >
           {children}

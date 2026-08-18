@@ -1,6 +1,7 @@
 "use client";
 import BusRoutes from "@/components/map/tools/routes";
 import SearchInput from "@/components/map/tools/search";
+import SettingsButton from "@/components/map/tools/settings";
 import MapComponent from "@/components/ui/map";
 import { INITIAL_BOUNDS, RESTRICTED_BOUNDS } from "@moventis/shared";
 import { useBusFinder } from "@/context/buses";
@@ -15,11 +16,13 @@ import { env } from "@/env";
 import LinesPanel from "@/components/map/lines-panel";
 import { LayoutList, LocateFixed, Loader2 } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
+import { useSettings } from "@/hooks/use-settings";
 import UserLocationLayer from "@/components/map/user-location-layer";
 import { cn } from "@/lib/utils";
 
 const BusMap = () => {
   const { stops, routes, busPositions, preferidesStops } = useBusFinder();
+  const { resolvedTheme } = useSettings();
   const [linesOpen, setLinesOpen] = useState(false);
   const { status, position, shouldPan, requestLocation, onPanned } = useGeolocation();
 
@@ -38,11 +41,17 @@ const BusMap = () => {
   return (
     <div className="relative">
       <Card className="bg-transparent shadow-none md:bg-card md:border-border absolute top-0 z-10 mx-auto w-full space-y-2 rounded-none rounded-br-xl border-none p-4 md:max-w-md md:p-6 md:shadow-lg">
-        <SearchInput />
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <SearchInput />
+          </div>
+          <SettingsButton />
+        </div>
         <BusRoutes />
       </Card>
       <MapComponent
         mapId={env.NEXT_PUBLIC_MAPS_MAP_ID || undefined}
+        colorScheme={resolvedTheme === "dark" ? "DARK" : "LIGHT"}
         bounds={INITIAL_BOUNDS}
         restrictions={{ latLngBounds: RESTRICTED_BOUNDS, strictBounds: false }}
         className="h-screen w-full"
@@ -65,7 +74,21 @@ const BusMap = () => {
           variant="outline"
           onClick={() => setLinesOpen(true)}
           title="veure totes les línies"
-          className="pointer-events-auto h-12 gap-2.5 rounded-xl px-5 shadow-lg"
+          // `outline`'s dark-mode background is a translucent overlay
+          // (`dark:bg-input/30`, and `dark:hover:bg-input/50` on hover), meant
+          // for a button sitting on a solid app surface. These two float
+          // directly on the map tiles with nothing solid behind them, so that
+          // translucency reads as fully transparent instead of subtle.
+          //
+          // The override has to be `dark:`-scoped as well as plain, and both
+          // halves are load-bearing. `globals.css` declares the dark variant as
+          // `&:is(.dark *)`, so a `dark:` utility outranks an unprefixed one on
+          // specificity and wins the cascade whatever the source order — and
+          // `twMerge` only dedupes within a modifier group, so a plain `bg-card`
+          // alone doesn't displace `dark:bg-input/30`, it just loses to it.
+          // Matching the modifier is what lets `twMerge` drop the variant's
+          // class instead. Same fix `SettingsButton` and `SearchInput` need.
+          className="pointer-events-auto bg-card dark:bg-card dark:hover:bg-accent h-12 gap-2.5 rounded-xl px-5 shadow-lg"
         >
           <LayoutList className="size-5" />
           <span className="font-medium">Línies</span>
@@ -76,7 +99,7 @@ const BusMap = () => {
           title={locateTitle}
           disabled={status === "unsupported"}
           className={cn(
-            "pointer-events-auto h-12 gap-2.5 rounded-xl px-5 shadow-lg",
+            "pointer-events-auto bg-card dark:bg-card dark:hover:bg-accent h-12 gap-2.5 rounded-xl px-5 shadow-lg",
             status === "active" && "border-blue-500 text-blue-500",
             status === "error" && "border-destructive text-destructive",
           )}

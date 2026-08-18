@@ -68,12 +68,21 @@ All env vars live in a single `.env` at the monorepo root. Copy `.env.example` t
 ```
 DATABASE_URL="postgresql://postgres:password@localhost:5432/moventis-lleida"
 NEXT_PUBLIC_MAPS_API_KEY=""   # Google Maps JavaScript API key
-NEXT_PUBLIC_MAPS_MAP_ID=""    # Google Cloud Map ID (required for AdvancedMarker)
-NEXT_PUBLIC_ENABLE_BUS_LOCATION="false"  # client-only toggle for live bus position prediction (`buses.byLine`); off by default, still being tuned
+NEXT_PUBLIC_MAPS_MAP_ID=""    # Google Cloud Map ID (required for AdvancedMarker); needs both a light and dark style associated with it in Map Management — see Theming below
 ANDROID_HOME=                 # Android SDK path (Expo only)
 ```
 
 Turbo loads the root `.env` automatically via `globalDotEnv` in `turbo.json`. Env is validated at startup via `@t3-oss/env-nextjs` in `apps/web/src/env.js`.
+
+### Theming
+
+Device-local, via `apps/web/src/hooks/use-settings.ts` (localStorage, not an env var) — clar/fosc/sistema, defaulting to "sistema". An inline script in `layout.tsx` applies `.dark` to `<html>` before first paint, from the same storage key, to avoid a flash; `use-settings.ts`'s `resolvedTheme` mirrors that same eager read so the Google Map picks the right style on its first mount rather than reloading a tick later.
+
+There is only **one** Map ID (`NEXT_PUBLIC_MAPS_MAP_ID`). As of Google's March 2025 Cloud-based styling update, a single Map ID can carry both a light-mode and a dark-mode style (Cloud Console > Map Management > that Map ID > Map styles — separate cards for each, each independently published); `apps/web/src/styles/map-style-dark.json` is the dark one, pasted in there by hand, and is not imported by any code. `map/index.tsx` picks between them at runtime by passing the JS SDK's `colorScheme` option (`"LIGHT"` / `"DARK"`, driven by `resolvedTheme`) rather than by swapping Map IDs.
+
+Two things make this work that are easy to break by editing `map.tsx` casually:
+- **`renderingType="VECTOR"` is required.** The default raster rendering (a `<div>`-based `google.maps.Map`, which is what `<Map>` produces without this) ignores a Map ID's dark-style slot entirely and falls back to Google's plain default colors — this is not optional polish, it's the difference between the dark style applying at all or not.
+- **`colorScheme` (like `mapId` and `renderingType`) is fixed at map creation** — the SDK does not let you change it on a live instance. `map.tsx` forces a remount on change via `key={colorScheme}`, mirroring the same pattern used elsewhere for the anti-flash theme script.
 
 ## Architecture
 
