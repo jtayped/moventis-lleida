@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { api } from "@/trpc/react";
-import { env } from "@/env";
 import type { BusPosition, Lines } from "@moventis/shared";
 
 export type BusLineStatus = "loading" | "done" | "error";
@@ -21,12 +20,17 @@ export interface LineBuses {
  * refreshes them on a ~25 s timer. Decoupled from any open stop: selecting a
  * line is all it takes to predict its buses. A failing line never affects the
  * others (or the timetable).
+ *
+ * @param enabled The device's own opt-in (`useSettings().settings.liveBusPrediction`,
+ * off by default — it's an experimental feature, not a stable one). The caller
+ * decides this, not this hook: whether the prediction runs is a settings
+ * concern, fetching it once asked to is a data concern.
  */
-export function useLineBuses(selectedRoutes: Lines[]): LineBuses {
-  // Off by default (NEXT_PUBLIC_ENABLE_BUS_LOCATION): the prediction is still
-  // being tuned, so deployed builds fire zero buses.byLine requests unless
-  // explicitly turned on.
-  const linesToQuery = env.NEXT_PUBLIC_ENABLE_BUS_LOCATION ? selectedRoutes : [];
+export function useLineBuses(
+  selectedRoutes: Lines[],
+  enabled: boolean,
+): LineBuses {
+  const linesToQuery = enabled ? selectedRoutes : [];
 
   const queries = api.useQueries((t) =>
     linesToQuery.map((code) =>

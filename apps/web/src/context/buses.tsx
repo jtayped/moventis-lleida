@@ -5,8 +5,8 @@ import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useLineBuses, type BusLineStatus } from "@/hooks/use-line-buses";
 import { usePreferides } from "@/hooks/use-preferides";
+import { useSettings } from "@/hooks/use-settings";
 import { useUrlSelection } from "@/hooks/use-url-selection";
-import { env } from "@/env";
 import { keepPreviousData } from "@tanstack/react-query";
 import type { BusPosition, Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
@@ -42,8 +42,9 @@ interface BusFinderValue {
   /** Per-line fetch status of the live bus prediction, for loading/empty/error UI. */
   lineBusStatus: Record<string, BusLineStatus>;
   /**
-   * Whether live bus prediction is turned on (`NEXT_PUBLIC_ENABLE_BUS_LOCATION`).
-   * Off by default. Consumers must gate any live-bus UI on this directly rather
+   * Whether live bus prediction is turned on — the device's own opt-in from the
+   * settings panel (`useSettings`), off by default since it's still
+   * experimental. Consumers must gate any live-bus UI on this directly rather
    * than inferring it from `lineBusStatus` being empty, which reads as "error".
    */
   isBusLocationEnabled: boolean;
@@ -74,6 +75,15 @@ interface BusFinderValue {
   /** True saved state, ungated by visibility — the drawer's star needs the truth. */
   isPreferida: (externalId: string) => boolean;
   togglePreferida: (externalId: string) => void;
+  /**
+   * The device declined the storage notice, so nothing can be saved. Distinct
+   * from "nothing saved yet": the star has to say why it does nothing rather
+   * than look broken. The line strip's badge needs no such treatment — it is
+   * already hidden while `preferidesCount` is 0, which declining guarantees.
+   */
+  preferidesDisabled: boolean;
+  /** Unsaves every stop at once — the settings panel's data-management action. */
+  clearPreferides: () => void;
 }
 
 const BusFinderContext = createContext<BusFinderValue | undefined>(undefined);
@@ -162,10 +172,21 @@ export const BusFinderProvider = ({
   const {
     ids: preferidesIds,
     visible: showPreferides,
+    disabled: preferidesDisabled,
     isPreferida,
     togglePreferida,
     toggleVisible: togglePreferides,
+    clear: clearPreferides,
   } = usePreferides();
+
+  // The settings panel's own opt-in for the live bus prediction — off by
+  // default, since it's still experimental. Read here rather than inside
+  // `useLineBuses` so the one flag drives both the fetch below and
+  // `isBusLocationEnabled` in the context value, instead of two copies of the
+  // same setting drifting apart.
+  const {
+    settings: { liveBusPrediction: isBusLocationEnabled },
+  } = useSettings();
 
   // Resolves the saved ids to stops. Cached for an hour: a stop's coordinates and
   // name barely move, and this runs on every page load for every saved stop.
@@ -185,11 +206,21 @@ export const BusFinderProvider = ({
   // Kept out of `isLoadingStops` on purpose. That flag drives the search field's
   // spinner, which is about the query the user just typed; a background resolve
   // of the saved list has nothing to do with it.
+  //
+  // Intersected with the live ids, and not merely deduplicated against the map:
+  // `keepPreviousData` answers a disabled query with the *previous* id set's
+  // stops and never replaces them, so emptying the list — unsaving the last one,
+  // or declining the storage notice — would otherwise leave its pins on the map
+  // until a reload. Declining has to clear them in the same tick it clears the
+  // device.
   const preferidesStops = useMemo(() => {
-    if (!showPreferides) return [];
+    if (!showPreferides || preferidesIds.length === 0) return [];
+    const saved = new Set(preferidesIds);
     const onMap = new Set(stops.map((s) => s.externalId));
-    return savedStops.filter((s) => !onMap.has(s.externalId));
-  }, [showPreferides, savedStops, stops]);
+    return savedStops.filter(
+      (s) => saved.has(s.externalId) && !onMap.has(s.externalId),
+    );
+  }, [showPreferides, preferidesIds, savedStops, stops]);
 
   function toggleRoute(routeCode: Lines) {
     setSelectedRoutes((currentRoutes) =>
@@ -213,7 +244,7 @@ export const BusFinderProvider = ({
   // stop. Lifted here so both the map markers and the stop drawer read one source
   // (aggregated positions + per-line status).
   const { positions: busPositions, statusByLine: lineBusStatus } =
-    useLineBuses(selectedRoutes);
+    useLineBuses(selectedRoutes, isBusLocationEnabled);
 
   const value = {
     routes: routes as Line[],
@@ -229,13 +260,15 @@ export const BusFinderProvider = ({
     selectedStopId,
     busPositions,
     lineBusStatus,
-    isBusLocationEnabled: env.NEXT_PUBLIC_ENABLE_BUS_LOCATION,
+    isBusLocationEnabled,
     preferidesStops,
     preferidesCount: preferidesIds.length,
     showPreferides,
     togglePreferides,
     isPreferida,
     togglePreferida,
+    preferidesDisabled,
+    clearPreferides,
   } satisfies BusFinderValue;
 
   return (
