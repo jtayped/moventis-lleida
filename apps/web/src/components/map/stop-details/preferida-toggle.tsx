@@ -19,25 +19,38 @@ import { cn } from "@/lib/utils";
  * pin off the map.
  */
 const PreferidaToggle = ({ externalId }: { externalId: string }) => {
-  const { isPreferida, togglePreferida } = useBusFinder();
+  const { isPreferida, togglePreferida, preferidesDisabled } = useBusFinder();
   const saved = isPreferida(externalId);
 
+  const label = preferidesDisabled
+    ? "Preferides desactivades: has rebutjat desar dades en aquest dispositiu"
+    : saved
+      ? "Treu de preferides"
+      : "Afegeix a preferides";
+
   return (
-    <Button
-      onClick={() => togglePreferida(externalId)}
-      variant="ghost"
-      size="icon"
-      aria-pressed={saved}
-      aria-label={saved ? "Treu de preferides" : "Afegeix a preferides"}
-      title={saved ? "treu de preferides" : "afegeix a preferides"}
-      className={cn(
-        saved
-          ? "text-amber-500 hover:text-amber-600"
-          : "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      <Star size={20} className={saved ? "fill-current" : undefined} />
-    </Button>
+    // The tooltip hangs on the wrapper rather than on the button, because the one
+    // case that most needs explaining is the disabled one — and `buttonVariants`
+    // gives a disabled button `pointer-events-none`, so a `title` on it never fires.
+    // Lowercased explicitly: unlike the rest of the page, a native `title` tooltip
+    // isn't inside the DOM the body's `lowercase` class reaches.
+    <span title={label.toLowerCase()}>
+      <Button
+        onClick={() => togglePreferida(externalId)}
+        disabled={preferidesDisabled}
+        variant="ghost"
+        size="icon"
+        aria-pressed={saved}
+        aria-label={label}
+        className={cn(
+          saved
+            ? "text-amber-500 hover:text-amber-600"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        <Star size={20} className={saved ? "fill-current" : undefined} />
+      </Button>
+    </span>
   );
 };
 
