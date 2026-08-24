@@ -18,8 +18,30 @@ const AVG_SPEED_MPS = 4;
 const MIN_SPEED_MPS = 1.5;
 const MAX_SPEED_MPS = 12;
 
+/**
+ * The API documentedly caps real-time (`real:"S"`) arrivals at ~5 buses per
+ * journey — so this isn't a design choice, it's what the API itself never
+ * exceeds in normal operation. A journey bucket with more than this is not
+ * extra buses: live testing (`validate-bus-positions.ts`) found a handful of
+ * stops whose journey merges in a long, evenly-spaced tail (a schedule, not
+ * GPS-tracked vehicles) under the same name, up to 300+ minutes out — and
+ * because `pickJourney` fed that straight into placement, those showed up as
+ * real bus markers. `pickJourney` keeps only the nearest `REALTIME_BUS_CAP`
+ * arrivals for exactly this reason: the near-term ones look like a normal,
+ * clean progression in every case seen live, so trimming the tail recovers
+ * the real fleet instead of discarding the whole reading.
+ */
+const REALTIME_BUS_CAP = 5;
+
 /** A route is treated as a loop when its polyline returns within this of its start. */
 const LOOP_TOLERANCE_M = 80;
+
+/**
+ * How far upstream of the anchor to look for calibration stops, in metres and
+ * in stop count. Kept short deliberately — see {@link calibCandidates}.
+ */
+const CALIB_MIN_VIABLE_DISTANCE_M = 50;
+const CALIB_MAX_STOPS_BACK = 6;
 
 export interface LocatorStop {
   /** DB cuid (used in the emitted segment). */
@@ -89,15 +111,20 @@ function isClosedLoop(path: LngLat[]): boolean {
 
 /**
  * Find the journey in a probe result that belongs to `variant`, returning its
- * name and real-time ETAs. A shared terminal can list several journeys (failure
- * mode #6); `matchVariant` keeps us on this variant's own journey.
+ * name and real-time ETAs — capped to the nearest {@link REALTIME_BUS_CAP} and
+ * sorted ascending, dropping anything beyond that as corrupted (see its doc).
+ * A shared terminal can list several journeys (failure mode #6); `matchVariant`
+ * keeps us on this variant's own journey.
  */
 function pickJourney(
   probe: ProbeResult,
   variant: LocatorVariant,
 ): { name: string; etas: number[] } | null {
   for (const [name, etas] of probe) {
-    if (etas.length && matchVariant(name, [variant])) return { name, etas };
+    if (etas.length && matchVariant(name, [variant])) {
+      const capped = [...etas].sort((a, b) => a - b).slice(0, REALTIME_BUS_CAP);
+      return { name, etas: capped };
+    }
   }
   return null;
 }
@@ -111,6 +138,60 @@ interface VariantGeometry {
   hasGeom: boolean;
   /** Arc-length of each stop projected onto the polyline (travel order). */
   stopArcs: number[];
+}
+
+/**
+ * List calibration-stop candidates upstream of the anchor, nearest first,
+ * rather than reaching for one far away (e.g. the route's midpoint, as this
+ * used to do). A distant calibration point reliably breaks on loop variants —
+ * where the anchor (a variant's terminal) is the *same physical stop* as its
+ * origin, confirmed empirically across most of the Lleida network via
+ * `validate-bus-positions.ts` — because a bus that has already passed a
+ * distant calibration point this lap won't be seen there again until its
+ * *next* lap, while its ETA to the (very close) terminal is small. That
+ * inverts the `eta_anchor > eta_calib` relationship {@link calibrateSpeed}
+ * assumes, so every diff came out negative and calibration silently fell back
+ * to the fixed speed on every request. Staying within a few hundred metres of
+ * the anchor keeps both probes looking at (nearly) the same handful of buses,
+ * avoiding the ambiguity entirely — this mirrors how
+ * `validate-bus-positions.ts`'s adjacent-stop ground-truth check derives real
+ * segment times, which held up cleanly in live testing where the old
+ * distant-anchor calibration did not.
+ *
+ * Returns *every* viable stop within {@link CALIB_MAX_STOPS_BACK} stops that
+ * clears the minimum baseline (skipping near-duplicate stops a few metres
+ * apart), not just the nearest one: the caller tries them in order and moves
+ * on if one doesn't pan out (no matching journey, too few buses, or an
+ * implausible speed), so a single bad stop doesn't block calibration for the
+ * whole variant.
+ */
+/**
+ * Arc-distance travelling upstream from `anchorArc` back to `candidateArc`,
+ * wrapping on loops. Needed because a loop variant's terminal typically
+ * *coincides* with its origin stop (found live via `list-loop-variants.ts` —
+ * true for most of the network), and projecting that shared point onto the
+ * polyline can tie-break to arc≈0 instead of arc≈total; the two are the same
+ * physical point on a loop, so a plain `anchorArc − candidateArc` goes deeply
+ * negative for every candidate in that case even though every one of them is
+ * genuinely upstream. Unwrapping here keeps distance (and hence candidate
+ * selection) correct regardless of which of the two equivalent arc values
+ * `projectToPolyline` happened to pick.
+ */
+function upstreamDistance(geom: VariantGeometry, anchorArc: number, candidateArc: number): number {
+  const raw = anchorArc - candidateArc;
+  return geom.loop && raw < 0 ? raw + geom.total : raw;
+}
+
+function calibCandidates(geom: VariantGeometry, anchorIdx: number): number[] {
+  const anchorArc = geom.stopArcs[anchorIdx]!;
+  const minIdx = Math.max(0, anchorIdx - CALIB_MAX_STOPS_BACK);
+  const candidates: number[] = [];
+  for (let idx = anchorIdx - 1; idx >= minIdx; idx--) {
+    if (upstreamDistance(geom, anchorArc, geom.stopArcs[idx]!) >= CALIB_MIN_VIABLE_DISTANCE_M) {
+      candidates.push(idx);
+    }
+  }
+  return candidates;
 }
 
 function buildGeometry(variant: LocatorVariant): VariantGeometry {
@@ -213,12 +294,14 @@ function median(xs: number[]): number {
 }
 
 /**
- * Derive a variant's real speed (m/s) from two probes. Buses at the upstream
- * anchor `A₂` are a subset of those at the primary anchor `A` (only the ones not
- * yet past `A₂`). For a bus seen at both, `eta_A − eta_{A₂} = T(A₂→A)` is constant,
- * so `speed = arcBetween(A₂,A) / median(T)`. Aligning the two ascending ETA lists
- * at their tails pairs the same buses. Returns null (→ fixed-speed fallback) when
- * fewer than two buses match or the recovered speed is nonsense.
+ * Derive a variant's real speed (m/s) from two nearby probes (see
+ * {@link chooseCalibIdx} for why `A₂` is now close to `A` rather than far
+ * upstream). Buses at `A₂` are a subset of those at the primary anchor `A`
+ * (only the ones not yet past `A₂`). For a bus seen at both, `eta_A − eta_{A₂}
+ * = T(A₂→A)` is constant, so `speed = arcBetween(A₂,A) / median(T)`. Aligning
+ * the two ascending ETA lists at their tails pairs the same buses. Returns
+ * null (→ fixed-speed fallback) when fewer than two buses match or the
+ * recovered speed is nonsense.
  */
 function calibrateSpeed(
   geom: VariantGeometry,
@@ -227,13 +310,20 @@ function calibrateSpeed(
   calibIdx: number,
   calibEtas: number[],
 ): number | null {
-  const arcBetween = Math.abs(geom.stopArcs[anchorIdx]! - geom.stopArcs[calibIdx]!);
+  const arcBetween = upstreamDistance(geom, geom.stopArcs[anchorIdx]!, geom.stopArcs[calibIdx]!);
   if (arcBetween <= 0) return null;
 
+  // Both lists are already capped to REALTIME_BUS_CAP by pickJourney.
   const a = [...anchorEtas].sort((x, y) => x - y);
   const b = [...calibEtas].sort((x, y) => x - y);
   const pairs = Math.min(a.length, b.length);
-  if (pairs < 2) return null;
+  // Require at least 3 matched buses: with exactly 2, the "median" is just
+  // their average and one bad pairing (a mismatched bus, not a genuine
+  // outlier) skews it directly with nothing to reject it against — found live
+  // when a 2-pair calibration averaged one plausible reading with one
+  // physically-impossible one (191 km/h) into a merely-too-fast result that
+  // passed the sanity clamp undetected.
+  if (pairs < 3) return null;
 
   // Align tails: the largest-ETA (farthest) buses are the ones reaching A₂.
   const diffs: number[] = [];
@@ -241,11 +331,19 @@ function calibrateSpeed(
     const d = a[a.length - 1 - j]! - b[b.length - 1 - j]!;
     if (d > 0) diffs.push(d);
   }
-  if (diffs.length < 2) return null;
+  if (diffs.length < 3) return null;
 
   const t = median(diffs);
   if (t <= 0) return null;
   const speed = arcBetween / t;
+  if (process.env.DEBUG_BUS_LOCATOR) {
+    console.error(
+      `[calibrateSpeed] arc=${arcBetween.toFixed(0)}m anchorEtas=[${a.map((x) => x.toFixed(0)).join(",")}] ` +
+        `calibEtas=[${b.map((x) => x.toFixed(0)).join(",")}] diffs=[${diffs.map((x) => x.toFixed(0)).join(",")}] ` +
+        `median=${t.toFixed(0)}s speed=${speed.toFixed(2)}m/s (${(speed * 3.6).toFixed(1)}km/h) ` +
+        `${speed < MIN_SPEED_MPS || speed > MAX_SPEED_MPS ? "REJECTED (out of range)" : "accepted"}`,
+    );
+  }
   if (speed < MIN_SPEED_MPS || speed > MAX_SPEED_MPS) return null;
   return speed;
 }
@@ -258,8 +356,10 @@ function calibrateSpeed(
  * returns the real-time (`real:"S"`) ETAs of the buses heading toward it — each
  * ETA back-projects to a point along the route geometry. Loop variants whose
  * terminal reports nothing fall back to a midpoint anchor; speed is calibrated
- * per variant from a second upstream probe (else a fixed fallback). Cost is
- * ~2–3 probes per variant regardless of stop count.
+ * per variant from a probe a few stops upstream of the anchor, trying the
+ * nearest few candidates until one works (see {@link calibCandidates}; else a
+ * fixed fallback). Typical cost is ~2–3 probes per variant regardless of stop
+ * count, occasionally more when a nearby calibration stop doesn't pan out.
  */
 export async function locateLineBuses(
   input: LineLocatorInput,
@@ -289,28 +389,41 @@ export async function locateLineBuses(
     }
     if (!anchor || anchor.etas.length === 0) continue;
 
-    // Step B — calibrate speed from an upstream second probe.
-    const calibIdx =
-      anchorIdx === n - 1 ? Math.floor(n / 2) : Math.floor(n / 4);
+    // Step B — calibrate speed from a nearby upstream probe, trying candidates
+    // nearest-first and moving on if one doesn't pan out (missing journey, too
+    // few buses, or a corrupted bucket) rather than giving up on the first.
     let speed = AVG_SPEED_MPS;
     let calibrated = false;
-    if (calibIdx > 0 && calibIdx < anchorIdx) {
+    if (process.env.DEBUG_BUS_LOCATOR) {
+      console.error(
+        `[candidates] anchorIdx=${anchorIdx} stopArcs=[${geom.stopArcs.map((a) => a.toFixed(0)).join(",")}] ` +
+          `candidates=[${calibCandidates(geom, anchorIdx).join(",")}]`,
+      );
+    }
+    for (const calibIdx of calibCandidates(geom, anchorIdx)) {
       const calib = pickJourney(
         await probe(variant.stops[calibIdx]!.externalId),
         variant,
       );
-      if (calib) {
-        const s = calibrateSpeed(
-          geom,
-          anchorIdx,
-          anchor.etas,
-          calibIdx,
-          calib.etas,
+      if (process.env.DEBUG_BUS_LOCATOR) {
+        console.error(
+          `[locate] variant=${variant.direction} "${variant.description}" anchorIdx=${anchorIdx} ` +
+            `calibIdx=${calibIdx} anchorEtas=[${anchor.etas.map((x) => x.toFixed(0)).join(",")}] ` +
+            `calibJourney=${calib ? `"${calib.name}" etas=[${calib.etas.map((x) => x.toFixed(0)).join(",")}]` : "NONE (no matching journey at calib stop)"}`,
         );
-        if (s !== null) {
-          speed = s;
-          calibrated = true;
-        }
+      }
+      if (!calib) continue;
+      const s = calibrateSpeed(
+        geom,
+        anchorIdx,
+        anchor.etas,
+        calibIdx,
+        calib.etas,
+      );
+      if (s !== null) {
+        speed = s;
+        calibrated = true;
+        break;
       }
     }
 

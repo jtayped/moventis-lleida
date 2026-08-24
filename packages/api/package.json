@@ -9,7 +9,9 @@
   },
   "scripts": {
     "test": "vitest run",
-    "test:live": "vitest run --config vitest.live.config.ts"
+    "test:live": "vitest run --config vitest.live.config.ts",
+    "validate-bus-positions": "tsx --env-file=../../.env src/scripts/validate-bus-positions.ts",
+    "list-loop-variants": "tsx --env-file=../../.env src/scripts/list-loop-variants.ts"
   },
   "dependencies": {
     "@moventis/db": "workspace:*",
@@ -23,6 +25,7 @@
   "devDependencies": {
     "@moventis/eslint-config": "workspace:*",
     "@moventis/tsconfig": "workspace:*",
+    "tsx": "^4.19.2",
     "vitest": "^4.1.9"
   }
 }

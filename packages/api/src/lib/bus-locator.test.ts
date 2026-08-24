@@ -107,20 +107,21 @@ describe("locateLineBuses — terminal anchoring", () => {
 });
 
 describe("locateLineBuses — two-probe calibration", () => {
-  // Terminal anchor = 11, calibration anchor = floor(12/2) = 6.
-  const arcBetween = 5 * SEG_METERS; // arc(11) − arc(6)
+  // Terminal anchor = 11; calibration now picks the nearest upstream stop that
+  // clears the ~500 m target, which at ~240 m/segment is 3 stops back = 8.
+  const arcBetween = 3 * SEG_METERS; // arc(11) − arc(8)
   const TRUE_SPEED = 8; // twice the fallback, to make placement distinguishable
   const T = arcBetween / TRUE_SPEED; // segment time A₂→A, in seconds
 
   it("recovers a faster real speed and places accordingly (high confidence)", async () => {
     // A bus at the terminal with ETA 2·T sits 2·arcBetween back at the real speed
-    // (→ stop 1), but only 1·arcBetween back at the fallback speed (→ stop 6).
+    // (→ stop 5), but only 1·arcBetween back at the fallback speed (→ stop 8).
     const out = await locate([linearVariant()], {
       s11: { "test line": [2 * T, 2 * T + 60, 2 * T + 120] },
-      s6: { "test line": [T, T + 60, T + 120] },
+      s8: { "test line": [T, T + 60, T + 120] },
     });
     const bus = out.find((p) => Math.abs(p.etaSeconds - 2 * T) < 1e-6)!;
-    expect(bus.segment).toEqual({ fromStopId: "id0", toStopId: "id1" });
+    expect(bus.segment).toEqual({ fromStopId: "id4", toStopId: "id5" });
     expect(bus.confidence).toBe("high");
   });
 
@@ -128,20 +129,41 @@ describe("locateLineBuses — two-probe calibration", () => {
     // Two clean buses give diff = T; one calib reads far too early (diff 1.8·T).
     const out = await locate([linearVariant()], {
       s11: { "test line": [2 * T, 2 * T, 2 * T] },
-      s6: { "test line": [T, T, T / 5] },
+      s8: { "test line": [T, T, T / 5] },
     });
     expect(out).toHaveLength(3);
     expect(out.every((p) => p.confidence === "high")).toBe(true);
-    expect(out.every((p) => p.segment.fromStopId === "id0" && p.segment.toStopId === "id1")).toBe(true);
+    expect(out.every((p) => p.segment.fromStopId === "id4" && p.segment.toStopId === "id5")).toBe(true);
   });
 
   it("falls back to the fixed speed (medium) with too few matchable buses", async () => {
     const out = await locate([linearVariant()], {
       s11: { "test line": [SEG_SECONDS * 1.5] },
-      s6: { "test line": [SEG_SECONDS * 0.5] }, // only one bus ⇒ no calibration
+      s8: { "test line": [SEG_SECONDS * 0.5] }, // only one bus ⇒ no calibration
     });
     expect(out[0]!.segment).toEqual({ fromStopId: "id9", toStopId: "id10" });
     expect(out[0]!.confidence).toBe("medium");
+  });
+
+  it("never consults a distant stop even if the calibration probe would find one", async () => {
+    // Regression guard for the real bug this fixes: the old calibration point
+    // was the route's midpoint (`floor(n/2)`, here s5), far from the terminal.
+    // On a loop whose terminal is the same physical stop as the origin, a
+    // distant point like that sees "next lap" ETAs — larger than the
+    // terminal's — which inverts `eta_anchor > eta_calib` and made every diff
+    // negative, so calibration silently fell back to the fixed speed on every
+    // request (confirmed live via `validate-bus-positions.ts` across most of
+    // the network). `s5` here carries data that would wreck calibration if it
+    // were ever read; the locator must never probe it now that the near
+    // neighbour (s8) is preferred.
+    const out = await locate([linearVariant()], {
+      s11: { "test line": [2 * T, 2 * T + 60, 2 * T + 120] },
+      s8: { "test line": [T, T + 60, T + 120] },
+      s5: { "test line": [T * 50, T * 50, T * 50] },
+    });
+    const bus = out.find((p) => Math.abs(p.etaSeconds - 2 * T) < 1e-6)!;
+    expect(bus.confidence).toBe("high");
+    expect(bus.segment).toEqual({ fromStopId: "id4", toStopId: "id5" });
   });
 });
 

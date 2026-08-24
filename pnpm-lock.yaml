@@ -264,6 +264,9 @@ importers:
       '@moventis/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
       vitest:
         specifier: ^4.1.9
         version: 4.1.9(@types/node@20.19.39)(vite@8.0.16(@types/node@20.19.39)(esbuild@0.28.1)(jiti@2.6.1)(terser@5.46.1)(tsx@4.22.4)(yaml@2.8.3))
