@@ -196,7 +196,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
   }
 
   return (
-    <div className="mt-4 flex flex-col p-4 md:mx-auto md:w-lg">
+    <div className="mt-4 flex h-[62vh] flex-col p-4 md:mx-auto md:w-lg">
       <SrLabels name={details.name} />
       <StopDetailsHeader
         externalId={externalId}
@@ -237,7 +237,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
 
       {hasTimetableOnlyTime && <ScheduleLegend />}
 
-      <ScrollArea className="h-100 pr-3">
+      <ScrollArea className="min-h-0 flex-1 pr-3">
         <div>
           {filteredSchedules.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center">
