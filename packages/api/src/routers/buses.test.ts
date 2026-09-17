@@ -12,6 +12,7 @@ vi.mock("../lib/stop-schedule", async (importOriginal) => {
 
 import { createCaller } from "../root";
 import { getStopSchedule } from "../lib/stop-schedule";
+import { clearLineBusesCache } from "./buses";
 
 const mockedSchedule = vi.mocked(getStopSchedule);
 
@@ -30,8 +31,7 @@ function variantStops(prefix = "e") {
   }));
 }
 
-/** A schedule listing the given journeys, each with two near real-time arrivals. */
-function realtimeWorld(journeys: string[]): Schedules {
+function line(journeys: { name: string; etas: { s: number; live: boolean }[] }[]): Schedules {
   return [
     {
       externalLineId: ROUTE_EXT,
@@ -39,10 +39,10 @@ function realtimeWorld(journeys: string[]): Schedules {
       lineName: "x",
       selected: false,
       incidencias: null,
-      journeys: journeys.map((name) => ({
-        name,
-        scheduledTimes: [60, 120].map((s) => ({
-          isRealTime: true,
+      journeys: journeys.map((j) => ({
+        name: j.name,
+        scheduledTimes: j.etas.map(({ s, live }) => ({
+          isRealTime: live,
           arrivalTime: new Date(Date.now() + s * 1000),
           accessible: null,
         })),
@@ -51,41 +51,32 @@ function realtimeWorld(journeys: string[]): Schedules {
   ];
 }
 
+/**
+ * The lists a 6-stop variant publishes with one bus between stops 2 and 3
+ * (30 s from stop 3) and one future departure 600 s out, 60 s per stop. The
+ * journey is chosen by the stop id's prefix, so a second variant `a0..a4,e5`
+ * publishes `dest2` and the shared terminal `e5` publishes both.
+ */
+function realtimeWorld(stopExternalId: string): Schedules {
+  const index = Number(stopExternalId.slice(1));
+  const lists = (name: string) => {
+    const etas = [{ s: 600 + 60 * index, live: true }];
+    if (index >= 3) etas.unshift({ s: 30 + 60 * (index - 3), live: true });
+    return { name, etas };
+  };
+  if (stopExternalId.startsWith("a")) return line([lists("dest2")]);
+  if (stopExternalId === "e5") return line([lists(JOURNEY), lists("dest2")]);
+  return line([lists(JOURNEY)]);
+}
+
 /** A schedule with only scheduled (real:"N") arrivals — the night case. */
 function nightWorld(): Schedules {
-  return [
-    {
-      externalLineId: ROUTE_EXT,
-      lineCode: "9" as Lines,
-      lineName: "x",
-      selected: false,
-      incidencias: null,
-      journeys: [
-        {
-          name: JOURNEY,
-          scheduledTimes: [
-            {
-              isRealTime: false,
-              arrivalTime: new Date(Date.now() + 3_600_000),
-              accessible: null,
-            },
-          ],
-        },
-      ],
-    },
-  ];
+  return line([{ name: JOURNEY, etas: [{ s: 3600, live: false }] }]);
 }
 
 const singleVariantRoute = {
   externalId: ROUTE_EXT,
-  variants: [
-    {
-      direction: "I",
-      description: JOURNEY,
-      geometry: null,
-      stops: variantStops(),
-    },
-  ],
+  variants: [{ direction: "I", description: JOURNEY, geometry: null, stops: variantStops() }],
 };
 
 interface FakeDb {
@@ -105,9 +96,10 @@ function byLine(db: FakeDb) {
 }
 
 beforeEach(() => {
+  clearLineBusesCache();
   // NB: a block body — returning the mock would register it as a teardown hook.
-  mockedSchedule.mockImplementation(() =>
-    Promise.resolve(realtimeWorld([JOURNEY])),
+  mockedSchedule.mockImplementation((stopExternalId: string) =>
+    Promise.resolve(realtimeWorld(stopExternalId)),
   );
 });
 afterEach(() => {
@@ -115,17 +107,18 @@ afterEach(() => {
 });
 
 describe("buses.byLine", () => {
-  it("locates the real-time buses and reports valid segments", async () => {
+  it("locates the real-time bus between the stops that do and do not list it", async () => {
     const out = await byLine(makeDb());
-    expect(out.length).toBeGreaterThan(0);
-    for (const p of out) {
-      expect(p.lineCode).toBe("9");
-      expect(p.direction).toBe("I");
-      expect(p.journeyName).toBe(JOURNEY);
-      expect(p.segment.fromStopId).not.toBe(p.segment.toStopId);
-      expect(p.fraction).toBeGreaterThanOrEqual(0);
-      expect(p.fraction).toBeLessThanOrEqual(1);
-    }
+    expect(out).toHaveLength(1);
+    const [p] = out;
+    expect(p!.lineCode).toBe("9");
+    expect(p!.direction).toBe("I");
+    expect(p!.journeyName).toBe(JOURNEY);
+    expect(p!.segment).toEqual({ fromStopId: "eid2", toStopId: "eid3" });
+    expect(p!.spanStops).toBe(1);
+    expect(p!.confidence).toBe("high");
+    expect(p!.fraction).toBeGreaterThanOrEqual(0);
+    expect(p!.fraction).toBeLessThanOrEqual(1);
   });
 
   it("returns [] at night (only scheduled arrivals)", async () => {
@@ -152,22 +145,20 @@ describe("buses.byLine", () => {
   it("still returns what it located when only some probes failed", async () => {
     // Partial degradation is normal (one stop 500s, the rest answer); the line is
     // not down, so the positions that were recovered must still be delivered.
-    const world = realtimeWorld([JOURNEY]);
     mockedSchedule.mockImplementation((stopExternalId: string) =>
-      Promise.resolve(stopExternalId === "e0" ? null : world),
+      Promise.resolve(stopExternalId === "e0" ? null : realtimeWorld(stopExternalId)),
     );
 
     const out = await byLine(makeDb());
 
-    expect(
-      mockedSchedule.mock.calls.some(([stopExt]) => stopExt === "e0"),
-    ).toBe(true);
-    expect(out.length).toBeGreaterThan(0);
+    expect(mockedSchedule.mock.calls.some(([stopExt]) => stopExt === "e0")).toBe(true);
+    expect(out).toHaveLength(1);
+    expect(out[0]!.segment).toEqual({ fromStopId: "eid2", toStopId: "eid3" });
   });
 
   it("fetches a shared terminal only once (per-request cache)", async () => {
     // Two variants both terminate at stop `e5`; without the cache it would be
-    // fetched twice. The shared terminal lists both journeys (failure mode #6).
+    // fetched twice. The shared terminal lists both journeys.
     const shared = variantStops();
     const second = variantStops("a");
     second[second.length - 1] = shared[shared.length - 1]!; // share `e5`
@@ -178,15 +169,34 @@ describe("buses.byLine", () => {
         { direction: "V", description: "dest2", geometry: null, stops: second },
       ],
     };
-    mockedSchedule.mockImplementation(() =>
-      Promise.resolve(realtimeWorld([JOURNEY, "dest2"])),
-    );
 
-    await byLine(makeDb(route));
+    const out = await byLine(makeDb(route));
 
-    const e5Calls = mockedSchedule.mock.calls.filter(
-      ([stopExt]) => stopExt === "e5",
-    );
+    const e5Calls = mockedSchedule.mock.calls.filter(([stopExt]) => stopExt === "e5");
     expect(e5Calls).toHaveLength(1);
+    expect(out.map((p) => p.journeyName).sort()).toEqual([JOURNEY, "dest2"]);
+  });
+
+  it("shares one computation per line for a few seconds", async () => {
+    const db = makeDb();
+    const first = await byLine(db);
+    const calls = mockedSchedule.mock.calls.length;
+    const second = await byLine(db);
+    expect(second).toEqual(first);
+    expect(mockedSchedule.mock.calls.length).toBe(calls);
+    expect(db.route.findFirst).toHaveBeenCalledTimes(1);
+
+    clearLineBusesCache();
+    await byLine(db);
+    expect(mockedSchedule.mock.calls.length).toBeGreaterThan(calls);
+  });
+
+  it("does not keep a failure in the cache", async () => {
+    mockedSchedule.mockResolvedValue(null);
+    await expect(byLine(makeDb())).rejects.toBeTruthy();
+    mockedSchedule.mockImplementation((stopExternalId: string) =>
+      Promise.resolve(realtimeWorld(stopExternalId)),
+    );
+    expect(await byLine(makeDb())).toHaveLength(1);
   });
 });
