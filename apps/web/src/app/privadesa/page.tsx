@@ -58,7 +58,7 @@ const PrivadesaPage = () => {
 
       <h1 className="mt-6 text-2xl font-bold">privadesa</h1>
       <p className="text-muted-foreground mt-1 text-xs">
-        última actualització: agost del 2026
+        última actualització: setembre del 2026
       </p>
 
       <Section title="qui és responsable d'aquest lloc">
@@ -91,6 +91,11 @@ const PrivadesaPage = () => {
             La teva decisió sobre l&apos;avís d&apos;emmagatzematge local (si
             l&apos;has acceptat o rebutjat).
           </li>
+          <li>
+            Les teves preferències de la configuració, entre elles si has
+            desactivat l&apos;analítica anònima: el senyal que l&apos;apaga es
+            desa en aquest dispositiu, i és el que fa que no s&apos;enviï res.
+          </li>
         </List>
         <P>
           Aquestes dades no surten mai del teu dispositiu: no hi ha cap servidor
@@ -100,20 +105,31 @@ const PrivadesaPage = () => {
 
       <Section title="cookies i seguiment">
         <P>
-          No fem servir cookies de seguiment, analítica de tercers ni
-          publicitat.
+          No fem servir cookies de seguiment ni publicitat. Comptem visites de
+          forma anònima amb una eina pròpia, i pots desactivar-ho a la
+          configuració.
         </P>
       </Section>
 
-      <Section title="analítica de rendiment (Vercel)">
+      <Section title="analítica (umami)">
         <P>
-          Per entendre com funciona el lloc i detectar errors, fem servir Vercel
-          Analytics i Vercel Speed Insights. Aquestes eines no fan servir
-          cookies ni desen res al teu dispositiu: recullen dades agregades i
-          anònimes (pàgines visitades, procedència aproximada, mètriques de
-          rendiment) que Vercel processa per nosaltres. Més informació a la
-          política de privadesa de Vercel:{" "}
-          <External href="https://vercel.com/docs/analytics/privacy-policy" />
+          Per saber si el lloc es fa servir i què s&apos;hi consulta, fem servir
+          umami, que allotgem nosaltres mateixos a
+          analytics.joeltaylor.business. No fa servir cookies ni cap
+          identificador que et segueixi entre visites, i la teva adreça IP no es
+          desa: només s&apos;utilitza de pas per deduir el país.
+        </P>
+        <P>
+          Les dades no van a parar a cap tercer —es queden al nostre servidor— i
+          són agregades: quines pàgines es visiten, quines línies i parades
+          s&apos;obren, i dades aproximades de navegador i país. No hi ha res
+          que permeti identificar-te, i mai desem el text que escrius al
+          cercador.
+        </P>
+        <P>
+          Pots desactivar-ho quan vulguis des del tauler de configuració, a
+          l&apos;apartat &quot;privadesa i dades&quot;. Si vols saber què recull
+          exactament l&apos;eina: <External href="https://umami.is/docs/faq" />
         </P>
       </Section>
 
