@@ -108,6 +108,46 @@ const StaleNotice = ({
   );
 };
 
+/** "4", "4 i 7", "4, 7 i 9" — a list a person would read aloud. */
+const joinLines = (codes: string[]) =>
+  codes.length <= 1
+    ? (codes[0] ?? "")
+    : `${codes.slice(0, -1).join(", ")} i ${codes[codes.length - 1]}`;
+
+/**
+ * Some of the stop's lines answered and some did not. The timetable below is
+ * real but incomplete, and a missing line here looks exactly like a line with
+ * no buses left today — so it has to be named, or the person waits for a bus
+ * the drawer never mentions.
+ */
+const PartialNotice = ({
+  failedRoutes,
+  isFetching,
+  refetch,
+}: {
+  failedRoutes: string[];
+  isFetching: boolean;
+  refetch: () => void;
+}) => (
+  <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+    <TriangleAlert size={14} className="shrink-0" />
+    <span className="min-w-0 flex-1">
+      no s&apos;han pogut carregar les hores de{" "}
+      {failedRoutes.length === 1 ? "la línia" : "les línies"}{" "}
+      {joinLines(failedRoutes)}
+    </span>
+    <Button
+      onClick={() => refetch()}
+      variant="ghost"
+      size="sm"
+      disabled={isFetching}
+      className="h-7 shrink-0 px-2 text-xs underline underline-offset-2"
+    >
+      torna-ho a provar
+    </Button>
+  </div>
+);
+
 const StopDetails = ({ externalId }: { externalId: string }) => {
   const {
     selectedRoutes,
@@ -300,6 +340,14 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
       {isError && (
         <StaleNotice
           dataUpdatedAt={dataUpdatedAt}
+          isFetching={isFetching}
+          refetch={refetch}
+        />
+      )}
+
+      {details.failedRoutes.length > 0 && (
+        <PartialNotice
+          failedRoutes={details.failedRoutes}
           isFetching={isFetching}
           refetch={refetch}
         />
