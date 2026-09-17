@@ -22,8 +22,6 @@ export const busesRouter = createTRPCRouter({
   byLine: publicProcedure
     .input(z.object({ routeCode: z.string() }))
     .query(async ({ ctx, input }): Promise<BusPosition[]> => {
-      const now = Date.now();
-
       const route = await ctx.db.route.findFirst({
         where: { code: input.routeCode, deletedAt: null },
         select: {
@@ -71,10 +69,16 @@ export const busesRouter = createTRPCRouter({
         let pending = cache.get(stopExternalId);
         if (!pending) {
           pending = getStopSchedule(stopExternalId, route.externalId).then(
-            (schedule) =>
-              schedule
-                ? toProbeResult(schedule, route.externalId, now)
-                : (new Map() as ProbeResult),
+            (schedule) => {
+              if (!schedule) {
+                return new Map() as ProbeResult;
+              }
+              // Resolve each probe against *its own* fetch time. A single `now`
+              // captured at the top of the resolver ages by the queue delay
+              // between probes, inflating every later ETA — which the locator
+              // reads as metres of extra distance and a skewed calibrated speed.
+              return toProbeResult(schedule, route.externalId, Date.now());
+            },
           );
           cache.set(stopExternalId, pending);
         }
