@@ -1,0 +1,82 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  # Source-only checks: lint, types and the deterministic test suite. Nothing
+  # here touches the network or a database — the Moventis API canary is the
+  # opt-in `pnpm test:live`, never CI.
+  check:
+    runs-on: ubuntu-latest
+    # `next lint` loads next.config.js, which imports src/env.js, which
+    # validates the environment on import. No .env exists on a runner, so the
+    # validation has to be skipped for lint to run at all — same switch the
+    # Docker build uses.
+    env:
+      SKIP_ENV_VALIDATION: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  # Does the web app compile. Placeholder env only: the `page.tsx` route is
+  # dynamic (it reads searchParams), so nothing here reaches the database, and
+  # NEXT_PUBLIC_* values are inlined into the bundle at build time anyway —
+  # the real ones are supplied by the Coolify build, not by this job.
+  build:
+    runs-on: ubuntu-latest
+    env:
+      SKIP_ENV_VALIDATION: 1
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      NEXT_PUBLIC_MAPS_API_KEY: ci-placeholder
+      NEXT_PUBLIC_MAPS_MAP_ID: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm build --filter=@moventis/web
+
+  # Production runs whatever `docker compose build` produces from these two
+  # Dockerfiles (see docs/deployment.md), so a Dockerfile that no longer builds
+  # is a broken deploy that `build` above cannot see: the prune, the Alpine
+  # base image and the Prisma engine download only exist here.
+  docker:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: web
+            file: apps/web/Dockerfile
+            build-args: |
+              NEXT_PUBLIC_MAPS_API_KEY=ci-placeholder
+              NEXT_PUBLIC_MAPS_MAP_ID=ci-placeholder
+          - name: scraper
+            file: apps/scraper/Dockerfile
+            build-args: ""
+    name: docker (${{ matrix.name }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          push: false
+          build-args: ${{ matrix.build-args }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

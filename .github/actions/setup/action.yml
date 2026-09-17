@@ -1,0 +1,24 @@
+name: setup
+description: Node and pnpm at the versions this repo pins, with the pnpm store cached and the workspace installed.
+
+# Every job needs the same toolchain. Node comes from .nvmrc and pnpm from the
+# `packageManager` field in package.json, so a version bump is one edit that CI,
+# the Dockerfiles and a fresh clone all pick up together.
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+
+    # `cache: pnpm` caches the pnpm store keyed on pnpm-lock.yaml — the store,
+    # not node_modules, because .npmrc hoists and a hoisted tree is not
+    # portable between runners.
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    # `packages/db`'s postinstall runs `prisma generate`, so the client exists
+    # for typecheck and build without a separate step.
+    - run: pnpm install --frozen-lockfile
+      shell: bash
