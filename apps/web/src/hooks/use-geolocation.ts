@@ -3,11 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { track } from "@/lib/analytics";
 
 export type GeolocationStatus =
-  | "idle"
-  | "loading"
-  | "active"
-  | "error"
-  | "unsupported";
+  "idle" | "loading" | "active" | "error" | "unsupported";
 
 interface GeolocationState {
   status: GeolocationStatus;
