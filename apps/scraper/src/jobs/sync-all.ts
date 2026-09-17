@@ -110,10 +110,15 @@ async function syncVariant(
     select: { id: true },
   });
 
-  // Rebuild the ordered stop list for this variant
-  await db.routeVariantStop.deleteMany({ where: { variantId: variant.id } });
-
+  // Upsert every stop first, outside the transaction below: these are writes
+  // that stand on their own, and keeping them out means the delete + recreate
+  // of the ordered list is the only thing that has to be atomic.
   const stopIds: string[] = [];
+  const variantStopData: {
+    variantId: string;
+    stopId: string;
+    sequence: number;
+  }[] = [];
   for (const det of trayecto.TrayectosDet) {
     const p = det.Parada;
     if (!p?.ID_PARADA) continue;
@@ -125,34 +130,26 @@ async function syncVariant(
       p.LONGITUD,
     );
     stopIds.push(stopId);
-  }
-
-  // Batch-create RouteVariantStop records
-  if (trayecto.TrayectosDet.length > 0) {
-    const variantStopData: {
-      variantId: string;
-      stopId: string;
-      sequence: number;
-    }[] = [];
-    let seqIdx = 0;
-    for (const det of trayecto.TrayectosDet) {
-      if (!det.Parada?.ID_PARADA) continue;
-      const stopId = stopIds[seqIdx++];
-      if (!stopId) continue;
-      variantStopData.push({
-        variantId: variant.id,
-        stopId,
-        sequence: det.SECUENCIA,
-      });
-    }
-
-    // skipDuplicates handles the rare case of a circular route where the
-    // terminal stop appears at both ends with the same SECUENCIA value.
-    await db.routeVariantStop.createMany({
-      data: variantStopData,
-      skipDuplicates: true,
+    variantStopData.push({
+      variantId: variant.id,
+      stopId,
+      sequence: det.SECUENCIA,
     });
   }
+
+  // Rebuild the ordered stop list atomically. Delete and re-create used to be
+  // two independent round-trips, so anything throwing in between left the
+  // variant with no stops at all until the next successful nightly run.
+  //
+  // skipDuplicates handles the rare case of a circular route where the terminal
+  // stop appears at both ends with the same SECUENCIA value.
+  await db.$transaction([
+    db.routeVariantStop.deleteMany({ where: { variantId: variant.id } }),
+    db.routeVariantStop.createMany({
+      data: variantStopData,
+      skipDuplicates: true,
+    }),
+  ]);
 
   return { externalId: primaryId, stopIds };
 }
@@ -185,16 +182,19 @@ async function syncLine(line: ResolvedLine, seen: SeenStops): Promise<void> {
   // An empty list from a clean probe is meaningful (a dormant line must stop
   // claiming it runs today); an empty list from a failed probe is not, and
   // writing it would make the line strip mark every line as not running.
+  //
+  // The pair is one transaction: a failure between the two left the line with no
+  // operating days at all, which the UI reads as "fora d'horari avui".
   if (line.calendarProbed || line.operatingDates.length > 0) {
-    await db.operatingDay.deleteMany({ where: { routeId: route.id } });
-    if (line.operatingDates.length > 0) {
-      await db.operatingDay.createMany({
+    await db.$transaction([
+      db.operatingDay.deleteMany({ where: { routeId: route.id } }),
+      db.operatingDay.createMany({
         data: line.operatingDates.map((d) => ({
           routeId: route.id,
           date: parseDateStr(d),
         })),
-      });
-    }
+      }),
+    ]);
   }
 
   // A line's stop set and variant list may only be *replaced* when this run saw
@@ -252,15 +252,15 @@ async function syncLine(line: ResolvedLine, seen: SeenStops): Promise<void> {
     const g = v.geometry as { paths: [number, number][][] } | null;
     return g?.paths ?? [];
   });
-  await db.route.update({
-    where: { id: route.id },
-    data: {
-      path:
-        aggregatedPaths.length > 0
-          ? { paths: aggregatedPaths }
-          : Prisma.JsonNull,
-    },
-  });
+  // An empty aggregate means this run learned nothing about the geometry — one
+  // night of failed KML fetches, say. Writing it would blank a drawn route, and
+  // `routes.getPath` would then cache the blank for a week.
+  if (aggregatedPaths.length > 0) {
+    await db.route.update({
+      where: { id: route.id },
+      data: { path: { paths: aggregatedPaths } },
+    });
+  }
 }
 
 /**
