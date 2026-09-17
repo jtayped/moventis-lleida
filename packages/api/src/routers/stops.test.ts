@@ -1,9 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Schedules } from "@moventis/shared";
+import type * as StopScheduleModule from "../lib/stop-schedule";
 
 // Avoid constructing the real Prisma client (the router gets `db` via ctx instead).
 vi.mock("@moventis/db", () => ({ db: {} }));
+// Stub the only network call; keep the real normalizeText the buses router needs.
+vi.mock("../lib/stop-schedule", async (importOriginal) => {
+  const actual = await importOriginal<typeof StopScheduleModule>();
+  return { ...actual, getStopSchedule: vi.fn() };
+});
 
 import { createCaller } from "../root";
+import { getStopSchedule } from "../lib/stop-schedule";
 
 /**
  * `getByExternalIds` backs the saved-stops list, and both things it does
@@ -48,5 +56,123 @@ describe("stops.getByExternalIds", () => {
     const { call } = caller();
     const tooMany = Array.from({ length: 201 }, (_, i) => String(i));
     await expect(call({ externalIds: tooMany })).rejects.toThrow();
+  });
+});
+
+const mockedSchedule = vi.mocked(getStopSchedule);
+
+afterEach(() => vi.clearAllMocks());
+
+/** One line's schedules, as `getStopSchedule` would return them for `code`. */
+function scheduleFor(code: string, externalLineId: string): Schedules {
+  return [
+    {
+      externalLineId,
+      lineCode: code,
+      lineName: "x",
+      selected: false,
+      incidencias: null,
+      journeys: [],
+    },
+  ];
+}
+
+interface FakeStop {
+  id: string;
+  externalId: string;
+  name: string;
+  deletedAt: Date | null;
+  routes: { code: string; externalId: string }[];
+}
+
+function stopCaller(stop: FakeStop | null) {
+  const findUnique = vi.fn((_args: Record<string, unknown>) => Promise.resolve(stop));
+  const db = { stop: { findUnique } };
+  return {
+    findUnique,
+    call: createCaller({ db, headers: new Headers() } as never).stops.get,
+  };
+}
+
+const twoRouteStop: FakeStop = {
+  id: "s1",
+  externalId: "10211",
+  name: "Ronda",
+  deletedAt: null,
+  routes: [
+    { code: "1", externalId: "101" },
+    { code: "9", externalId: "137" },
+  ],
+};
+
+describe("stops.get", () => {
+  it("never probes a soft-deleted route", async () => {
+    // Only `findMany` is wrapped by the `deletedAt: null` extension, so an included
+    // relation arrives unfiltered — a withdrawn route would be fetched from Moventis
+    // on every open of the stop, burning throttle slots on a line that no longer runs.
+    mockedSchedule.mockImplementation((_stop, routeExt) =>
+      Promise.resolve(scheduleFor(routeExt === "101" ? "1" : "9", routeExt)),
+    );
+    const { findUnique, call } = stopCaller(twoRouteStop);
+
+    await call({ externalId: "10211" });
+
+    expect(findUnique.mock.calls[0]?.[0]).toMatchObject({
+      include: { routes: { where: { deletedAt: null } } },
+    });
+    expect(mockedSchedule).toHaveBeenCalledTimes(2);
+  });
+
+  it("names the routes whose live fetch failed", async () => {
+    mockedSchedule.mockImplementation((_stop, routeExt) =>
+      Promise.resolve(routeExt === "101" ? null : scheduleFor("9", "137")),
+    );
+    const { call } = stopCaller(twoRouteStop);
+
+    const result = await call({ externalId: "10211" });
+
+    // The timetable is short, not empty — without this the client shows line 9's
+    // times as the whole truth and line 1 silently vanishes from the stop.
+    expect(result.failedRoutes).toEqual(["1"]);
+    expect(result.schedules).toHaveLength(1);
+  });
+
+  it("throws when every route's live fetch failed", async () => {
+    mockedSchedule.mockResolvedValue(null);
+    const { call } = stopCaller(twoRouteStop);
+
+    await expect(call({ externalId: "10211" })).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Moventis unreachable",
+    });
+  });
+
+  it("returns an empty timetable for a stop whose routes are all withdrawn", async () => {
+    const { call } = stopCaller({ ...twoRouteStop, routes: [] });
+
+    // This used to throw INTERNAL_SERVER_ERROR, which reads as a server fault for
+    // what is just a stop off the network — and a saved one still has to open.
+    await expect(call({ externalId: "10211" })).resolves.toMatchObject({
+      schedules: [],
+      failedRoutes: [],
+    });
+    expect(mockedSchedule).not.toHaveBeenCalled();
+  });
+
+  it("returns an empty timetable for a soft-deleted stop", async () => {
+    const { call } = stopCaller({ ...twoRouteStop, deletedAt: new Date() });
+
+    await expect(call({ externalId: "10211" })).resolves.toMatchObject({
+      schedules: [],
+      failedRoutes: [],
+    });
+    expect(mockedSchedule).not.toHaveBeenCalled();
+  });
+
+  it("is NOT_FOUND for an unknown externalId", async () => {
+    const { call } = stopCaller(null);
+    await expect(call({ externalId: "nope" })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 });
