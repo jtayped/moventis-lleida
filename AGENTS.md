@@ -44,7 +44,7 @@ pnpm db:studio    # open Prisma Studio
 
 `apps/scraper`'s production `start` script also runs `db:push` before launching, so schema changes in `schema.prisma` apply automatically on every deploy — no manual push step needed. It runs without `--accept-data-loss`, so a destructive change (e.g. a column drop/retype) makes the scraper container exit non-zero instead of silently applying — resolve those manually with `pnpm db:push --accept-data-loss` once you've confirmed the loss is intended.
 
-Deploys: merging to `main` is the only deploy path — a GitHub webhook tells Coolify, which rebuilds `docker-compose.yml` on the server. `docs/deployment.md` has the runbook.
+Deploys: merging to `main` is the only deploy path. Nothing is built on the VPS — `ci` passes, `.github/workflows/release.yml` builds both images and pushes them to GHCR (`ghcr.io/jtayped/moventis-lleida-{web,scraper}`, tagged `:<sha>` and `:main`), then its `deploy` job calls Coolify, which pulls and swaps. **`docker-compose.yml` must never gain a `build:` key** — that silently moves a Next compile back onto a shared host. `docs/deployment.md` has the runbook and the rollback path; `docs/decisions/0001-build-in-ci-deploy-images.md` has the reasoning.
 
 ## Testing
 
@@ -78,6 +78,8 @@ ANDROID_HOME=                 # Android SDK path (Expo only)
 ```
 
 Turbo 2 does not load dotenv files, so `apps/web/src/env.js` reads `../../.env` itself (server-side only) and validates it via `@t3-oss/env-nextjs`; the scraper uses `tsx --env-file`. A new variable the web build needs also has to be listed under `build.env` in `turbo.json`, or Turbo's cache will not see it change.
+
+The `.env` above is for local development. In production the four `NEXT_PUBLIC_*` values are **GitHub repository variables**, read by the `release` workflow and inlined into the browser bundle at image build time; the copies on the Coolify application are inert for the bundle, so changing one there does nothing a visitor sees. A new `NEXT_PUBLIC_*` variable therefore needs three edits: `turbo.json`'s `build.env`, the `build-args` of `build-web` in `release.yml`, and a repository variable.
 
 ### Theming
 
