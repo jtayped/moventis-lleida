@@ -1,5 +1,18 @@
 const BASE = "https://www.moventis.es";
 
+/**
+ * Cap on every outbound request.
+ *
+ * Without one, a hung socket never settles: it parks a `mapWithConcurrency`
+ * worker forever, and the `Promise.all` that waits on those workers parks the
+ * whole nightly sync with it. A timeout rejects like any other request failure,
+ * which the probe/resolution layer already understands as "unreachable" — doubt,
+ * not a withdrawal, so nothing is pruned on the strength of it.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
+
+const timeout = () => AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+
 export const LLEIDA_ZONE = "2";
 
 export interface MoventisLine {
@@ -51,7 +64,9 @@ export interface MoventisTrayecto {
 export async function fetchLleidaLines(
   knownLineIds: ReadonlySet<string> = new Set(),
 ): Promise<MoventisLine[]> {
-  const res = await fetch(`${BASE}/es/moventis/es/lines`);
+  const res = await fetch(`${BASE}/es/moventis/es/lines`, {
+    signal: timeout(),
+  });
   if (!res.ok) throw new Error(`/lines ${res.status}`);
   const all = (await res.json()) as MoventisLine[];
   return all.filter(
@@ -63,7 +78,9 @@ export async function fetchTrayectos(
   lineId: string,
   date: string,
 ): Promise<MoventisTrayecto[]> {
-  const res = await fetch(`${BASE}/api/json/GetTrayectos/${lineId}/${date}`);
+  const res = await fetch(`${BASE}/api/json/GetTrayectos/${lineId}/${date}`, {
+    signal: timeout(),
+  });
   if (!res.ok) throw new Error(`GetTrayectos/${lineId} ${res.status}`);
   const data = (await res.json()) as unknown[];
   // Filter out stub responses like [{ numLinea: "xxx" }] that have no TrayectosDet
@@ -87,7 +104,9 @@ export async function fetchKml(
   lineId: string,
   trayectoId: number,
 ): Promise<string> {
-  const res = await fetch(`${BASE}/api/json/GetKMLs/${lineId}/${trayectoId}`);
+  const res = await fetch(`${BASE}/api/json/GetKMLs/${lineId}/${trayectoId}`, {
+    signal: timeout(),
+  });
   if (!res.ok) throw new Error(`GetKMLs/${lineId}/${trayectoId} ${res.status}`);
   return res.text();
 }
