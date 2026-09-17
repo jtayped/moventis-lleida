@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import ArrivalTimeCard from "./arrival-time-item";
 import type { Journey, Schedules } from "@moventis/shared";
+import type { DriftLookup } from "@/hooks/use-arrival-drift";
 import { getContrastTextColor } from "@/lib/contrast";
 import { TriangleAlert } from "lucide-react";
 
@@ -11,6 +12,7 @@ interface StopScheduleLineProps {
   color: string;
   closestScheduledTime: ScheduledTime | null;
   now: number;
+  getDrift: DriftLookup;
 }
 
 export const StopScheduleLine = ({
@@ -18,6 +20,7 @@ export const StopScheduleLine = ({
   color,
   closestScheduledTime,
   now,
+  getDrift,
 }: StopScheduleLineProps) => {
   return (
     <div className="py-3">
@@ -60,7 +63,12 @@ export const StopScheduleLine = ({
                   {journeyGroup.name}
                 </h4>
                 {closestTime && (
-                  <ArrivalTimeCard journey={closestTime} isClosest now={now} />
+                  <ArrivalTimeCard
+                    journey={closestTime}
+                    isClosest
+                    now={now}
+                    drift={getDrift(closestTime)}
+                  />
                 )}
                 {otherTimes.length > 0 && (
                   <div
@@ -75,6 +83,7 @@ export const StopScheduleLine = ({
                         journey={time}
                         isClosest={false}
                         now={now}
+                        drift={getDrift(time)}
                       />
                     ))}
                   </div>
