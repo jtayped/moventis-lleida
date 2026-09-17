@@ -125,9 +125,29 @@ describe("buses.byLine", () => {
     expect(mockedSchedule).not.toHaveBeenCalled();
   });
 
-  it("returns [] when the upstream schedule is unavailable", async () => {
+  it("throws when every probe failed, rather than claiming no bus is running", async () => {
+    // A failed probe and a line with no live buses both reduce to an empty map, so
+    // resolving `[]` here made an outage indistinguishable from a quiet line — and
+    // the drawer stated it as fact. Total failure has to reach the client as an error.
     mockedSchedule.mockResolvedValue(null);
-    expect(await byLine(makeDb())).toEqual([]);
+    await expect(byLine(makeDb())).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Moventis unreachable",
+    });
+  });
+
+  it("still returns what it located when only some probes failed", async () => {
+    // Partial degradation is normal (one stop 500s, the rest answer); the line is
+    // not down, so the positions that were recovered must still be delivered.
+    const world = realtimeWorld([JOURNEY]);
+    mockedSchedule.mockImplementation((stopExternalId: string) =>
+      Promise.resolve(stopExternalId === "e0" ? null : world),
+    );
+
+    const out = await byLine(makeDb());
+
+    expect(mockedSchedule.mock.calls.some(([stopExt]) => stopExt === "e0")).toBe(true);
+    expect(out.length).toBeGreaterThan(0);
   });
 
   it("fetches a shared terminal only once (per-request cache)", async () => {

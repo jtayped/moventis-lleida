@@ -1,4 +1,5 @@
 import z from "zod";
+import { TRPCError } from "@trpc/server";
 import { type BusPosition, busPositionSchema } from "@moventis/shared";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import { getStopSchedule, normalizeText } from "../lib/stop-schedule";
@@ -18,6 +19,9 @@ export const busesRouter = createTRPCRouter({
    *
    * A plain query (not a stream): calibration needs ≥2 probes before placing, and
    * the client refetches on a timer — per-bus streaming would add no value here.
+   *
+   * Throws `INTERNAL_SERVER_ERROR` when every probe failed: an upstream outage
+   * must not be reported to the client as "no bus is reporting its position".
    */
   byLine: publicProcedure
     .input(z.object({ routeCode: z.string() }))
@@ -65,12 +69,16 @@ export const busesRouter = createTRPCRouter({
       // Per-request cache: a stop shared between variants (or used as both anchor
       // and a neighbour's calibration point) is fetched from Moventis only once.
       const cache = new Map<string, Promise<ProbeResult>>();
+      let attempted = 0;
+      let failed = 0;
       const probe = (stopExternalId: string): Promise<ProbeResult> => {
         let pending = cache.get(stopExternalId);
         if (!pending) {
+          attempted++;
           pending = getStopSchedule(stopExternalId, route.externalId).then(
             (schedule) => {
               if (!schedule) {
+                failed++;
                 return new Map() as ProbeResult;
               }
               // Resolve each probe against *its own* fetch time. A single `now`
@@ -90,6 +98,18 @@ export const busesRouter = createTRPCRouter({
         variants,
         probe,
       });
+
+      // A failed probe reads exactly like "no bus is running here": an empty map.
+      // With every probe failed, the locator finds nothing and this would resolve
+      // `[]`, and the UI would state as fact that no bus on the line is reporting
+      // its position. An outage is not an empty timetable — say so, and let the
+      // client render its error state. A partial failure still returns what it found.
+      if (attempted > 0 && failed === attempted) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Moventis unreachable",
+        });
+      }
 
       return positions.map((p) => busPositionSchema.parse(p));
     }),
