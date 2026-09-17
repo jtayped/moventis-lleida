@@ -1,6 +1,7 @@
 export * from "./src/constants/lleida";
 
 export * from "./src/lib/geo";
+export * from "./src/lib/arrival-drift";
 
 export * from "./src/schemas/schedule";
 export * from "./src/schemas/route-path";
