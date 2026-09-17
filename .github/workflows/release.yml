@@ -1,0 +1,137 @@
+name: release
+
+# Builds both images and hands Coolify a tag to pull. Nothing is built on the
+# VPS any more (docs/decisions/0001-build-in-ci-deploy-images.md).
+#
+# An image is never published from code that has not been verified, so this
+# starts from `ci` finishing rather than from the push itself. `workflow_run`
+# does not check the conclusion or the branch for you — the `if` on every job
+# below does.
+#
+# `workflow_dispatch` serves two purposes: with `image_tag` empty it rebuilds
+# the default branch and deploys; with a tag it skips the builds and rolls
+# Coolify back to that already-published image.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Roll back to this published image tag (a 40-character commit sha). Leave empty to rebuild and deploy.
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+# Keyed on the commit, not the branch: two merges in quick succession each
+# publish their own sha, and cancelling the first would leave `:main` pointing
+# at an image whose deploy never ran.
+concurrency:
+  group: release-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.image_tag == '') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/jtayped/moventis-lleida-web:${{ github.event.workflow_run.head_sha || github.sha }}
+            ghcr.io/jtayped/moventis-lleida-web:main
+          # Same scope as ci.yml's `docker (web)` job, so a pull request build
+          # and the release build of the same commit share layers.
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+          # Next inlines these into the browser bundle at build time, and
+          # Coolify no longer builds anything, so this is the only place they
+          # can be supplied. Repository variables rather than secrets: every
+          # one of them ships to every visitor inside the JavaScript, and
+          # calling a value secret when it is not is how a real secret ends up
+          # beside it one day. The Maps key is protected by its HTTP referrer
+          # restriction and its quota, not by being hidden.
+          build-args: |
+            NEXT_PUBLIC_MAPS_API_KEY=${{ vars.NEXT_PUBLIC_MAPS_API_KEY }}
+            NEXT_PUBLIC_MAPS_MAP_ID=${{ vars.NEXT_PUBLIC_MAPS_MAP_ID }}
+            NEXT_PUBLIC_UMAMI_SCRIPT_URL=${{ vars.NEXT_PUBLIC_UMAMI_SCRIPT_URL }}
+            NEXT_PUBLIC_UMAMI_WEBSITE_ID=${{ vars.NEXT_PUBLIC_UMAMI_WEBSITE_ID }}
+
+  build-scraper:
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.image_tag == '') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/scraper/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/jtayped/moventis-lleida-scraper:${{ github.event.workflow_run.head_sha || github.sha }}
+            ghcr.io/jtayped/moventis-lleida-scraper:main
+          cache-from: type=gha,scope=scraper
+          cache-to: type=gha,mode=max,scope=scraper
+
+  deploy:
+    # Both images, or Coolify pulls a tag that does not exist yet. `always()`
+    # because a rollback dispatch skips the two builds on purpose; the result
+    # tests still refuse a build that actually failed.
+    needs: [build-web, build-scraper]
+    if: >-
+      always() && !cancelled() &&
+      !contains(needs.*.result, 'failure') &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # Coolify pulls the tags itself; this tells it a new one exists, then
+      # waits for the deployment to finish and the site to answer. An accepted
+      # webhook is not a successful deploy.
+      - name: Deploy and wait for health
+        run: node .github/scripts/deploy-coolify.mjs
+        env:
+          COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_HEALTH_URL: ${{ vars.COOLIFY_HEALTH_URL }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          ROLLBACK: ${{ github.event_name == 'workflow_dispatch' && inputs.image_tag != '' }}

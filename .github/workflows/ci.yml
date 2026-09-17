@@ -38,7 +38,8 @@ jobs:
   # Does the web app compile. Placeholder env only: the `page.tsx` route is
   # dynamic (it reads searchParams), so nothing here reaches the database, and
   # NEXT_PUBLIC_* values are inlined into the bundle at build time anyway —
-  # the real ones are supplied by the Coolify build, not by this job.
+  # the real ones come from repository variables in the `release` workflow,
+  # which is the only place a shipped image is built.
   build:
     runs-on: ubuntu-latest
     env:
@@ -51,10 +52,14 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm build --filter=@moventis/web
 
-  # Production runs whatever `docker compose build` produces from these two
-  # Dockerfiles (see docs/deployment.md), so a Dockerfile that no longer builds
-  # is a broken deploy that `build` above cannot see: the prune, the Alpine
-  # base image and the Prisma engine download only exist here.
+  # Production runs the images `release` builds from these two Dockerfiles
+  # (see docs/deployment.md), so a Dockerfile that no longer builds is a broken
+  # deploy that `build` above cannot see: the prune, the Alpine base image and
+  # the Prisma engine download only exist here.
+  #
+  # `push: false` — nothing is published from a pull request. The `release`
+  # workflow rebuilds on the same `type=gha` cache scopes once this run passes
+  # on main, so the layers are already warm and it pushes what they produce.
   docker:
     runs-on: ubuntu-latest
     strategy:
