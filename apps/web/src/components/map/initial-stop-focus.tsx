@@ -9,6 +9,14 @@ import MapPinsRenderer from "@/components/map/pins/pins-renderer";
 const FOCUS_ZOOM = 16;
 
 /**
+ * Stops already panned to, by `externalId`. Module-level on purpose: this
+ * component lives inside the `<Map>`, which remounts whenever the colour scheme
+ * changes, and a `useRef` flag would reset with it — flipping the theme would
+ * yank the map back to the `?stop=` stop after the user had panned away.
+ */
+const pannedStopIds = new Set<string>();
+
+/**
  * Makes a `?stop=` link land somewhere. On its own that param opens the drawer
  * over the default city-wide bounds with no pins, so closing the drawer leaves no
  * indication of where the stop is — the one case the drawer alone can't cover.
@@ -26,7 +34,6 @@ const InitialStopFocus = () => {
 
   // The selection at mount is the one that came from the URL.
   const externalId = useRef(selectedStopId).current;
-  const panned = useRef(false);
 
   // Same query key as the drawer's, so this shares its result instead of
   // issuing a second request.
@@ -36,8 +43,8 @@ const InitialStopFocus = () => {
   );
 
   useEffect(() => {
-    if (panned.current || !map || !stop) return;
-    panned.current = true;
+    if (!map || !stop || pannedStopIds.has(stop.externalId)) return;
+    pannedStopIds.add(stop.externalId);
 
     map.panTo({ lat: stop.latitude, lng: stop.longitude });
     const zoom = map.getZoom();

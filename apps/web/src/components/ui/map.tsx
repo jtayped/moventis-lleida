@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useRef } from "react";
 import { APIProvider, Map } from "@vis.gl/react-google-maps";
 import { env } from "@/env";
 
@@ -57,6 +57,13 @@ const MapComponent = ({
 }: MapComponentProps) => {
   const apiKey = env.NEXT_PUBLIC_MAPS_API_KEY;
 
+  // Where the map was last looking. Lives out here, in the component the
+  // `key` below does *not* remount, so a theme flip recreates the map on the
+  // same view instead of replaying `defaultBounds` and throwing away whatever
+  // the user had panned and zoomed to.
+  const cameraRef = useRef<{ center: Coordinates; zoom: number } | null>(null);
+  const camera = cameraRef.current;
+
   return (
     <div className={className}>
       <APIProvider apiKey={apiKey}>
@@ -69,10 +76,13 @@ const MapComponent = ({
           // with this one Map ID actually applies.
           key={colorScheme}
           style={{ width: "100%", height: "100%" }}
-          defaultBounds={bounds}
+          defaultBounds={camera ? undefined : bounds}
           restriction={restrictions}
-          defaultCenter={!bounds ? defaultCenter : undefined}
-          defaultZoom={!bounds ? defaultZoom : undefined}
+          defaultCenter={camera ? camera.center : bounds ? undefined : defaultCenter}
+          defaultZoom={camera ? camera.zoom : bounds ? undefined : defaultZoom}
+          onCameraChanged={({ detail }) => {
+            cameraRef.current = { center: detail.center, zoom: detail.zoom };
+          }}
           gestureHandling="greedy"
           disableDefaultUI
           mapId={mapId}
