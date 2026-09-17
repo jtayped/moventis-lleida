@@ -93,12 +93,25 @@ function buildJourneys(trayectos: ApiScheduleLine["trayectos"], now: Date): Jour
   }));
 }
 
+/**
+ * Upstream is a third party with no SLA, and axios has no default timeout: a hung
+ * socket would keep one outbound slot open forever, and the request's caller with
+ * it. 8 s is well past the p99 of a healthy response and well short of any client
+ * patience — a timeout surfaces as an `AxiosError` (`ECONNABORTED`), which
+ * {@link getStopSchedule} already maps to the "unavailable" null contract.
+ */
+const MOVENTIS_TIMEOUT_MS = 8_000;
+
 function fetchSchedulesRaw(
   externalStopId: string,
   externalRouteId: string,
 ): Promise<unknown> {
   const url = `https://www.moventis.es/api/json/GetTiemposParada/es/${externalStopId}/${externalRouteId}/0`;
-  return moventisQueue.schedule(() => axios.get(url).then(({ data }) => data as unknown));
+  return moventisQueue.schedule(() =>
+    axios
+      .get(url, { timeout: MOVENTIS_TIMEOUT_MS })
+      .then(({ data }) => data as unknown),
+  );
 }
 
 /** Map one validated API line to our internal {@link Schedules} entry. */

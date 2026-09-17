@@ -24,6 +24,9 @@ describe("getStopSchedule (HTTP wiring)", () => {
     await getStopSchedule("10336", "137");
     expect(get).toHaveBeenCalledWith(
       "https://www.moventis.es/api/json/GetTiemposParada/es/10336/137/0",
+      // A timeout is not optional: axios has none by default, so a hung socket
+      // would hold an outbound slot — and its caller — open indefinitely.
+      { timeout: 8_000 },
     );
   });
 
@@ -42,6 +45,15 @@ describe("getStopSchedule (HTTP wiring)", () => {
 
   it("returns null on a network error (never breaks the timetable)", async () => {
     get.mockRejectedValue(new AxiosError("network down"));
+    expect(await getStopSchedule("1", "1")).toBeNull();
+  });
+
+  it("returns null when the request times out", async () => {
+    // What axios raises when `timeout` fires: same "unavailable" contract as any
+    // other network failure, so an unresponsive upstream degrades rather than hangs.
+    get.mockRejectedValue(
+      new AxiosError("timeout of 8000ms exceeded", "ECONNABORTED"),
+    );
     expect(await getStopSchedule("1", "1")).toBeNull();
   });
 
