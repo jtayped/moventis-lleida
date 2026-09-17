@@ -39,9 +39,16 @@ describe("stops.getByExternalIds", () => {
     // The one query here that must see deleted stops: a saved stop that leaves the
     // network still needs a pin, because the drawer that pin opens holds the only
     // control that can unsave it. A `deletedAt: null` here strands it forever.
+    //
+    // An *absent* `deletedAt` is the broken state, not the correct one: the client
+    // extension in `packages/db/index.ts` spreads `{ deletedAt: null, ...where }`
+    // into every `stop.findMany`, so omitting the key resolves to "live rows only".
+    // Only an own key set to `undefined` spreads over the injected null and turns
+    // the filter off — hence `toHaveProperty(..., undefined)`, which `toEqual`
+    // alone would not catch (it ignores undefined-valued keys).
     const where = findMany.mock.calls[0]?.[0];
-    expect(where?.where).not.toHaveProperty("deletedAt");
-    expect(where?.where).toEqual({ externalId: { in: ["10211"] } });
+    expect(where?.where).toHaveProperty("deletedAt", undefined);
+    expect(where?.where).toEqual({ deletedAt: undefined, externalId: { in: ["10211"] } });
   });
 
   it("short-circuits an empty list without touching the database", async () => {
