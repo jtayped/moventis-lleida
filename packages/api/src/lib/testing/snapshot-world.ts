@@ -15,7 +15,10 @@ export interface LineSnapshot {
   routeCode: string;
   routeExternalId: string;
   variants: { direction: string; description: string; stops: string[] }[];
-  stops: Record<string, { name: string; lat: number; lng: number; fetchedAt: string; body: unknown }>;
+  stops: Record<
+    string,
+    { name: string; lat: number; lng: number; fetchedAt: string; body: unknown }
+  >;
 }
 
 export function snapshotWorld(name: string): {
@@ -41,7 +44,9 @@ export function snapshotWorld(name: string): {
     const s = snapshot.stops[externalId];
     if (!s) return Promise.resolve(null);
     const schedules = parseSchedulesResponse(s.body, new Date(s.fetchedAt));
-    return Promise.resolve(toProbeResult(schedules, snapshot.routeExternalId, now));
+    return Promise.resolve(
+      toProbeResult(schedules, snapshot.routeExternalId, now),
+    );
   };
   return { snapshot, variants, probe, calls };
 }

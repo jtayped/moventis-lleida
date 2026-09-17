@@ -292,10 +292,13 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
   }, [details, selectedRoutes]);
 
   const { liveCount, liveApproximateCount } = useMemo(() => {
-    const relevant = busPositions.filter((p) => relevantLines.includes(p.lineCode));
+    const relevant = busPositions.filter((p) =>
+      relevantLines.includes(p.lineCode),
+    );
     return {
       liveCount: relevant.length,
-      liveApproximateCount: relevant.filter((p) => p.confidence !== "high").length,
+      liveApproximateCount: relevant.filter((p) => p.confidence !== "high")
+        .length,
     };
   }, [busPositions, relevantLines]);
 

@@ -39,11 +39,15 @@ import {
 function parseArgs() {
   const args = process.argv.slice(2);
   const positional = args.filter((a) => !a.startsWith("--"));
-  const flags = new Set(args.filter((a) => a.startsWith("--")).map((a) => a.slice(2)));
+  const flags = new Set(
+    args.filter((a) => a.startsWith("--")).map((a) => a.slice(2)),
+  );
   const lineCode = positional[0];
   const direction = positional[1] as "I" | "V" | undefined;
   if (!lineCode) {
-    console.error("Usage: pnpm validate-bus-positions <lineCode> [I|V] [--full]");
+    console.error(
+      "Usage: pnpm validate-bus-positions <lineCode> [I|V] [--full]",
+    );
     process.exit(1);
   }
   return { lineCode, direction, full: flags.has("full") };
@@ -78,7 +82,13 @@ async function main() {
             orderBy: { sequence: "asc" },
             select: {
               stop: {
-                select: { id: true, externalId: true, name: true, latitude: true, longitude: true },
+                select: {
+                  id: true,
+                  externalId: true,
+                  name: true,
+                  latitude: true,
+                  longitude: true,
+                },
               },
             },
           },
@@ -93,7 +103,8 @@ async function main() {
 
   const nameByExternalId = new Map<string, string>();
   const variants: LocatorVariant[] = route.variants.map((v) => {
-    for (const s of v.stops) nameByExternalId.set(s.stop.externalId, s.stop.name);
+    for (const s of v.stops)
+      nameByExternalId.set(s.stop.externalId, s.stop.name);
     return {
       direction: v.direction === "V" ? "V" : "I",
       description: normalizeText(v.description),
@@ -106,9 +117,13 @@ async function main() {
       })),
     };
   });
-  const targets = direction ? variants.filter((v) => v.direction === direction) : variants;
+  const targets = direction
+    ? variants.filter((v) => v.direction === direction)
+    : variants;
   if (targets.length === 0) {
-    console.error(`No variant found for line "${lineCode}" direction "${direction ?? "any"}"`);
+    console.error(
+      `No variant found for line "${lineCode}" direction "${direction ?? "any"}"`,
+    );
     process.exit(1);
   }
 
@@ -120,8 +135,9 @@ async function main() {
     let pending = cache.get(stopExternalId);
     if (!pending) {
       requests++;
-      pending = getStopSchedule(stopExternalId, route.externalId).then((schedule) =>
-        schedule ? toProbeResult(schedule, route.externalId, now) : null,
+      pending = getStopSchedule(stopExternalId, route.externalId).then(
+        (schedule) =>
+          schedule ? toProbeResult(schedule, route.externalId, now) : null,
       );
       cache.set(stopExternalId, pending);
     }
@@ -129,7 +145,11 @@ async function main() {
   };
 
   const started = Date.now();
-  const result = await locateLineBuses({ lineCode: route.code, variants: targets, probe });
+  const result = await locateLineBuses({
+    lineCode: route.code,
+    variants: targets,
+    probe,
+  });
   const locatorRequests = requests;
   console.log(
     `Line ${route.code}: ${result.positions.length} bus(es) located with ${locatorRequests} request(s) in ${Date.now() - started} ms`,
@@ -141,7 +161,8 @@ async function main() {
 
   for (const trace of result.variants) {
     const variant = targets.find(
-      (v) => v.direction === trace.direction && v.description === trace.description,
+      (v) =>
+        v.direction === trace.direction && v.description === trace.description,
     )!;
     const name = (index: number) => {
       const ext = variant.stops[index]!.externalId;
@@ -154,10 +175,15 @@ async function main() {
     );
     console.log("=".repeat(72));
     console.log("  Probed stops:");
-    for (const p of trace.probed) console.log(`    ${name(p.index).padEnd(52)} ${fmtList(p.etas)}`);
+    for (const p of trace.probed)
+      console.log(`    ${name(p.index).padEnd(52)} ${fmtList(p.etas)}`);
 
     console.log("  Brackets:");
-    const geom = { stopArcs: trace.stopArcs, total: trace.totalArc, loop: trace.loop };
+    const geom = {
+      stopArcs: trace.stopArcs,
+      total: trace.totalArc,
+      loop: trace.loop,
+    };
     for (const b of analyseChain(trace.probed, geom)) {
       const between = b.alignment.between.map(fmt).join(", ") || "-";
       console.log(
@@ -198,22 +224,31 @@ async function main() {
       let etas: number[] | null = null;
       if (r) {
         for (const [journey, list] of r) {
-          if (trace.journeyName !== null && journey === trace.journeyName) etas = [...list].sort((a, b) => a - b);
+          if (trace.journeyName !== null && journey === trace.journeyName)
+            etas = [...list].sort((a, b) => a - b);
         }
       }
       all.push({ index, stopId: stop.id, externalId: stop.externalId, etas });
     }
     const truth = analyseChain(all, geom).flatMap((b) =>
-      b.alignment.between.map((eta) => ({ eta, from: b.from.index, to: b.to.index })),
+      b.alignment.between.map((eta) => ({
+        eta,
+        from: b.from.index,
+        to: b.to.index,
+      })),
     );
 
     console.log(`  Full resolution (${all.length} stops):`);
     for (const p of all) {
-      if (!probedByIndex.has(p.index)) console.log(`    ${name(p.index).padEnd(52)} ${fmtList(p.etas)}`);
+      if (!probedByIndex.has(p.index))
+        console.log(`    ${name(p.index).padEnd(52)} ${fmtList(p.etas)}`);
     }
     console.log("  Ground-truth buses (adjacent-stop brackets):");
     if (truth.length === 0) console.log("    (none)");
-    for (const t of truth) console.log(`    eta ${fmt(t.eta)} between ${name(t.from)} and ${name(t.to)}`);
+    for (const t of truth)
+      console.log(
+        `    eta ${fmt(t.eta)} between ${name(t.from)} and ${name(t.to)}`,
+      );
 
     console.log("  Comparison:");
     const unclaimed = [...truth];
@@ -225,7 +260,9 @@ async function main() {
           Math.abs(t.eta - placed.position.etaSeconds) <=
             // The locator's ETA is to its own downstream stop; the truth's to
             // a nearer one, so allow the travel between them plus the slack.
-            SAME_TRIP_SLACK_S + Math.max(0, placed.position.etaSeconds - Math.max(0, t.eta)) + 1,
+            SAME_TRIP_SLACK_S +
+              Math.max(0, placed.position.etaSeconds - Math.max(0, t.eta)) +
+              1,
       );
       if (idx === -1) {
         phantoms++;
@@ -242,7 +279,9 @@ async function main() {
     }
     for (const t of unclaimed) {
       misses++;
-      console.log(`    MISS    truth eta ${fmt(t.eta)} in ${t.from}→${t.to}: not emitted by the locator`);
+      console.log(
+        `    MISS    truth eta ${fmt(t.eta)} in ${t.from}→${t.to}: not emitted by the locator`,
+      );
     }
   }
 

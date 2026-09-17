@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { distanceMeters, type BusPosition, type LngLat } from "@moventis/shared";
+import {
+  distanceMeters,
+  type BusPosition,
+  type LngLat,
+} from "@moventis/shared";
 import {
   alignLists,
   checkConsistency,
@@ -33,7 +37,10 @@ function indexOf(variant: LocatorVariant, stopId: string): number {
 
 /** The emitted bracket of a position, as variant stop indices. */
 function bracketOf(variant: LocatorVariant, p: BusPosition) {
-  return { fromIndex: indexOf(variant, p.segment.fromStopId), toIndex: indexOf(variant, p.segment.toStopId) };
+  return {
+    fromIndex: indexOf(variant, p.segment.fromStopId),
+    toIndex: indexOf(variant, p.segment.toStopId),
+  };
 }
 
 /**
@@ -52,7 +59,10 @@ function expectFleetLocated(result: LineLocatorResult, sims: SimVariant[]) {
         const b = bracketOf(sim.variant, p);
         return b.fromIndex <= truth.fromIndex && truth.toIndex <= b.toIndex;
       });
-      expect(idx, `bus on segment ${bus.segment} of ${journey} has a bracket`).toBeGreaterThanOrEqual(0);
+      expect(
+        idx,
+        `bus on segment ${bus.segment} of ${journey} has a bracket`,
+      ).toBeGreaterThanOrEqual(0);
       unclaimed.splice(idx, 1);
     }
   }
@@ -61,12 +71,19 @@ function expectFleetLocated(result: LineLocatorResult, sims: SimVariant[]) {
 function expectConsistent(result: LineLocatorResult) {
   for (const trace of result.variants) {
     for (const v of checkConsistency(trace)) {
-      expect(v.problems, `${v.position.journeyName} eta=${v.position.etaSeconds.toFixed(0)}`).toEqual([]);
+      expect(
+        v.problems,
+        `${v.position.journeyName} eta=${v.position.etaSeconds.toFixed(0)}`,
+      ).toEqual([]);
     }
   }
 }
 
-async function run(sims: SimVariant[], opts: SimWorldOptions = {}, budget?: Partial<typeof DEFAULT_PROBE_BUDGET>) {
+async function run(
+  sims: SimVariant[],
+  opts: SimWorldOptions = {},
+  budget?: Partial<typeof DEFAULT_PROBE_BUDGET>,
+) {
   const world = simulateWorld(sims, opts);
   const result = await locateLineBuses({
     lineCode: LINE,
@@ -80,7 +97,10 @@ async function run(sims: SimVariant[], opts: SimWorldOptions = {}, budget?: Part
 // ─── Building blocks ────────────────────────────────────────────────────────
 
 /** A 20-stop linear variant at 250 m spacing, 6 m/s, 20 s dwell. */
-function linear(buses: SimVariant["buses"], extra: Partial<SimVariant> = {}): SimVariant {
+function linear(
+  buses: SimVariant["buses"],
+  extra: Partial<SimVariant> = {},
+): SimVariant {
   const stops = makeStops(20);
   return {
     variant: makeVariant(stops),
@@ -93,7 +113,10 @@ function linear(buses: SimVariant["buses"], extra: Partial<SimVariant> = {}): Si
 }
 
 /** A 28-stop loop (terminal === origin), like line 2. */
-function loop(buses: SimVariant["buses"], extra: Partial<SimVariant> = {}): SimVariant {
+function loop(
+  buses: SimVariant["buses"],
+  extra: Partial<SimVariant> = {},
+): SimVariant {
   const stops = makeStops(28, { loop: true, spacingM: 280 });
   return {
     variant: makeVariant(stops, { description: "ronda hospitals" }),
@@ -130,7 +153,11 @@ describe("alignLists", () => {
   });
 
   it("treats trailing downstream entries as the cap's doing when upstream is full", () => {
-    const a = alignLists([100, 200, 300, 400, 500], [150, 250, 350, 450, 550, 650], T);
+    const a = alignLists(
+      [100, 200, 300, 400, 500],
+      [150, 250, 350, 450, 550, 650],
+      T,
+    );
     expect(a.between).toEqual([]);
     expect(a.pairs).toHaveLength(5);
     expect(a.ignored).toEqual([650]);
@@ -165,19 +192,28 @@ describe("alignLists", () => {
 
 describe("plan and matching", () => {
   it("coarse indices always include origin and terminal and respect the stride cap", () => {
-    expect(coarseIndices(28, DEFAULT_PROBE_BUDGET)).toEqual([0, 5, 10, 15, 20, 25, 27]);
+    expect(coarseIndices(28, DEFAULT_PROBE_BUDGET)).toEqual([
+      0, 5, 10, 15, 20, 25, 27,
+    ]);
     expect(coarseIndices(6, DEFAULT_PROBE_BUDGET)).toEqual([0, 1, 2, 3, 4, 5]);
-    expect(coarseIndices(64, DEFAULT_PROBE_BUDGET)).toEqual([0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 63]);
+    expect(coarseIndices(64, DEFAULT_PROBE_BUDGET)).toEqual([
+      0, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 63,
+    ]);
   });
 
   it("maxTravelSeconds grows with distance and stop count", () => {
     expect(maxTravelSeconds(278, 1)).toBeGreaterThan(236); // live hospital segment
-    expect(maxTravelSeconds(1000, 4)).toBeGreaterThan(maxTravelSeconds(1000, 1));
+    expect(maxTravelSeconds(1000, 4)).toBeGreaterThan(
+      maxTravelSeconds(1000, 1),
+    );
   });
 
   it("matchVariant matches exactly and via an accent-insensitive fallback", () => {
     const variants: LocatorVariant[] = [
-      makeVariant(makeStops(3), { description: "caparrella - llivia", direction: "V" }),
+      makeVariant(makeStops(3), {
+        description: "caparrella - llivia",
+        direction: "V",
+      }),
     ];
     expect(matchVariant("caparrella - llivia", variants)?.direction).toBe("V");
     expect(matchVariant("caparrella - llívia", variants)?.direction).toBe("V");
@@ -186,8 +222,13 @@ describe("plan and matching", () => {
 
   it("dedupeVariants keeps the longest of same-named variants", () => {
     const short = makeVariant(makeStops(5), { description: "polígons" });
-    const long = makeVariant(makeStops(9, { prefix: "l" }), { description: "polígons" });
-    const other = makeVariant(makeStops(4, { prefix: "o" }), { description: "polígons", direction: "V" });
+    const long = makeVariant(makeStops(9, { prefix: "l" }), {
+      description: "polígons",
+    });
+    const other = makeVariant(makeStops(4, { prefix: "o" }), {
+      description: "polígons",
+      direction: "V",
+    });
     expect(dedupeVariants([short, long, other])).toEqual([long, other]);
   });
 });
@@ -202,8 +243,14 @@ describe("locateLineBuses — simulated fleets", () => {
     const { result } = await run([sim]);
     expectFleetLocated(result, [sim]);
     expectConsistent(result);
-    expect(result.positions.every((p) => p.spanStops === 1 && p.confidence === "high")).toBe(true);
-    expect(result.probeCount).toBeLessThanOrEqual(6 + DEFAULT_PROBE_BUDGET.refineProbes);
+    expect(
+      result.positions.every(
+        (p) => p.spanStops === 1 && p.confidence === "high",
+      ),
+    ).toBe(true);
+    expect(result.probeCount).toBeLessThanOrEqual(
+      6 + DEFAULT_PROBE_BUDGET.refineProbes,
+    );
   });
 
   it("emits nothing for a line whose only entries are future departures", async () => {
@@ -211,7 +258,9 @@ describe("locateLineBuses — simulated fleets", () => {
     const { result } = await run([sim]);
     expect(result.positions).toEqual([]);
     // The coarse pass only: nothing to refine.
-    expect(result.probeCount).toBe(coarseIndices(20, DEFAULT_PROBE_BUDGET).length);
+    expect(result.probeCount).toBe(
+      coarseIndices(20, DEFAULT_PROBE_BUDGET).length,
+    );
   });
 
   it("survives dwell variation, jitter and the 5-entry cap", async () => {
@@ -231,7 +280,9 @@ describe("locateLineBuses — simulated fleets", () => {
 
   it("brackets across a stop whose response omits the journey, without inventing buses", async () => {
     const sim = linear([{ segment: 5, fraction: 0.5 }]);
-    const { result } = await run([sim], { missingJourneyAt: ["s4", "s5", "s6"] });
+    const { result } = await run([sim], {
+      missingJourneyAt: ["s4", "s5", "s6"],
+    });
     expectFleetLocated(result, [sim]);
     expectConsistent(result);
     const p = result.positions[0]!;
@@ -290,7 +341,9 @@ describe("locateLineBuses — simulated fleets", () => {
     const { result } = await run([sim]);
     expectFleetLocated(result, [sim]);
     expectConsistent(result);
-    expect(result.probeCount).toBeLessThanOrEqual(12 + DEFAULT_PROBE_BUDGET.refineProbes);
+    expect(result.probeCount).toBeLessThanOrEqual(
+      12 + DEFAULT_PROBE_BUDGET.refineProbes,
+    );
   });
 });
 
@@ -379,8 +432,18 @@ describe("consistency invariant", () => {
       stopArcs: [0, 250, 500, 750],
       totalArc: 750,
       probed: [
-        { index: 0, stopId: stops[0]!.id, externalId: stops[0]!.externalId, etas: [40] },
-        { index: 1, stopId: stops[1]!.id, externalId: stops[1]!.externalId, etas: [100] },
+        {
+          index: 0,
+          stopId: stops[0]!.id,
+          externalId: stops[0]!.externalId,
+          etas: [40],
+        },
+        {
+          index: 1,
+          stopId: stops[1]!.id,
+          externalId: stops[1]!.externalId,
+          etas: [100],
+        },
       ],
       placed: [
         {
@@ -417,8 +480,18 @@ describe("consistency invariant", () => {
       stopArcs: [0, 250, 500],
       totalArc: 500,
       probed: [
-        { index: 0, stopId: stops[0]!.id, externalId: stops[0]!.externalId, etas: [5] },
-        { index: 1, stopId: stops[1]!.id, externalId: stops[1]!.externalId, etas: [15, 200] },
+        {
+          index: 0,
+          stopId: stops[0]!.id,
+          externalId: stops[0]!.externalId,
+          etas: [5],
+        },
+        {
+          index: 1,
+          stopId: stops[1]!.id,
+          externalId: stops[1]!.externalId,
+          etas: [15, 200],
+        },
       ],
       placed: [
         {
@@ -446,37 +519,65 @@ describe("consistency invariant", () => {
 
 describe("recorded snapshots", () => {
   it("line 2 (loop, 20:16 on 2026-09-17): three buses, each between adjacent stops", async () => {
-    const { variants, probe, calls, snapshot } = snapshotWorld("line-2-loop-snapshot.json");
-    const result = await locateLineBuses({ lineCode: snapshot.routeCode, variants, probe });
+    const { variants, probe, calls, snapshot } = snapshotWorld(
+      "line-2-loop-snapshot.json",
+    );
+    const result = await locateLineBuses({
+      lineCode: snapshot.routeCode,
+      variants,
+      probe,
+    });
 
     // The three "0 min 00 s" entries in the capture: stops 10379, 13056, 10246.
     const arriving = result.positions
-      .map((p) => variants[0]!.stops[indexOf(variants[0]!, p.segment.toStopId)]!.externalId)
+      .map(
+        (p) =>
+          variants[0]!.stops[indexOf(variants[0]!, p.segment.toStopId)]!
+            .externalId,
+      )
       .sort();
     expect(arriving).toEqual(["10246", "10379", "13056"]);
-    expect(result.positions.every((p) => p.spanStops === 1 && p.confidence === "high")).toBe(true);
+    expect(
+      result.positions.every(
+        (p) => p.spanStops === 1 && p.confidence === "high",
+      ),
+    ).toBe(true);
     expect(result.positions.every((p) => p.etaSeconds < 60)).toBe(true);
     expectConsistent(result);
     // The terminal is the origin: one fetch serves both ends of the chain.
-    expect(new Set(calls).size).toBeLessThanOrEqual(7 + DEFAULT_PROBE_BUDGET.refineProbes);
+    expect(new Set(calls).size).toBeLessThanOrEqual(
+      7 + DEFAULT_PROBE_BUDGET.refineProbes,
+    );
     expect(result.probeCount).toBe(new Set(calls).size);
   });
 
   it("line 5 (linear, 20:25 on 2026-09-17): two buses outbound, one inbound", async () => {
-    const { variants, probe, snapshot } = snapshotWorld("line-5-linear-snapshot.json");
-    const result = await locateLineBuses({ lineCode: snapshot.routeCode, variants, probe });
+    const { variants, probe, snapshot } = snapshotWorld(
+      "line-5-linear-snapshot.json",
+    );
+    const result = await locateLineBuses({
+      lineCode: snapshot.routeCode,
+      variants,
+      probe,
+    });
 
-    const byDirection = (d: "I" | "V") => result.positions.filter((p) => p.direction === d);
+    const byDirection = (d: "I" | "V") =>
+      result.positions.filter((p) => p.direction === d);
     const v = variants.find((x) => x.direction === "V")!;
     const i = variants.find((x) => x.direction === "I")!;
 
     // V: "0 min 19 s" at 10796 and "0 min 00 s" at 10198.
-    expect(byDirection("V").map((p) => v.stops[indexOf(v, p.segment.toStopId)]!.externalId).sort()).toEqual([
-      "10198",
-      "10796",
-    ]);
+    expect(
+      byDirection("V")
+        .map((p) => v.stops[indexOf(v, p.segment.toStopId)]!.externalId)
+        .sort(),
+    ).toEqual(["10198", "10796"]);
     // I: "1 min 02 s" at 10798 (mercat balàfia).
-    expect(byDirection("I").map((p) => i.stops[indexOf(i, p.segment.toStopId)]!.externalId)).toEqual(["10798"]);
+    expect(
+      byDirection("I").map(
+        (p) => i.stops[indexOf(i, p.segment.toStopId)]!.externalId,
+      ),
+    ).toEqual(["10798"]);
     expect(result.positions.every((p) => p.spanStops === 1)).toBe(true);
     expectConsistent(result);
   });

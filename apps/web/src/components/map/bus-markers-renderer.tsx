@@ -22,7 +22,8 @@ const FALLBACK_COLOR = "#059669"; // emerald-600
  */
 function titleFor(pos: BusPosition): string {
   const line = `Bus línia ${pos.lineCode}`;
-  if (pos.confidence === "high") return `${line} — entre dues parades consecutives`;
+  if (pos.confidence === "high")
+    return `${line} — entre dues parades consecutives`;
   const span = `entre parades (${pos.spanStops} trams)`;
   return pos.confidence === "medium"
     ? `${line} — ${span}, posició estimada`

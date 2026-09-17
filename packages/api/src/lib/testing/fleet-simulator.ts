@@ -1,5 +1,10 @@
 import { distanceMeters, type LngLat } from "@moventis/shared";
-import type { LocatorStop, LocatorVariant, ProbeFn, ProbeResult } from "../bus-locator";
+import type {
+  LocatorStop,
+  LocatorVariant,
+  ProbeFn,
+  ProbeResult,
+} from "../bus-locator";
 
 /**
  * A synthetic fleet, rendered into the per-stop arrival lists the Moventis API
@@ -74,7 +79,12 @@ export function makeStops(
   const stops: LocatorStop[] = [];
   if (!loop) {
     for (let i = 0; i < n; i++) {
-      stops.push({ id: `${prefix}id${i}`, externalId: `${prefix}${i}`, lat: LAT, lng: LNG + (i * spacingM) / mPerDegLng });
+      stops.push({
+        id: `${prefix}id${i}`,
+        externalId: `${prefix}${i}`,
+        lat: LAT,
+        lng: LNG + (i * spacingM) / mPerDegLng,
+      });
     }
     return stops;
   }
@@ -96,7 +106,13 @@ export function makeVariant(
   stops: LocatorStop[],
   overrides: Partial<LocatorVariant> = {},
 ): LocatorVariant {
-  return { direction: "I", description: "test line", geometry: null, stops, ...overrides };
+  return {
+    direction: "I",
+    description: "test line",
+    geometry: null,
+    stops,
+    ...overrides,
+  };
 }
 
 /** Segment travel times from the stop spacing at a constant speed (m/s). */
@@ -112,7 +128,9 @@ export function segmentTimes(stops: LocatorStop[], speedMps: number): number[] {
 
 export function isLoop(variant: LocatorVariant): boolean {
   const n = variant.stops.length;
-  return n > 1 && variant.stops[0]!.externalId === variant.stops[n - 1]!.externalId;
+  return (
+    n > 1 && variant.stops[0]!.externalId === variant.stops[n - 1]!.externalId
+  );
 }
 
 /** Scheduled offset from the origin to stop `k` (travel + a dwell per stop passed). */
@@ -144,7 +162,11 @@ function jitter(amp: number, a: number, b: number): number {
  * The uncapped, ascending list a stop publishes for this variant's journey.
  * `k` is the stop index; on a loop the terminal index renders as the origin.
  */
-export function listAt(sim: SimVariant, k: number, jitterSeconds = 0): number[] {
+export function listAt(
+  sim: SimVariant,
+  k: number,
+  jitterSeconds = 0,
+): number[] {
   const n = sim.variant.stops.length;
   const loop = isLoop(sim.variant);
   const layover = sim.layoverSeconds ?? 0;
@@ -152,7 +174,8 @@ export function listAt(sim: SimVariant, k: number, jitterSeconds = 0): number[] 
   const out: number[] = [];
 
   sim.buses.forEach((bus, b) => {
-    if (k > bus.segment) out.push(arrivalAt(sim, bus, k) + jitter(jitterSeconds, k, b));
+    if (k > bus.segment)
+      out.push(arrivalAt(sim, bus, k) + jitter(jitterSeconds, k, b));
     if (loop) {
       // On a loop every bus is also listed as its next lap, projected from its
       // departure after the layover — whether or not it has passed this stop
@@ -166,7 +189,10 @@ export function listAt(sim: SimVariant, k: number, jitterSeconds = 0): number[] 
 }
 
 /** The stop bracket a simulated bus is truly in, as variant stop indices. */
-export function trueBracket(bus: SimBus): { fromIndex: number; toIndex: number } {
+export function trueBracket(bus: SimBus): {
+  fromIndex: number;
+  toIndex: number;
+} {
   return { fromIndex: bus.segment, toIndex: bus.segment + 1 };
 }
 
@@ -174,8 +200,16 @@ export function trueBracket(bus: SimBus): { fromIndex: number; toIndex: number }
  * Render the world into a probe. Stops shared between variants publish every
  * journey that serves them, as a real shared stop does.
  */
-export function simulateWorld(variants: SimVariant[], opts: SimWorldOptions = {}): SimWorld {
-  const { cap = 5, missingJourneyAt = [], failAt = [], jitterSeconds = 0 } = opts;
+export function simulateWorld(
+  variants: SimVariant[],
+  opts: SimWorldOptions = {},
+): SimWorld {
+  const {
+    cap = 5,
+    missingJourneyAt = [],
+    failAt = [],
+    jitterSeconds = 0,
+  } = opts;
   const calls: string[] = [];
   const probe: ProbeFn = (externalId) => {
     calls.push(externalId);
@@ -185,7 +219,10 @@ export function simulateWorld(variants: SimVariant[], opts: SimWorldOptions = {}
       const journey = sim.journey ?? sim.variant.description;
       const k = sim.variant.stops.findIndex((s) => s.externalId === externalId);
       if (k === -1 || missingJourneyAt.includes(externalId)) continue;
-      const merged = [...(result.get(journey) ?? []), ...listAt(sim, k, jitterSeconds)]
+      const merged = [
+        ...(result.get(journey) ?? []),
+        ...listAt(sim, k, jitterSeconds),
+      ]
         .sort((x, y) => x - y)
         .slice(0, cap);
       result.set(journey, merged);

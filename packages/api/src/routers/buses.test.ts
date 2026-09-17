@@ -31,7 +31,9 @@ function variantStops(prefix = "e") {
   }));
 }
 
-function line(journeys: { name: string; etas: { s: number; live: boolean }[] }[]): Schedules {
+function line(
+  journeys: { name: string; etas: { s: number; live: boolean }[] }[],
+): Schedules {
   return [
     {
       externalLineId: ROUTE_EXT,
@@ -76,7 +78,14 @@ function nightWorld(): Schedules {
 
 const singleVariantRoute = {
   externalId: ROUTE_EXT,
-  variants: [{ direction: "I", description: JOURNEY, geometry: null, stops: variantStops() }],
+  variants: [
+    {
+      direction: "I",
+      description: JOURNEY,
+      geometry: null,
+      stops: variantStops(),
+    },
+  ],
 };
 
 interface FakeDb {
@@ -146,12 +155,16 @@ describe("buses.byLine", () => {
     // Partial degradation is normal (one stop 500s, the rest answer); the line is
     // not down, so the positions that were recovered must still be delivered.
     mockedSchedule.mockImplementation((stopExternalId: string) =>
-      Promise.resolve(stopExternalId === "e0" ? null : realtimeWorld(stopExternalId)),
+      Promise.resolve(
+        stopExternalId === "e0" ? null : realtimeWorld(stopExternalId),
+      ),
     );
 
     const out = await byLine(makeDb());
 
-    expect(mockedSchedule.mock.calls.some(([stopExt]) => stopExt === "e0")).toBe(true);
+    expect(
+      mockedSchedule.mock.calls.some(([stopExt]) => stopExt === "e0"),
+    ).toBe(true);
     expect(out).toHaveLength(1);
     expect(out[0]!.segment).toEqual({ fromStopId: "eid2", toStopId: "eid3" });
   });
@@ -172,7 +185,9 @@ describe("buses.byLine", () => {
 
     const out = await byLine(makeDb(route));
 
-    const e5Calls = mockedSchedule.mock.calls.filter(([stopExt]) => stopExt === "e5");
+    const e5Calls = mockedSchedule.mock.calls.filter(
+      ([stopExt]) => stopExt === "e5",
+    );
     expect(e5Calls).toHaveLength(1);
     expect(out.map((p) => p.journeyName).sort()).toEqual([JOURNEY, "dest2"]);
   });

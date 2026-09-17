@@ -21,7 +21,10 @@ import { toGeometry, toProbeResult } from "../lib/probe";
  */
 const LINE_CACHE_TTL_MS = 10_000;
 
-const lineCache = new Map<string, { at: number; value: Promise<BusPosition[]> }>();
+const lineCache = new Map<
+  string,
+  { at: number; value: Promise<BusPosition[]> }
+>();
 
 /** Test hook: the module-level cache would otherwise leak between cases. */
 export function clearLineBusesCache(): void {
@@ -45,7 +48,8 @@ export const busesRouter = createTRPCRouter({
     .input(z.object({ routeCode: z.string() }))
     .query(async ({ ctx, input }): Promise<BusPosition[]> => {
       const cached = lineCache.get(input.routeCode);
-      if (cached && Date.now() - cached.at < LINE_CACHE_TTL_MS) return cached.value;
+      if (cached && Date.now() - cached.at < LINE_CACHE_TTL_MS)
+        return cached.value;
 
       const value = locate(ctx.db, input.routeCode);
       lineCache.set(input.routeCode, { at: Date.now(), value });
@@ -114,7 +118,11 @@ async function locate(db: Db, routeCode: string): Promise<BusPosition[]> {
     return toProbeResult(schedule, route.externalId, now);
   };
 
-  const { positions } = await locateLineBuses({ lineCode: routeCode, variants, probe });
+  const { positions } = await locateLineBuses({
+    lineCode: routeCode,
+    variants,
+    probe,
+  });
 
   // With every probe failed the locator finds nothing, and resolving `[]` would
   // let the UI state as fact that no bus on the line is reporting its position.

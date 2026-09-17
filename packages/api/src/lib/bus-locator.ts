@@ -193,7 +193,8 @@ export interface LineLocatorResult {
 }
 
 const asc = (a: number, b: number) => a - b;
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.max(lo, Math.min(hi, v));
 
 /** Strip combining diacritics for an accent-insensitive comparison. */
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -235,7 +236,8 @@ function pickJourney(
   variant: LocatorVariant,
 ): { name: string; etas: number[] } | null {
   for (const [name, etas] of probe) {
-    if (matchVariant(name, [variant])) return { name, etas: [...etas].sort(asc) };
+    if (matchVariant(name, [variant]))
+      return { name, etas: [...etas].sort(asc) };
   }
   return null;
 }
@@ -340,14 +342,16 @@ function buildGeometry(variant: LocatorVariant): VariantGeometry {
   const last = variant.stops[n - 1]!;
   const loop =
     first.externalId === last.externalId ||
-    (path.length > 2 && distanceMeters(path[0]!, path[path.length - 1]!) < LOOP_TOLERANCE_M);
+    (path.length > 2 &&
+      distanceMeters(path[0]!, path[path.length - 1]!) < LOOP_TOLERANCE_M);
   const stopArcs = variant.stops.map(
     (s) => projectToPolyline([s.lng, s.lat], path, cum).arc,
   );
   // A loop's terminal is its origin: projecting that shared point can land on
   // arc≈0 for both, which would make the closing bracket zero-length. Pin the
   // terminal to the end of the polyline.
-  if (loop && n >= 2 && stopArcs[n - 1]! <= stopArcs[n - 2]!) stopArcs[n - 1] = total;
+  if (loop && n >= 2 && stopArcs[n - 1]! <= stopArcs[n - 2]!)
+    stopArcs[n - 1] = total;
   return { path, cum, total, loop, stopArcs };
 }
 
@@ -387,12 +391,25 @@ export function analyseChain(
   for (let k = 1; k < chain.length; k++) {
     const from = chain[k - 1]!;
     const to = chain[k]!;
-    const distanceM = bracketDistance(geom.stopArcs, geom.total, geom.loop, from.index, to.index);
+    const distanceM = bracketDistance(
+      geom.stopArcs,
+      geom.total,
+      geom.loop,
+      from.index,
+      to.index,
+    );
     const maxTravel = maxTravelSeconds(distanceM, to.index - from.index);
     const alignment = alignLists(from.etas, to.etas, maxTravel);
     const diffs = alignment.pairs.map((p) => p.downstream - p.upstream);
     const t = diffs.length ? median(diffs) : null;
-    out.push({ from, to, distanceM, maxTravel, alignment, travel: t !== null && t > 1 ? t : null });
+    out.push({
+      from,
+      to,
+      distanceM,
+      maxTravel,
+      alignment,
+      travel: t !== null && t > 1 ? t : null,
+    });
   }
   return out;
 }
@@ -423,9 +440,16 @@ function confidenceFor(bracket: Bracket): BusPosition["confidence"] {
 // ─── Probe plan ────────────────────────────────────────────────────────────
 
 /** Coarse-pass stop indices: origin, every `stride`, terminal. */
-export function coarseIndices(stopCount: number, budget: ProbeBudget): number[] {
+export function coarseIndices(
+  stopCount: number,
+  budget: ProbeBudget,
+): number[] {
   const last = stopCount - 1;
-  const stride = clamp(Math.ceil(last / budget.coarseSegments), 1, budget.maxBracketStops);
+  const stride = clamp(
+    Math.ceil(last / budget.coarseSegments),
+    1,
+    budget.maxBracketStops,
+  );
   const idx = new Set<number>([0]);
   for (let i = stride; i < last; i += stride) idx.add(i);
   idx.add(last);
@@ -435,7 +459,11 @@ export function coarseIndices(stopCount: number, budget: ProbeBudget): number[] 
 // ─── Locate ────────────────────────────────────────────────────────────────
 
 /** The unprobed stop nearest the midpoint of (from, to), or -1 when none is left. */
-function nearestUnprobed(from: number, to: number, probed: Map<number, unknown>): number {
+function nearestUnprobed(
+  from: number,
+  to: number,
+  probed: Map<number, unknown>,
+): number {
   const mid = Math.floor((from + to) / 2);
   for (let d = 0; d < to - from; d++) {
     for (const k of [mid + d, mid - d]) {
@@ -453,7 +481,9 @@ function nearestUnprobed(from: number, to: number, probed: Map<number, unknown>)
  * budget lasts. Stops shared between variants (and a loop's origin/terminal)
  * are fetched once per call. See the module doc for the model.
  */
-export async function locateLineBuses(input: LineLocatorInput): Promise<LineLocatorResult> {
+export async function locateLineBuses(
+  input: LineLocatorInput,
+): Promise<LineLocatorResult> {
   const { lineCode, probe } = input;
   const budget: ProbeBudget = { ...DEFAULT_PROBE_BUDGET, ...input.budget };
   const variants = dedupeVariants(input.variants);
@@ -488,7 +518,12 @@ export async function locateLineBuses(input: LineLocatorInput): Promise<LineLoca
         journeyName ??= journey?.name ?? null;
         etas = journey?.etas ?? null;
       }
-      probed.set(index, { index, stopId: stop.id, externalId: stop.externalId, etas });
+      probed.set(index, {
+        index,
+        stopId: stop.id,
+        externalId: stop.externalId,
+        etas,
+      });
     };
 
     // Coarse pass. An interior index snaps to a neighbour already fetched for
@@ -497,7 +532,11 @@ export async function locateLineBuses(input: LineLocatorInput): Promise<LineLoca
     const plan = coarseIndices(n, budget).map((index) => {
       if (index === 0 || index === n - 1) return index;
       for (const candidate of [index, index - 1, index + 1]) {
-        if (candidate > 0 && candidate < n - 1 && fetched.has(variant.stops[candidate]!.externalId)) {
+        if (
+          candidate > 0 &&
+          candidate < n - 1 &&
+          fetched.has(variant.stops[candidate]!.externalId)
+        ) {
           return candidate;
         }
       }
@@ -513,7 +552,10 @@ export async function locateLineBuses(input: LineLocatorInput): Promise<LineLoca
     let refineLeft = budget.refineProbes;
     while (refineLeft > 0) {
       const targets = analyseChain([...probed.values()], geom)
-        .filter((b) => b.alignment.between.length > 0 && b.to.index - b.from.index > 1)
+        .filter(
+          (b) =>
+            b.alignment.between.length > 0 && b.to.index - b.from.index > 1,
+        )
         .sort((x, y) => y.to.index - y.from.index - (x.to.index - x.from.index))
         .map((b) => nearestUnprobed(b.from.index, b.to.index, probed))
         .filter((k): k is number => k !== -1)
@@ -544,13 +586,20 @@ export async function locateLineBuses(input: LineLocatorInput): Promise<LineLoca
           direction: variant.direction,
           lat: p.lat,
           lng: p.lng,
-          segment: { fromStopId: bracket.from.stopId, toStopId: bracket.to.stopId },
+          segment: {
+            fromStopId: bracket.from.stopId,
+            toStopId: bracket.to.stopId,
+          },
           spanStops: bracket.to.index - bracket.from.index,
           fraction: clamp(p.fraction, 0, 1),
           etaSeconds: Math.max(0, eta),
           confidence: confidenceFor(bracket),
         };
-        trace.placed.push({ position, fromIndex: bracket.from.index, toIndex: bracket.to.index });
+        trace.placed.push({
+          position,
+          fromIndex: bracket.from.index,
+          toIndex: bracket.to.index,
+        });
         positions.push(position);
       }
     }
@@ -592,7 +641,11 @@ export interface ConsistencyVerdict {
  * plan, because the check needs only the trace shape.
  */
 export function checkConsistency(trace: VariantTrace): ConsistencyVerdict[] {
-  const geom = { stopArcs: trace.stopArcs, total: trace.totalArc, loop: trace.loop };
+  const geom = {
+    stopArcs: trace.stopArcs,
+    total: trace.totalArc,
+    loop: trace.loop,
+  };
   const brackets = analyseChain(trace.probed, geom);
   const byIndex = new Map(trace.probed.map((p) => [p.index, p]));
   const verdicts: ConsistencyVerdict[] = [];
@@ -603,12 +656,24 @@ export function checkConsistency(trace: VariantTrace): ConsistencyVerdict[] {
     const from = byIndex.get(fromIndex);
     const to = byIndex.get(toIndex);
     if (!from?.etas || !to?.etas) {
-      verdicts.push({ position, ok: false, problems: ["bracket stops were not probed"], notes });
+      verdicts.push({
+        position,
+        ok: false,
+        problems: ["bracket stops were not probed"],
+        notes,
+      });
       continue;
     }
-    const bracket = brackets.find((b) => b.from.index === fromIndex && b.to.index === toIndex);
+    const bracket = brackets.find(
+      (b) => b.from.index === fromIndex && b.to.index === toIndex,
+    );
     if (!bracket) {
-      verdicts.push({ position, ok: false, problems: ["bracket is not a consecutive pair of probed stops"], notes });
+      verdicts.push({
+        position,
+        ok: false,
+        problems: ["bracket is not a consecutive pair of probed stops"],
+        notes,
+      });
       continue;
     }
     const eta = position.etaSeconds;
@@ -620,10 +685,14 @@ export function checkConsistency(trace: VariantTrace): ConsistencyVerdict[] {
     const downstream = [...to.etas].sort(asc);
     const at = downstream.findIndex((x) => near(Math.max(0, x), eta));
     if (at === -1) {
-      problems.push(`not listed at downstream stop #${to.index} (${to.externalId})`);
+      problems.push(
+        `not listed at downstream stop #${to.index} (${to.externalId})`,
+      );
     }
     if (eta > bracket.maxTravel) {
-      problems.push(`ETA ${eta.toFixed(0)}s exceeds the bracket bound ${bracket.maxTravel.toFixed(0)}s`);
+      problems.push(
+        `ETA ${eta.toFixed(0)}s exceeds the bracket bound ${bracket.maxTravel.toFixed(0)}s`,
+      );
     }
 
     // Absent upstream: greedy injective assignment of the suspects to earlier
@@ -634,8 +703,15 @@ export function checkConsistency(trace: VariantTrace): ConsistencyVerdict[] {
     const earlier = at === -1 ? [] : downstream.slice(0, at);
     let cursor = 0;
     for (const y of [...suspects].sort(asc)) {
-      while (cursor < earlier.length && earlier[cursor]! - y < -SAME_TRIP_SLACK_S) cursor++;
-      if (cursor < earlier.length && earlier[cursor]! - y <= bracket.maxTravel) {
+      while (
+        cursor < earlier.length &&
+        earlier[cursor]! - y < -SAME_TRIP_SLACK_S
+      )
+        cursor++;
+      if (
+        cursor < earlier.length &&
+        earlier[cursor]! - y <= bracket.maxTravel
+      ) {
         cursor++;
       } else {
         problems.push(
@@ -654,9 +730,15 @@ export function checkConsistency(trace: VariantTrace): ConsistencyVerdict[] {
       if (trace.loop && b.to.index === trace.stopCount - 1) break;
       expected += b.travel;
       const list = b.to.etas!;
-      const found = list.some((x) => Math.abs(x - expected) <= Math.max(SAME_TRIP_SLACK_S, 0.15 * expected));
+      const found = list.some(
+        (x) =>
+          Math.abs(x - expected) <=
+          Math.max(SAME_TRIP_SLACK_S, 0.15 * expected),
+      );
       if (found) continue;
-      const capped = list.length >= REALTIME_LIST_CAP && (list[list.length - 1] ?? 0) < expected;
+      const capped =
+        list.length >= REALTIME_LIST_CAP &&
+        (list[list.length - 1] ?? 0) < expected;
       notes.push(
         capped
           ? `beyond the cap at stop #${b.to.index}`
