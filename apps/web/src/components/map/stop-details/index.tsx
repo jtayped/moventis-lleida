@@ -17,6 +17,8 @@ import {
   Sparkle,
 } from "lucide-react";
 import { isNewStop } from "@/lib/stops";
+import { formatTimeAgo } from "@/lib/time";
+import { Button } from "@/components/ui/button";
 import type { Journey, Schedules } from "@moventis/shared";
 
 type ScheduledTime = Journey["scheduledTimes"][number];
@@ -60,6 +62,47 @@ const SrLabels = ({ name }: { name?: string }) => (
   </>
 );
 
+/**
+ * A refetch that failed while a usable timetable is still on screen. Sits with
+ * the header's "actualitzat X" rather than replacing the page, because the times
+ * below it are still the best answer anyone at the stop has.
+ */
+const StaleNotice = ({
+  dataUpdatedAt,
+  isFetching,
+  refetch,
+}: {
+  dataUpdatedAt: number | null;
+  isFetching: boolean;
+  refetch: () => void;
+}) => {
+  const ago = formatTimeAgo(dataUpdatedAt);
+
+  return (
+    <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+      <TriangleAlert size={14} className="shrink-0" />
+      <span className="min-w-0 flex-1">
+        no s&apos;ha pogut actualitzar.{" "}
+        {!ago
+          ? "les hores poden estar desfasades"
+          : ago === "ara"
+            ? "les hores són d'ara mateix"
+            : `les hores són de ${ago}`}
+        .
+      </span>
+      <Button
+        onClick={() => refetch()}
+        variant="ghost"
+        size="sm"
+        disabled={isFetching}
+        className="h-7 shrink-0 px-2 text-xs underline underline-offset-2"
+      >
+        torna-ho a provar
+      </Button>
+    </div>
+  );
+};
+
 const StopDetails = ({ externalId }: { externalId: string }) => {
   const {
     selectedRoutes,
@@ -82,7 +125,18 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     isError,
     dataUpdatedAt,
     refetch,
-  } = api.stops.get.useQuery({ externalId });
+  } = api.stops.get.useQuery(
+    { externalId },
+    {
+      // A drawer left open on a bus stop is the whole product. Without this the
+      // list only ever shrinks — `now` ticks every 30s and past arrivals are
+      // filtered out — until it claims the stop has no schedules at all.
+      refetchInterval: 30_000,
+      // Nothing to keep fresh while the phone is in a pocket, and every poll is
+      // a live Moventis request per route on the stop.
+      refetchIntervalInBackground: false,
+    },
+  );
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -112,16 +166,33 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
 
   const filteredSchedules = useMemo(() => {
     if (!details?.schedules) return [];
-    return details.schedules.map((line) => ({
-      ...line,
-      journeys: line.journeys.map((journey) => ({
-        ...journey,
-        scheduledTimes: journey.scheduledTimes.filter(
-          (t) => t.arrivalTime.getTime() > now,
-        ),
-      })),
-    }));
+    return details.schedules.flatMap((line) => {
+      const journeys = line.journeys
+        .map((journey) => ({
+          ...journey,
+          scheduledTimes: journey.scheduledTimes.filter(
+            (t) => t.arrivalTime.getTime() > now,
+          ),
+        }))
+        // A destination heading with no times under it says nothing.
+        .filter((journey) => journey.scheduledTimes.length > 0);
+
+      // A line that never had a journey keeps its "sense busos" badge; one whose
+      // every time has passed drops out, so the drawer can say so in one place.
+      if (journeys.length === 0 && line.journeys.length > 0) return [];
+      return [{ ...line, journeys }];
+    });
   }, [details, now]);
+
+  // Distinguishes "this stop has no schedules" from "the schedules we have are
+  // all in the past" — the second is stale data, and says to refresh.
+  const hadTimes = useMemo(
+    () =>
+      (details?.schedules ?? []).some((line) =>
+        line.journeys.some((journey) => journey.scheduledTimes.length > 0),
+      ),
+    [details],
+  );
 
   // Only worth explaining the two badges when a timetable-only time is on screen.
   const hasTimetableOnlyTime = useMemo(
@@ -186,7 +257,10 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     );
   }
 
-  if (isError || !details) {
+  // Only when there is nothing to show. React Query keeps `data` when a
+  // background refetch fails, and on a bad signal at the stop itself a readable
+  // timetable — even a few minutes old — beats an error screen.
+  if (!details) {
     return (
       <>
         <SrLabels />
@@ -206,6 +280,14 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
         isFetching={isFetching}
         refetch={refetch}
       />
+
+      {isError && (
+        <StaleNotice
+          dataUpdatedAt={dataUpdatedAt}
+          isFetching={isFetching}
+          refetch={refetch}
+        />
+      )}
 
       <StopNavigation externalId={externalId} />
 
@@ -241,7 +323,22 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
         <div>
           {filteredSchedules.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center">
-              <p>no hi ha horaris disponibles per a aquesta parada.</p>
+              {hadTimes ? (
+                <>
+                  <p>totes les hores han passat — actualitza.</p>
+                  <Button
+                    onClick={() => refetch()}
+                    variant="outline"
+                    size="sm"
+                    disabled={isFetching}
+                    className="mt-3"
+                  >
+                    actualitza
+                  </Button>
+                </>
+              ) : (
+                <p>no hi ha horaris disponibles per a aquesta parada.</p>
+              )}
             </div>
           ) : showSections ? (
             <div>
