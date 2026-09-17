@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { useBusFinder } from "@/context/buses";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { useSettings, type ThemeSetting } from "@/hooks/use-settings";
+import { track } from "@/lib/analytics";
 
 const THEME_OPTIONS: {
   value: ThemeSetting;
@@ -62,9 +63,39 @@ const Section = ({
  * an account, because there are no accounts.
  */
 const SettingsPanel = () => {
-  const { settings, setLiveBusPrediction, setTheme } = useSettings();
+  const { settings, setAnalytics, setLiveBusPrediction, setTheme } =
+    useSettings();
   const { status: consent, accept, decline } = useCookieConsent();
   const { preferidesCount, clearPreferides } = useBusFinder();
+
+  // Every handler here reports before it writes. It has to for the analytics
+  // switch — turning it off is the last thing this device will ever send, and
+  // running the setter first would silence the event that says so — and the
+  // other two follow the same shape so the rule is one rule.
+  //
+  // The cost is that turning analytics back *on* isn't counted: at the moment
+  // of that click the device still hasn't opted in, and `track` is right to
+  // refuse it. An opt-in shows up as the visits that follow it.
+  const handleTheme = (theme: ThemeSetting) => {
+    track("setting changed", { setting: "theme", value: theme });
+    setTheme(theme);
+  };
+
+  const handleLiveBusPrediction = (enabled: boolean) => {
+    track("setting changed", {
+      setting: "liveBusPrediction",
+      value: enabled ? "on" : "off",
+    });
+    setLiveBusPrediction(enabled);
+  };
+
+  const handleAnalytics = (enabled: boolean) => {
+    track("setting changed", {
+      setting: "analytics",
+      value: enabled ? "on" : "off",
+    });
+    setAnalytics(enabled);
+  };
 
   // `unset` behaves like `accepted` everywhere else in the app (see
   // `use-cookie-consent.ts`), so it has to read that way here too — saying
@@ -92,7 +123,7 @@ const SettingsPanel = () => {
           <Switch
             id="live-bus-prediction"
             checked={settings.liveBusPrediction}
-            onCheckedChange={setLiveBusPrediction}
+            onCheckedChange={handleLiveBusPrediction}
             aria-describedby="live-bus-prediction-help"
             className="mt-0.5"
           />
@@ -111,7 +142,7 @@ const SettingsPanel = () => {
                   type="button"
                   size="sm"
                   variant={isActive ? "default" : "outline"}
-                  onClick={() => setTheme(value)}
+                  onClick={() => handleTheme(value)}
                   aria-pressed={isActive}
                   className="flex-1 gap-1.5"
                 >
@@ -139,8 +170,9 @@ const SettingsPanel = () => {
             </p>
             <p className="text-muted-foreground text-xs leading-relaxed">
               Les parades preferides es guarden al navegador, només en aquest
-              dispositiu. No fem servir cookies de seguiment ni analítica de
-              tercers.
+              dispositiu. No fem servir cookies de seguiment. Comptem visites de
+              forma anònima amb una eina pròpia, i pots desactivar-ho a la
+              configuració.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -165,6 +197,27 @@ const SettingsPanel = () => {
                 més informació
               </Link>
             </div>
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 space-y-1">
+              <Label htmlFor="analytics">Analítica anònima</Label>
+              <p
+                id="analytics-help"
+                className="text-muted-foreground text-xs leading-relaxed"
+              >
+                Comptem visites i accions amb una eina pròpia (umami), sense
+                cookies ni identificadors. Serveix per saber quines línies i
+                parades es consulten més.
+              </p>
+            </div>
+            <Switch
+              id="analytics"
+              checked={settings.analytics}
+              onCheckedChange={handleAnalytics}
+              aria-describedby="analytics-help"
+              className="mt-0.5"
+            />
           </div>
 
           <div className="flex items-center justify-between gap-4">
