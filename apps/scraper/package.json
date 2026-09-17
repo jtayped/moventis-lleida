@@ -8,6 +8,7 @@
     "start": "pnpm --filter=@moventis/db db:push --skip-generate && tsx src/index.ts",
     "sync": "tsx src/sync-once.ts",
     "sync:dev": "tsx --env-file=../../.env src/sync-once.ts",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -20,6 +21,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@moventis/eslint-config": "workspace:*",
     "@moventis/tsconfig": "workspace:*",
     "@types/node": "^20.14.10",
     "@types/node-cron": "^3.0.11",

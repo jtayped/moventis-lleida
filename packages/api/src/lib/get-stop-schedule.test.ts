@@ -1,15 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import axios, { AxiosError } from "axios";
+import type * as AxiosModule from "axios";
 import { TRPCError } from "@trpc/server";
 import { getStopSchedule } from "./stop-schedule";
 import { loadFixture } from "../__fixtures__/load";
 
 // Mock only axios.get; keep the real AxiosError class so `instanceof` still works.
 vi.mock("axios", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("axios")>();
+  const actual = await importOriginal<typeof AxiosModule>();
   return { ...actual, default: { ...actual.default, get: vi.fn() } };
 });
 
+// `axios.get` is the `vi.fn()` installed by the mock above, not a real method,
+// so there is no `this` for it to lose.
+// eslint-disable-next-line @typescript-eslint/unbound-method
 const get = vi.mocked(axios.get);
 
 afterEach(() => vi.clearAllMocks());

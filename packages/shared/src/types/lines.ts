@@ -1,5 +1,5 @@
 export type Lines = string;
-export type Line = {
+export interface Line {
   id: string;
   externalId: string;
   name: string;
@@ -8,4 +8,4 @@ export type Line = {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
-};
+}

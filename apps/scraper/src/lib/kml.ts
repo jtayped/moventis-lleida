@@ -3,7 +3,7 @@
  * an array of [lng, lat] pairs. The KML altitude component is discarded.
  */
 export function parseKmlPath(kml: string): [number, number][] {
-  const match = kml.match(/<coordinates>([\s\S]*?)<\/coordinates>/);
+  const match = /<coordinates>([\s\S]*?)<\/coordinates>/.exec(kml);
   if (!match?.[1]) return [];
   return match[1]
     .trim()
