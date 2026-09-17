@@ -4,8 +4,11 @@ import {
   advanceTracks,
   alignArrivals,
   driftMinutes,
+  journeyKey,
+  toDriftSamples,
   type DriftTrack,
 } from "./arrival-drift";
+import type { Schedules } from "../types/schedule";
 
 const MIN = 60_000;
 const T0 = 1_760_000_000_000; // an arbitrary epoch instant
@@ -74,11 +77,17 @@ describe("advanceTracks", () => {
 
   it("measures drift against the first prediction, not the last one", () => {
     let state: DriftTrack[] = [];
-    const t1 = advanceTracks(state, [{ arrivalMs: T0 + 10 * MIN, isRealTime: true }]);
+    const t1 = advanceTracks(state, [
+      { arrivalMs: T0 + 10 * MIN, isRealTime: true },
+    ]);
     state = t1.tracks;
-    const t2 = advanceTracks(state, [{ arrivalMs: T0 + 11 * MIN, isRealTime: true }]);
+    const t2 = advanceTracks(state, [
+      { arrivalMs: T0 + 11 * MIN, isRealTime: true },
+    ]);
     state = t2.tracks;
-    const t3 = advanceTracks(state, [{ arrivalMs: T0 + 13 * MIN, isRealTime: true }]);
+    const t3 = advanceTracks(state, [
+      { arrivalMs: T0 + 13 * MIN, isRealTime: true },
+    ]);
 
     expect(t2.drifts[0]?.deltaMs).toBe(1 * MIN);
     expect(t3.drifts[0]?.deltaMs).toBe(3 * MIN); // cumulative, not +2
@@ -92,7 +101,9 @@ describe("advanceTracks", () => {
     let tracks: DriftTrack[] = [];
     let last = { deltaMs: 0 };
     for (const minutes of [10, 13, 16, 19]) {
-      const r = advanceTracks(tracks, [{ arrivalMs: T0 + minutes * MIN, isRealTime: true }]);
+      const r = advanceTracks(tracks, [
+        { arrivalMs: T0 + minutes * MIN, isRealTime: true },
+      ]);
       tracks = r.tracks;
       last = r.drifts[0]!;
     }
@@ -100,7 +111,10 @@ describe("advanceTracks", () => {
   });
 
   it("uses the printed timetable as the baseline once the bus goes live", () => {
-    const scheduled = advanceTracks([], [{ arrivalMs: T0 + 15 * MIN, isRealTime: false }]);
+    const scheduled = advanceTracks(
+      [],
+      [{ arrivalMs: T0 + 15 * MIN, isRealTime: false }],
+    );
     const live = advanceTracks(scheduled.tracks, [
       { arrivalMs: T0 + 13 * MIN, isRealTime: true },
     ]);
@@ -112,10 +126,13 @@ describe("advanceTracks", () => {
   });
 
   it("returns drifts in the caller's order even when samples are unsorted", () => {
-    const first = advanceTracks([], [
-      { arrivalMs: T0 + 20 * MIN, isRealTime: true },
-      { arrivalMs: T0 + 5 * MIN, isRealTime: true },
-    ]);
+    const first = advanceTracks(
+      [],
+      [
+        { arrivalMs: T0 + 20 * MIN, isRealTime: true },
+        { arrivalMs: T0 + 5 * MIN, isRealTime: true },
+      ],
+    );
     const second = advanceTracks(first.tracks, [
       { arrivalMs: T0 + 22 * MIN, isRealTime: true }, // the 20 → +2
       { arrivalMs: T0 + 4 * MIN, isRealTime: true }, // the 5 → -1
@@ -124,11 +141,16 @@ describe("advanceTracks", () => {
   });
 
   it("forgets a bus that is no longer listed", () => {
-    const first = advanceTracks([], [
-      { arrivalMs: T0 + 1 * MIN, isRealTime: true },
+    const first = advanceTracks(
+      [],
+      [
+        { arrivalMs: T0 + 1 * MIN, isRealTime: true },
+        { arrivalMs: T0 + 15 * MIN, isRealTime: true },
+      ],
+    );
+    const second = advanceTracks(first.tracks, [
       { arrivalMs: T0 + 15 * MIN, isRealTime: true },
     ]);
-    const second = advanceTracks(first.tracks, [{ arrivalMs: T0 + 15 * MIN, isRealTime: true }]);
     expect(second.tracks).toHaveLength(1);
     expect(second.tracks[0]?.baselineMs).toBe(T0 + 15 * MIN);
   });
@@ -169,5 +191,87 @@ describe("driftMinutes", () => {
     expect(driftMinutes(-90_000)).toBe(-2);
     expect(driftMinutes(119_000)).toBe(2);
     expect(driftMinutes(-4 * MIN - 10_000)).toBe(-4);
+  });
+});
+
+describe("toDriftSamples", () => {
+  const time = (minutes: number, isRealTime: boolean) => ({
+    arrivalTime: new Date(T0 + minutes * MIN),
+    isRealTime,
+    accessible: null,
+  });
+
+  const schedules: Schedules = [
+    {
+      externalLineId: "137",
+      lineCode: "1",
+      lineName: "Linia 1",
+      selected: true,
+      incidencias: null,
+      journeys: [
+        { name: "Pardinyes", scheduledTimes: [time(8, true), time(-3, false)] },
+        { name: "Cappont", scheduledTimes: [time(12, false)] },
+      ],
+    },
+    {
+      externalLineId: "204",
+      lineCode: "4",
+      lineName: "Linia 4",
+      selected: false,
+      incidencias: null,
+      // Same direction name as line 1: the key has to keep them apart, or one
+      // line's buses would be aligned against the other's.
+      journeys: [{ name: "Pardinyes", scheduledTimes: [time(9, true)] }],
+    },
+  ];
+
+  it("keys samples per line and journey, in the order the API gave them", () => {
+    const samples = toDriftSamples(schedules);
+
+    expect(Object.keys(samples).sort()).toEqual([
+      journeyKey("137", "Cappont"),
+      journeyKey("137", "Pardinyes"),
+      journeyKey("204", "Pardinyes"),
+    ]);
+    // Unsorted, and the already-past time kept: the drawer hides it, the
+    // alignment must still see it as the tail of a track.
+    expect(samples[journeyKey("137", "Pardinyes")]).toEqual([
+      { arrivalMs: T0 + 8 * MIN, isRealTime: true },
+      { arrivalMs: T0 - 3 * MIN, isRealTime: false },
+    ]);
+    expect(samples[journeyKey("204", "Pardinyes")]).toEqual([
+      { arrivalMs: T0 + 9 * MIN, isRealTime: true },
+    ]);
+  });
+
+  it("feeds advanceDriftState straight, drifts landing back in input order", () => {
+    const first = advanceDriftState({}, toDriftSamples(schedules));
+    const later: Schedules = [
+      {
+        ...schedules[0]!,
+        journeys: [
+          {
+            name: "Pardinyes",
+            // The 8-minute bus slipped two minutes; the past one is gone.
+            scheduledTimes: [time(10, true)],
+          },
+          { name: "Cappont", scheduledTimes: [time(12, false)] },
+        ],
+      },
+      schedules[1]!,
+    ];
+    const second = advanceDriftState(first.state, toDriftSamples(later));
+
+    expect(second.drifts[journeyKey("137", "Pardinyes")]?.[0]?.deltaMs).toBe(
+      2 * MIN,
+    );
+    expect(second.drifts[journeyKey("137", "Cappont")]?.[0]).toMatchObject({
+      deltaMs: 0,
+      baselineIsRealTime: false,
+    });
+  });
+
+  it("returns nothing for a stop with no schedules", () => {
+    expect(toDriftSamples([])).toEqual({});
   });
 });

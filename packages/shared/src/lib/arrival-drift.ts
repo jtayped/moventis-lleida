@@ -32,6 +32,8 @@
  * the stop actually wants to know.
  */
 
+import type { Schedules } from "../types/schedule";
+
 export interface DriftTrack {
   /** Arrival first predicted for this bus. Never changes once set. */
   baselineMs: number;
@@ -240,4 +242,51 @@ export function driftMinutes(deltaMs: number): number {
   const rounded = minutes < 0 ? -Math.round(-minutes) : Math.round(minutes);
   // `-Math.round(0.4)` is -0, which `Object.is` and a `toBe(0)` both reject.
   return rounded === 0 ? 0 : rounded;
+}
+
+/**
+ * The key a journey's tracks are stored under: the line's Moventis id plus the
+ * journey name.
+ *
+ * The name alone is not enough — two lines through one stop can both call their
+ * direction "Pardinyes", and folding them together would align one line's buses
+ * against the other's. The line *code* is not enough either: the drawer groups
+ * by `externalLineId`, which is what distinguishes the variants of a line that
+ * share a code.
+ */
+export function journeyKey(
+  lineExternalId: string,
+  journeyName: string,
+): string {
+  return `${lineExternalId}|${journeyName}`;
+}
+
+/**
+ * Flatten a stop's timetable into the per-journey samples `advanceDriftState`
+ * folds in.
+ *
+ * Deliberately takes the *whole* response, not the list the drawer renders: a
+ * time filtered out for being in the past is still the tail of a track, and
+ * hiding it from the alignment would make every refresh look as if a bus had
+ * vanished and another appeared. Order is left exactly as the API gave it —
+ * `advanceTracks` sorts its own copy and hands the drifts back in this order.
+ */
+export function toDriftSamples(
+  schedules: Schedules,
+): Record<string, ArrivalSample[]> {
+  const byJourney: Record<string, ArrivalSample[]> = {};
+  for (const line of schedules) {
+    for (const journey of line.journeys) {
+      const key = journeyKey(line.externalLineId, journey.name);
+      const samples = journey.scheduledTimes.map((time) => ({
+        arrivalMs: time.arrivalTime.getTime(),
+        isRealTime: time.isRealTime,
+      }));
+      // Appended rather than assigned: a repeated key would otherwise drop a
+      // whole journey's buses silently, and losing their order is the milder
+      // failure of the two.
+      byJourney[key] = [...(byJourney[key] ?? []), ...samples];
+    }
+  }
+  return byJourney;
 }
