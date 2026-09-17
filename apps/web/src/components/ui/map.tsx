@@ -1,7 +1,8 @@
 "use client";
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { APIProvider, Map } from "@vis.gl/react-google-maps";
 import { env } from "@/env";
+import { Button } from "@/components/ui/button";
 
 interface Coordinates {
   lat: number;
@@ -64,9 +65,29 @@ const MapComponent = ({
   const cameraRef = useRef<{ center: Coordinates; zoom: number } | null>(null);
   const camera = cameraRef.current;
 
+  // A blocked key, a dead connection or an ad blocker all end here. Without it
+  // the page is a blank rectangle with the search field floating over nothing.
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  if (loadFailed) {
+    return (
+      <div className={className}>
+        <div className="bg-muted/40 flex h-full w-full flex-col items-center justify-center gap-4 p-6 text-center">
+          <p className="text-muted-foreground max-w-xs text-sm">
+            no s&apos;ha pogut carregar el mapa. comprova la connexió i
+            torna-ho a provar.
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            recarrega
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={className}>
-      <APIProvider apiKey={apiKey}>
+      <APIProvider apiKey={apiKey} onError={() => setLoadFailed(true)}>
         <Map
           // `colorScheme` (like `mapId` and `renderingType`) is fixed at
           // creation time in the underlying Maps JS SDK — changing the prop in
