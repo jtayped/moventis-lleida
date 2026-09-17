@@ -291,10 +291,16 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
       .filter((code) => selected.has(code));
   }, [details, selectedRoutes]);
 
-  const liveCount = useMemo(
-    () => busPositions.filter((p) => relevantLines.includes(p.lineCode)).length,
-    [busPositions, relevantLines],
-  );
+  const { liveCount, liveApproximateCount } = useMemo(() => {
+    const relevant = busPositions.filter((p) =>
+      relevantLines.includes(p.lineCode),
+    );
+    return {
+      liveCount: relevant.length,
+      liveApproximateCount: relevant.filter((p) => p.confidence !== "high")
+        .length,
+    };
+  }, [busPositions, relevantLines]);
 
   const liveStatus = useMemo<LiveBusStatusValue>(() => {
     if (relevantLines.length === 0) return "idle";
@@ -356,7 +362,11 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
       <StopNavigation externalId={externalId} />
 
       {isBusLocationEnabled && !details.deletedAt && (
-        <LiveBusStatus status={liveStatus} count={liveCount} />
+        <LiveBusStatus
+          status={liveStatus}
+          count={liveCount}
+          approximateCount={liveApproximateCount}
+        />
       )}
 
       {details.deletedAt && (

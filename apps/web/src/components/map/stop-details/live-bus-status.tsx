@@ -18,9 +18,17 @@ export type LiveBusStatusValue = "idle" | "loading" | "done" | "error";
 export default function LiveBusStatus({
   status,
   count,
+  approximateCount = 0,
 }: {
   status: LiveBusStatusValue;
+  /** Buses drawn for the lines that serve this stop. */
   count: number;
+  /**
+   * How many of those sit in a bracket wider than two adjacent stops — their
+   * marker is a point estimate inside that bracket, not a fix. The banner says
+   * so rather than let every marker read as equally precise.
+   */
+  approximateCount?: number;
 }) {
   if (status === "idle") return null;
 
@@ -68,17 +76,26 @@ export default function LiveBusStatus({
 
   return (
     <div
-      className={`${base} items-center border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300`}
+      className={`${base} border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300`}
       aria-live="polite"
     >
-      <span aria-hidden className="relative flex size-2.5 shrink-0">
+      <span aria-hidden className="relative mt-1.5 flex size-2.5 shrink-0">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
         <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
       </span>
-      <span className="font-medium">
-        {count === 1
-          ? "1 autobús en directe al mapa"
-          : `${count} autobusos en directe al mapa`}
+      <span>
+        <span className="font-medium">
+          {count === 1
+            ? "1 autobús en directe al mapa"
+            : `${count} autobusos en directe al mapa`}
+        </span>
+        {approximateCount > 0 && (
+          <span className="block text-xs opacity-80">
+            {approximateCount === 1
+              ? "1 amb la posició aproximada entre parades"
+              : `${approximateCount} amb la posició aproximada entre parades`}
+          </span>
+        )}
       </span>
     </div>
   );

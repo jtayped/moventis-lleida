@@ -15,11 +15,28 @@ interface BusMarkersRendererProps {
 const FALLBACK_COLOR = "#059669"; // emerald-600
 
 /**
+ * What the marker's tooltip claims. A position is a bracket between two stops
+ * (`spanStops` segments wide) with a point estimate inside it; the copy should
+ * not promise more than that. "high" is an adjacent-stop bracket; the wider
+ * ones say so.
+ */
+function titleFor(pos: BusPosition): string {
+  const line = `Bus línia ${pos.lineCode}`;
+  if (pos.confidence === "high")
+    return `${line} — entre dues parades consecutives`;
+  const span = `entre parades (${pos.spanStops} trams)`;
+  return pos.confidence === "medium"
+    ? `${line} — ${span}, posició estimada`
+    : `${line} — ${span}, posició poc precisa`;
+}
+
+/**
  * Renders inferred live bus positions on the map. Deliberately distinct from the
  * static stop pins (which are solid line-coloured circles with a white bus glyph):
  * a bus is a *white* vehicle chip with a green pulsing "live" dot and a pulsing
- * halo, so a moving vehicle never reads as a stop. Lower-confidence positions are
- * dimmed. Each marker uses its own line's colour. Markers carry a Catalan label.
+ * halo, so a moving vehicle never reads as a stop. Wider (less certain) brackets
+ * are dimmed, and the widest also lose the solid outline. Each marker uses its
+ * own line's colour. Markers carry a Catalan label.
  */
 const BusMarkersRenderer = React.memo(
   ({ positions, colorByLine }: BusMarkersRendererProps) => {
@@ -27,23 +44,19 @@ const BusMarkersRenderer = React.memo(
       <>
         {positions.map((pos, i) => {
           const accent = colorByLine[pos.lineCode] ?? FALLBACK_COLOR;
-          const dimmed = pos.confidence !== "high";
-          const title =
-            pos.confidence === "low"
-              ? `Bus línia ${pos.lineCode} — posició aproximada (poc precisa)`
-              : `Bus línia ${pos.lineCode} — posició aproximada`;
 
           return (
             <AdvancedMarker
               key={`${pos.lineCode}-${pos.journeyName}-${pos.segment.fromStopId}-${pos.segment.toStopId}-${pos.etaSeconds}-${i}`}
               position={{ lat: pos.lat, lng: pos.lng }}
-              title={title}
+              title={titleFor(pos)}
               zIndex={20}
             >
               <div
                 className={cn(
                   "relative flex items-center justify-center",
-                  dimmed && "opacity-70",
+                  pos.confidence === "medium" && "opacity-80",
+                  pos.confidence === "low" && "opacity-60",
                 )}
               >
                 {/* Pulsing halo — stop pins never animate, so this reads as motion. */}
@@ -54,7 +67,10 @@ const BusMarkersRenderer = React.memo(
                 />
                 {/* White vehicle chip: pill shape clearly differs from round stops. */}
                 <div
-                  className="relative flex items-center gap-1 rounded-full border-2 bg-white py-1 pr-2 pl-1.5 shadow-lg"
+                  className={cn(
+                    "relative flex items-center gap-1 rounded-full border-2 bg-white py-1 pr-2 pl-1.5 shadow-lg",
+                    pos.confidence === "low" && "border-dashed",
+                  )}
                   style={{ borderColor: accent }}
                 >
                   <span className="relative flex size-2">
