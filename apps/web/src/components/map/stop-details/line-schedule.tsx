@@ -56,7 +56,7 @@ export const StopScheduleLine = ({
 
             return (
               <div key={journeyGroup.name}>
-                <h4 className="mb-2 text-sm font-medium text-gray-700 capitalize">
+                <h4 className="text-muted-foreground mb-2 text-sm font-medium capitalize">
                   {journeyGroup.name}
                 </h4>
                 {closestTime && (
