@@ -8,40 +8,76 @@ import {
 } from "@moventis/shared";
 
 /**
- * Fallback urban-bus speed (m/s) used when two-probe calibration can't recover a
- * real speed for a variant (≈14 km/h, conservative for city traffic). When this
- * is used the affected positions are marked `confidence:"medium"`.
+ * Live bus positions, bracketed between the stops that do and do not list them.
+ *
+ * The Moventis API exposes no vehicle ids or GPS. What it does expose, per stop
+ * and journey, is an ascending list of `real:"S"` arrivals — and one physical
+ * bus shows up in that list at every stop it has still to reach on its current
+ * trip, with an ETA that grows by the scheduled inter-stop offset from one stop
+ * to the next. It is absent from the stops it has already passed. So for two
+ * probed stops A then B (travel order):
+ *
+ *   - every entry at A reappears at B, later by the A→B travel time (unless the
+ *     API's ~5-entry cap cut it at B), and
+ *   - an entry at B with no such counterpart at A is a bus between A and B.
+ *
+ * That is the whole locator: {@link alignLists} pairs the two lists by order
+ * and proximity and reports the unpaired leading entries at B as buses
+ * bracketed in (A, B]. Each pair also measures the real A→B travel time, which
+ * places a bracketed bus inside the bracket by its ETA to B.
+ *
+ * Two facts about the lists, both recorded in `__fixtures__/line-*-snapshot.json`
+ * and easy to get wrong:
+ *
+ *   1. An origin stop lists the *departures* of the next few trips, and every
+ *      downstream stop carries those same trips as projections (still
+ *      `real:"S"`, since a vehicle is assigned) — a bus on its way to the
+ *      terminal is listed there once as itself and again as its next trip.
+ *      A loop's terminal is its origin, so the list there is entirely
+ *      projections, a lap apart per vehicle. None of these are buses between
+ *      stops: they align with the origin's entries like any other trip, which
+ *      is why the origin is always probed and why nothing at the first probed
+ *      stop is ever emitted.
+ *   2. Lists are capped (usually at 5, some stops more), from the tail. The
+ *      alignment therefore only trusts *leading* unpaired entries, and trusts
+ *      trailing ones only when the upstream list was short enough to be
+ *      complete.
+ *
+ * Everything here is pure: I/O comes in through the injected {@link ProbeFn}
+ * and every ETA is relative to one reference instant chosen by the caller.
  */
-const AVG_SPEED_MPS = 4;
 
-/** Calibrated speeds are clamped to this sane urban range (m/s). */
-const MIN_SPEED_MPS = 1.5;
-const MAX_SPEED_MPS = 12;
+/** ETA lists are assumed capped at this size; a shorter list is complete. */
+export const REALTIME_LIST_CAP = 5;
 
 /**
- * The API documentedly caps real-time (`real:"S"`) arrivals at ~5 buses per
- * journey — so this isn't a design choice, it's what the API itself never
- * exceeds in normal operation. A journey bucket with more than this is not
- * extra buses: live testing (`validate-bus-positions.ts`) found a handful of
- * stops whose journey merges in a long, evenly-spaced tail (a schedule, not
- * GPS-tracked vehicles) under the same name, up to 300+ minutes out — and
- * because `pickJourney` fed that straight into placement, those showed up as
- * real bus markers. `pickJourney` keeps only the nearest `REALTIME_BUS_CAP`
- * arrivals for exactly this reason: the near-term ones look like a normal,
- * clean progression in every case seen live, so trimming the tail recovers
- * the real fleet instead of discarding the whole reading.
+ * How far *behind* an upstream entry a downstream entry may sit and still be
+ * read as the same trip (the API quantises to the second and two probes land a
+ * second or two apart), and how far a "0 min 00 s" arrival may already be in
+ * the past. Also the tolerance the consistency check allows.
  */
-const REALTIME_BUS_CAP = 5;
+export const SAME_TRIP_SLACK_S = 30;
 
-/** A route is treated as a loop when its polyline returns within this of its start. */
+/**
+ * Bound on the travel time across a bracket: the slowest plausible urban
+ * crawl, plus a dwell allowance per stop segment. Deliberately generous — a
+ * bracketed bus is only recognised when its ETA is under this bound, so a tight
+ * bound loses buses; a loose one merely widens the window in which two trips
+ * could be confused, which the greedy pairing already resolves toward "fewer
+ * buses". The live loop segment into a hospital measured 236 s for 278 m.
+ */
+const MIN_SPEED_MPS = 1;
+const DWELL_SLACK_S = 90;
+
+export function maxTravelSeconds(distanceM: number, segments: number): number {
+  return distanceM / MIN_SPEED_MPS + DWELL_SLACK_S * Math.max(1, segments);
+}
+
+/** Speed used to place a bus inside a bracket whose travel time was not measured. */
+const FALLBACK_SPEED_MPS = 4;
+
+/** A route is a loop when its polyline returns within this of its start. */
 const LOOP_TOLERANCE_M = 80;
-
-/**
- * How far upstream of the anchor to look for calibration stops, in metres and
- * in stop count. Kept short deliberately — see {@link calibCandidates}.
- */
-const CALIB_MIN_VIABLE_DISTANCE_M = 50;
-const CALIB_MAX_STOPS_BACK = 6;
 
 export interface LocatorStop {
   /** DB cuid (used in the emitted segment). */
@@ -62,23 +98,101 @@ export interface LocatorVariant {
   geometry: LngLat[] | null;
 }
 
-/** Per-journey real-time ETAs (seconds) observed at a stop. */
+/**
+ * Per-journey real-time ETAs (seconds) observed at a stop, all relative to the
+ * one reference instant the caller chose for the whole request. A "0 min 00 s"
+ * arrival fetched a few seconds after that instant is slightly negative and
+ * must be kept: it is the bus standing at the stop.
+ */
 export type ProbeResult = Map<string, number[]>;
 
 /**
  * Reads the real-time arrivals at a stop (by Moventis externalId) for the line
- * being located. Injected so the locator stays pure I/O-free and testable; the
- * router supplies a per-request-cached probe backed by `getStopSchedule`.
+ * being located; `null` when the fetch failed. The distinction matters: an
+ * unavailable stop is left out of the chain (its neighbours bracket across it),
+ * whereas an empty list is a stop that lists no bus.
  */
-export type ProbeFn = (stopExternalId: string) => Promise<ProbeResult>;
+export type ProbeFn = (stopExternalId: string) => Promise<ProbeResult | null>;
+
+/**
+ * Probe budget per variant. The coarse pass splits the variant into about
+ * `coarseSegments` brackets of at most `maxBracketStops` stop segments (plus the
+ * origin and terminal); refinement then bisects occupied brackets, widest first,
+ * until they are single stop segments or `refineProbes` more probes are spent.
+ * A 28-stop loop with three buses costs 7 + ~6 probes; a variant with no bus
+ * costs the coarse pass only.
+ */
+export interface ProbeBudget {
+  coarseSegments: number;
+  maxBracketStops: number;
+  refineProbes: number;
+}
+
+export const DEFAULT_PROBE_BUDGET: ProbeBudget = {
+  coarseSegments: 6,
+  maxBracketStops: 6,
+  refineProbes: 8,
+};
 
 export interface LineLocatorInput {
   /** Line code stamped onto every emitted position (drives marker colour). */
   lineCode: string;
   variants: LocatorVariant[];
   probe: ProbeFn;
+  budget?: Partial<ProbeBudget>;
 }
 
+/** One probed stop of a variant, as the locator saw it. */
+export interface ProbedStop {
+  /** Index into the variant's stop list. */
+  index: number;
+  stopId: string;
+  externalId: string;
+  /**
+   * This variant's journey ETAs at the stop (ascending). Null when the stop is
+   * unavailable: the fetch failed, or the response does not list the journey at
+   * all. Both leave the stop out of the chain — an unlisted journey is not "no
+   * bus", and reading it that way would turn the next stop's projections into
+   * phantoms.
+   */
+  etas: number[] | null;
+}
+
+/** Everything the locator used for one variant — enough to re-check its output. */
+export interface VariantTrace {
+  direction: "I" | "V";
+  description: string;
+  /** The journey key the variant matched at some probed stop, if any. */
+  journeyName: string | null;
+  loop: boolean;
+  stopCount: number;
+  /** Straight-line/polyline arc of each stop (metres), travel order. */
+  stopArcs: number[];
+  /** Polyline length (metres). */
+  totalArc: number;
+  probed: ProbedStop[];
+  /**
+   * Each emitted position with its bracket as stop *indices*: on a loop the
+   * origin and terminal are one stop row, so `segment`'s ids alone cannot tell
+   * the first bracket from the closing one.
+   */
+  placed: PlacedBus[];
+}
+
+export interface PlacedBus {
+  position: BusPosition;
+  fromIndex: number;
+  toIndex: number;
+}
+
+export interface LineLocatorResult {
+  positions: BusPosition[];
+  variants: VariantTrace[];
+  /** Distinct stops fetched through `probe` for this call. */
+  probeCount: number;
+}
+
+const asc = (a: number, b: number) => a - b;
 const clamp = (v: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, v));
 
@@ -89,8 +203,7 @@ const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
  * Match an API journey key to a stored variant by `description`. Exact match
  * first, then an accent-insensitive fallback (the scraper's `normalizeName`
  * fixes diacritics that the parser's `normalizeText` leaves alone). Returns null
- * when no variant matches — the journey belongs to a deduped/filtered sub-variant
- * and is skipped (failure mode #3).
+ * when no variant matches.
  */
 export function matchVariant(
   journeyName: string,
@@ -102,369 +215,539 @@ export function matchVariant(
   return variants.find((v) => fold(v.description) === folded) ?? null;
 }
 
-/** True when the polyline is (approximately) closed — i.e. a circular line. */
-function isClosedLoop(path: LngLat[]): boolean {
-  return (
-    path.length > 2 &&
-    distanceMeters(path[0]!, path[path.length - 1]!) < LOOP_TOLERANCE_M
-  );
+/**
+ * The API keys journeys by description, so two stored variants with the same
+ * direction and description (line 9 stores two "polígons") would each claim the
+ * same entries and every bus would be drawn twice. Keep the longest per key.
+ */
+export function dedupeVariants(variants: LocatorVariant[]): LocatorVariant[] {
+  const byKey = new Map<string, LocatorVariant>();
+  for (const v of variants) {
+    const key = `${v.direction}|${fold(v.description)}`;
+    const held = byKey.get(key);
+    if (!held || v.stops.length > held.stops.length) byKey.set(key, v);
+  }
+  return [...byKey.values()];
 }
 
-/**
- * Find the journey in a probe result that belongs to `variant`, returning its
- * name and real-time ETAs — capped to the nearest {@link REALTIME_BUS_CAP} and
- * sorted ascending, dropping anything beyond that as corrupted (see its doc).
- * A shared terminal can list several journeys (failure mode #6); `matchVariant`
- * keeps us on this variant's own journey.
- */
+/** Find the journey in a probe result that belongs to `variant`. */
 function pickJourney(
   probe: ProbeResult,
   variant: LocatorVariant,
 ): { name: string; etas: number[] } | null {
   for (const [name, etas] of probe) {
-    if (etas.length && matchVariant(name, [variant])) {
-      const capped = [...etas].sort((a, b) => a - b).slice(0, REALTIME_BUS_CAP);
-      return { name, etas: capped };
-    }
+    if (matchVariant(name, [variant]))
+      return { name, etas: [...etas].sort(asc) };
   }
   return null;
 }
 
-/** Geometry context for a variant: the polyline, cumulative arcs, and stop arcs. */
+// ─── Alignment ─────────────────────────────────────────────────────────────
+
+export interface Alignment {
+  /** ETAs (to the downstream stop) of the buses bracketed between the two stops. */
+  between: number[];
+  /** Same-trip pairs, `downstream − upstream` being that trip's travel time. */
+  pairs: { upstream: number; downstream: number }[];
+  /** Downstream entries explained neither way (cap tail, or a trip missing upstream). */
+  ignored: number[];
+}
+
+/**
+ * Pair the ETA list at an upstream stop with the list at a downstream one and
+ * pick out the buses that sit between them.
+ *
+ * Both lists are ascending and buses do not overtake, so the same trips appear
+ * in the same order at both stops; walking the two lists together, a downstream
+ * entry is the current upstream entry's trip when it is later by at most
+ * `maxTravel` (and not earlier by more than the probe slack). A downstream
+ * entry that is *earlier* than every remaining upstream entry cannot be any of
+ * them — it is a bus that has already passed the upstream stop, provided its
+ * ETA fits within the bracket's travel-time bound; otherwise it is a trip the
+ * upstream stop failed to list and is ignored rather than drawn. An upstream
+ * entry with no downstream counterpart within the bound is skipped the same
+ * way. Once the upstream list is exhausted, leftover downstream entries are
+ * buses only if the upstream list was short enough to be complete; a list at
+ * the cap may simply have been cut.
+ *
+ * Ties break toward *fewer* buses: an entry is paired with the first upstream
+ * trip that could explain it. Two buses closer together than the bracket's
+ * travel time may therefore merge into one until refinement narrows the
+ * bracket — the locator would rather miss a bunched bus than draw one the stop
+ * lists contradict.
+ */
+export function alignLists(
+  upstream: number[],
+  downstream: number[],
+  maxTravel: number,
+): Alignment {
+  const a = [...upstream].sort(asc);
+  const b = [...downstream].sort(asc);
+  const between: number[] = [];
+  const pairs: Alignment["pairs"] = [];
+  const ignored: number[] = [];
+  let i = 0;
+  let j = 0;
+  while (j < b.length) {
+    const eta = b[j]!;
+    if (i >= a.length) {
+      if (a.length < REALTIME_LIST_CAP && eta <= maxTravel) between.push(eta);
+      else ignored.push(eta);
+      j++;
+      continue;
+    }
+    const diff = eta - a[i]!;
+    if (diff < -SAME_TRIP_SLACK_S) {
+      if (eta <= maxTravel) between.push(eta);
+      else ignored.push(eta);
+      j++;
+    } else if (diff <= maxTravel) {
+      pairs.push({ upstream: a[i]!, downstream: eta });
+      i++;
+      j++;
+    } else {
+      i++;
+    }
+  }
+  return { between, pairs, ignored };
+}
+
+/** Median of a non-empty list. */
+function median(xs: number[]): number {
+  const s = [...xs].sort(asc);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
+}
+
+// ─── Geometry ──────────────────────────────────────────────────────────────
+
 interface VariantGeometry {
   path: LngLat[];
   cum: number[];
   total: number;
   loop: boolean;
-  hasGeom: boolean;
   /** Arc-length of each stop projected onto the polyline (travel order). */
   stopArcs: number[];
 }
 
-/**
- * List calibration-stop candidates upstream of the anchor, nearest first,
- * rather than reaching for one far away (e.g. the route's midpoint, as this
- * used to do). A distant calibration point reliably breaks on loop variants —
- * where the anchor (a variant's terminal) is the *same physical stop* as its
- * origin, confirmed empirically across most of the Lleida network via
- * `validate-bus-positions.ts` — because a bus that has already passed a
- * distant calibration point this lap won't be seen there again until its
- * *next* lap, while its ETA to the (very close) terminal is small. That
- * inverts the `eta_anchor > eta_calib` relationship {@link calibrateSpeed}
- * assumes, so every diff came out negative and calibration silently fell back
- * to the fixed speed on every request. Staying within a few hundred metres of
- * the anchor keeps both probes looking at (nearly) the same handful of buses,
- * avoiding the ambiguity entirely — this mirrors how
- * `validate-bus-positions.ts`'s adjacent-stop ground-truth check derives real
- * segment times, which held up cleanly in live testing where the old
- * distant-anchor calibration did not.
- *
- * Returns *every* viable stop within {@link CALIB_MAX_STOPS_BACK} stops that
- * clears the minimum baseline (skipping near-duplicate stops a few metres
- * apart), not just the nearest one: the caller tries them in order and moves
- * on if one doesn't pan out (no matching journey, too few buses, or an
- * implausible speed), so a single bad stop doesn't block calibration for the
- * whole variant.
- */
-/**
- * Arc-distance travelling upstream from `anchorArc` back to `candidateArc`,
- * wrapping on loops. Needed because a loop variant's terminal typically
- * *coincides* with its origin stop (found live via `list-loop-variants.ts` —
- * true for most of the network), and projecting that shared point onto the
- * polyline can tie-break to arc≈0 instead of arc≈total; the two are the same
- * physical point on a loop, so a plain `anchorArc − candidateArc` goes deeply
- * negative for every candidate in that case even though every one of them is
- * genuinely upstream. Unwrapping here keeps distance (and hence candidate
- * selection) correct regardless of which of the two equivalent arc values
- * `projectToPolyline` happened to pick.
- */
-function upstreamDistance(
-  geom: VariantGeometry,
-  anchorArc: number,
-  candidateArc: number,
-): number {
-  const raw = anchorArc - candidateArc;
-  return geom.loop && raw < 0 ? raw + geom.total : raw;
-}
-
-function calibCandidates(geom: VariantGeometry, anchorIdx: number): number[] {
-  const anchorArc = geom.stopArcs[anchorIdx]!;
-  const minIdx = Math.max(0, anchorIdx - CALIB_MAX_STOPS_BACK);
-  const candidates: number[] = [];
-  for (let idx = anchorIdx - 1; idx >= minIdx; idx--) {
-    if (
-      upstreamDistance(geom, anchorArc, geom.stopArcs[idx]!) >=
-      CALIB_MIN_VIABLE_DISTANCE_M
-    ) {
-      candidates.push(idx);
-    }
-  }
-  return candidates;
-}
-
 function buildGeometry(variant: LocatorVariant): VariantGeometry {
+  const n = variant.stops.length;
   const hasGeom = !!variant.geometry && variant.geometry.length >= 2;
   const path: LngLat[] = hasGeom
     ? variant.geometry!
     : variant.stops.map((s) => [s.lng, s.lat] as LngLat);
   const cum = cumulativeArcLengths(path);
   const total = cum[cum.length - 1]!;
-  const loop = isClosedLoop(path);
+  const first = variant.stops[0]!;
+  const last = variant.stops[n - 1]!;
+  const loop =
+    first.externalId === last.externalId ||
+    (path.length > 2 &&
+      distanceMeters(path[0]!, path[path.length - 1]!) < LOOP_TOLERANCE_M);
   const stopArcs = variant.stops.map(
     (s) => projectToPolyline([s.lng, s.lat], path, cum).arc,
   );
-  return { path, cum, total, loop, hasGeom, stopArcs };
+  // A loop's terminal is its origin: projecting that shared point can land on
+  // arc≈0 for both, which would make the closing bracket zero-length. Pin the
+  // terminal to the end of the polyline.
+  if (loop && n >= 2 && stopArcs[n - 1]! <= stopArcs[n - 2]!)
+    stopArcs[n - 1] = total;
+  return { path, cum, total, loop, stopArcs };
 }
 
-/**
- * Find the stop segment containing `arc`, cyclically for loops. Returns the two
- * bounding stop indices (travel order) and the fraction travelled between them.
- */
-function segmentAtArc(
+/** Arc distance travelling forward from stop `a` to stop `b`, wrapping on loops. */
+export function bracketDistance(
   stopArcs: number[],
-  arc: number,
   total: number,
   loop: boolean,
-): { from: number; to: number; fraction: number } {
-  const n = stopArcs.length;
-  for (let i = 1; i < n; i++) {
-    if (arc <= stopArcs[i]!) {
-      const lo = stopArcs[i - 1]!;
-      const span = stopArcs[i]! - lo;
-      return {
-        from: i - 1,
-        to: i,
-        fraction: span <= 0 ? 0 : clamp((arc - lo) / span, 0, 1),
-      };
+  a: number,
+  b: number,
+): number {
+  const raw = stopArcs[b]! - stopArcs[a]!;
+  return loop && raw < 0 ? raw + total : Math.max(0, raw);
+}
+
+// ─── Chain analysis ────────────────────────────────────────────────────────
+
+export interface Bracket {
+  from: ProbedStop;
+  to: ProbedStop;
+  distanceM: number;
+  maxTravel: number;
+  alignment: Alignment;
+  /** Measured travel time across the bracket (median of pairs), or null. */
+  travel: number | null;
+}
+
+/** Align every consecutive pair of *available* probed stops along the variant. */
+export function analyseChain(
+  probed: ProbedStop[],
+  geom: { stopArcs: number[]; total: number; loop: boolean },
+): Bracket[] {
+  const chain = probed
+    .filter((p): p is ProbedStop & { etas: number[] } => p.etas !== null)
+    .sort((x, y) => x.index - y.index);
+  const out: Bracket[] = [];
+  for (let k = 1; k < chain.length; k++) {
+    const from = chain[k - 1]!;
+    const to = chain[k]!;
+    const distanceM = bracketDistance(
+      geom.stopArcs,
+      geom.total,
+      geom.loop,
+      from.index,
+      to.index,
+    );
+    const maxTravel = maxTravelSeconds(distanceM, to.index - from.index);
+    const alignment = alignLists(from.etas, to.etas, maxTravel);
+    const diffs = alignment.pairs.map((p) => p.downstream - p.upstream);
+    const t = diffs.length ? median(diffs) : null;
+    out.push({
+      from,
+      to,
+      distanceM,
+      maxTravel,
+      alignment,
+      travel: t !== null && t > 1 ? t : null,
+    });
+  }
+  return out;
+}
+
+function placeInBracket(
+  geom: VariantGeometry,
+  bracket: Bracket,
+  eta: number,
+): { lat: number; lng: number; fraction: number } {
+  const { distanceM, travel, to } = bracket;
+  const remaining =
+    travel !== null
+      ? clamp(eta / travel, 0, 1)
+      : distanceM > 0
+        ? clamp((eta * FALLBACK_SPEED_MPS) / distanceM, 0, 1)
+        : 0;
+  let arc = geom.stopArcs[to.index]! - distanceM * remaining;
+  if (geom.loop && arc < 0) arc += geom.total;
+  const point = pointAtArc(geom.path, geom.cum, arc);
+  return { lat: point[1], lng: point[0], fraction: 1 - remaining };
+}
+
+function confidenceFor(bracket: Bracket): BusPosition["confidence"] {
+  if (bracket.to.index - bracket.from.index === 1) return "high";
+  return bracket.travel !== null ? "medium" : "low";
+}
+
+// ─── Probe plan ────────────────────────────────────────────────────────────
+
+/** Coarse-pass stop indices: origin, every `stride`, terminal. */
+export function coarseIndices(
+  stopCount: number,
+  budget: ProbeBudget,
+): number[] {
+  const last = stopCount - 1;
+  const stride = clamp(
+    Math.ceil(last / budget.coarseSegments),
+    1,
+    budget.maxBracketStops,
+  );
+  const idx = new Set<number>([0]);
+  for (let i = stride; i < last; i += stride) idx.add(i);
+  idx.add(last);
+  return [...idx].sort(asc);
+}
+
+// ─── Locate ────────────────────────────────────────────────────────────────
+
+/** The unprobed stop nearest the midpoint of (from, to), or -1 when none is left. */
+function nearestUnprobed(
+  from: number,
+  to: number,
+  probed: Map<number, unknown>,
+): number {
+  const mid = Math.floor((from + to) / 2);
+  for (let d = 0; d < to - from; d++) {
+    for (const k of [mid + d, mid - d]) {
+      if (k > from && k < to && !probed.has(k)) return k;
     }
   }
-  // Past the last stop's arc: only reachable on a wrapped loop (closing segment).
-  if (loop) {
-    const lo = stopArcs[n - 1]!;
-    const span = total - lo + stopArcs[0]!;
-    return {
-      from: n - 1,
-      to: 0,
-      fraction: span <= 0 ? 0 : clamp((arc - lo) / span, 0, 1),
-    };
-  }
-  return { from: Math.max(0, n - 2), to: n - 1, fraction: 1 };
-}
-
-interface Placement {
-  lat: number;
-  lng: number;
-  fromIdx: number;
-  toIdx: number;
-  fraction: number;
-  confidence: BusPosition["confidence"];
+  return -1;
 }
 
 /**
- * Place a bus `etaSeconds` of travel-time back from the anchor stop along the
- * route. We know the bus reaches the anchor (the variant terminal, or a midpoint
- * on loops) in `etaSeconds`, so it sits that distance — at `speed` — earlier on
- * the polyline. On a loop this wraps; on a linear line it clamps to the origin.
- */
-function placeBus(
-  geom: VariantGeometry,
-  anchorIdx: number,
-  etaSeconds: number,
-  speed: number,
-  calibrated: boolean,
-): Placement {
-  const { path, cum, total, loop, hasGeom, stopArcs } = geom;
-  const anchorArc = stopArcs[anchorIdx]!;
-  const backDist = etaSeconds * speed;
-
-  const clampedAtOrigin = !loop && anchorArc - backDist <= 0;
-  const targetArc =
-    loop && total > 0
-      ? (((anchorArc - backDist) % total) + total) % total
-      : Math.max(0, anchorArc - backDist);
-
-  const point = pointAtArc(path, cum, targetArc);
-  const seg = segmentAtArc(stopArcs, targetArc, total, loop);
-
-  const confidence: BusPosition["confidence"] = clampedAtOrigin
-    ? "low"
-    : calibrated && hasGeom
-      ? "high"
-      : "medium";
-
-  return {
-    lat: point[1],
-    lng: point[0],
-    fromIdx: seg.from,
-    toIdx: seg.to,
-    fraction: seg.fraction,
-    confidence,
-  };
-}
-
-/** Median of a non-empty list. */
-function median(xs: number[]): number {
-  const s = [...xs].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
-}
-
-/**
- * Derive a variant's real speed (m/s) from two nearby probes (see
- * {@link chooseCalibIdx} for why `A₂` is now close to `A` rather than far
- * upstream). Buses at `A₂` are a subset of those at the primary anchor `A`
- * (only the ones not yet past `A₂`). For a bus seen at both, `eta_A − eta_{A₂}
- * = T(A₂→A)` is constant, so `speed = arcBetween(A₂,A) / median(T)`. Aligning
- * the two ascending ETA lists at their tails pairs the same buses. Returns
- * null (→ fixed-speed fallback) when fewer than two buses match or the
- * recovered speed is nonsense.
- */
-function calibrateSpeed(
-  geom: VariantGeometry,
-  anchorIdx: number,
-  anchorEtas: number[],
-  calibIdx: number,
-  calibEtas: number[],
-): number | null {
-  const arcBetween = upstreamDistance(
-    geom,
-    geom.stopArcs[anchorIdx]!,
-    geom.stopArcs[calibIdx]!,
-  );
-  if (arcBetween <= 0) return null;
-
-  // Both lists are already capped to REALTIME_BUS_CAP by pickJourney.
-  const a = [...anchorEtas].sort((x, y) => x - y);
-  const b = [...calibEtas].sort((x, y) => x - y);
-  const pairs = Math.min(a.length, b.length);
-  // Require at least 3 matched buses: with exactly 2, the "median" is just
-  // their average and one bad pairing (a mismatched bus, not a genuine
-  // outlier) skews it directly with nothing to reject it against — found live
-  // when a 2-pair calibration averaged one plausible reading with one
-  // physically-impossible one (191 km/h) into a merely-too-fast result that
-  // passed the sanity clamp undetected.
-  if (pairs < 3) return null;
-
-  // Align tails: the largest-ETA (farthest) buses are the ones reaching A₂.
-  const diffs: number[] = [];
-  for (let j = 0; j < pairs; j++) {
-    const d = a[a.length - 1 - j]! - b[b.length - 1 - j]!;
-    if (d > 0) diffs.push(d);
-  }
-  if (diffs.length < 3) return null;
-
-  const t = median(diffs);
-  if (t <= 0) return null;
-  const speed = arcBetween / t;
-  if (process.env.DEBUG_BUS_LOCATOR) {
-    console.error(
-      `[calibrateSpeed] arc=${arcBetween.toFixed(0)}m anchorEtas=[${a.map((x) => x.toFixed(0)).join(",")}] ` +
-        `calibEtas=[${b.map((x) => x.toFixed(0)).join(",")}] diffs=[${diffs.map((x) => x.toFixed(0)).join(",")}] ` +
-        `median=${t.toFixed(0)}s speed=${speed.toFixed(2)}m/s (${(speed * 3.6).toFixed(1)}km/h) ` +
-        `${speed < MIN_SPEED_MPS || speed > MAX_SPEED_MPS ? "REJECTED (out of range)" : "accepted"}`,
-    );
-  }
-  if (speed < MIN_SPEED_MPS || speed > MAX_SPEED_MPS) return null;
-  return speed;
-}
-
-/**
- * Locate the real-time buses running each variant of a line and return a
- * {@link BusPosition} for every one.
+ * Locate the real-time buses on each variant of a line.
  *
- * The Moventis API gives no GPS, but probing a variant's destination terminal
- * returns the real-time (`real:"S"`) ETAs of the buses heading toward it — each
- * ETA back-projects to a point along the route geometry. Loop variants whose
- * terminal reports nothing fall back to a midpoint anchor; speed is calibrated
- * per variant from a probe a few stops upstream of the anchor, trying the
- * nearest few candidates until one works (see {@link calibCandidates}; else a
- * fixed fallback). Typical cost is ~2–3 probes per variant regardless of stop
- * count, occasionally more when a nearby calibration stop doesn't pan out.
+ * Per variant: probe the coarse plan, align consecutive probed stops, then
+ * bisect the widest bracket that holds a bus and repeat while the refinement
+ * budget lasts. Stops shared between variants (and a loop's origin/terminal)
+ * are fetched once per call. See the module doc for the model.
  */
 export async function locateLineBuses(
   input: LineLocatorInput,
-): Promise<BusPosition[]> {
-  const { lineCode, variants, probe } = input;
-  const out: BusPosition[] = [];
+): Promise<LineLocatorResult> {
+  const { lineCode, probe } = input;
+  const budget: ProbeBudget = { ...DEFAULT_PROBE_BUDGET, ...input.budget };
+  const variants = dedupeVariants(input.variants);
+
+  // Memoised per call so the plan can snap onto stops another variant fetched.
+  const fetched = new Map<string, Promise<ProbeResult | null>>();
+  const fetch = (externalId: string) => {
+    let p = fetched.get(externalId);
+    if (!p) {
+      p = probe(externalId);
+      fetched.set(externalId, p);
+    }
+    return p;
+  };
+
+  const positions: BusPosition[] = [];
+  const traces: VariantTrace[] = [];
 
   for (const variant of variants) {
     const n = variant.stops.length;
     if (n < 2) continue;
-
     const geom = buildGeometry(variant);
+    const probed = new Map<number, ProbedStop>();
+    let journeyName: string | null = null;
 
-    // Step A — primary anchor is the destination terminal; loops may report 0
-    // there, so fall back to a midpoint.
-    let anchorIdx = n - 1;
-    let anchor = pickJourney(
-      await probe(variant.stops[anchorIdx]!.externalId),
-      variant,
-    );
-    if ((!anchor || anchor.etas.length === 0) && geom.loop) {
-      anchorIdx = Math.floor(n / 2);
-      anchor = pickJourney(
-        await probe(variant.stops[anchorIdx]!.externalId),
-        variant,
-      );
-    }
-    if (!anchor || anchor.etas.length === 0) continue;
-
-    // Step B — calibrate speed from a nearby upstream probe, trying candidates
-    // nearest-first and moving on if one doesn't pan out (missing journey, too
-    // few buses, or a corrupted bucket) rather than giving up on the first.
-    let speed = AVG_SPEED_MPS;
-    let calibrated = false;
-    if (process.env.DEBUG_BUS_LOCATOR) {
-      console.error(
-        `[candidates] anchorIdx=${anchorIdx} stopArcs=[${geom.stopArcs.map((a) => a.toFixed(0)).join(",")}] ` +
-          `candidates=[${calibCandidates(geom, anchorIdx).join(",")}]`,
-      );
-    }
-    for (const calibIdx of calibCandidates(geom, anchorIdx)) {
-      const calib = pickJourney(
-        await probe(variant.stops[calibIdx]!.externalId),
-        variant,
-      );
-      if (process.env.DEBUG_BUS_LOCATOR) {
-        console.error(
-          `[locate] variant=${variant.direction} "${variant.description}" anchorIdx=${anchorIdx} ` +
-            `calibIdx=${calibIdx} anchorEtas=[${anchor.etas.map((x) => x.toFixed(0)).join(",")}] ` +
-            `calibJourney=${calib ? `"${calib.name}" etas=[${calib.etas.map((x) => x.toFixed(0)).join(",")}]` : "NONE (no matching journey at calib stop)"}`,
-        );
+    const probeIndex = async (index: number) => {
+      const stop = variant.stops[index]!;
+      const result = await fetch(stop.externalId);
+      let etas: number[] | null = null;
+      if (result) {
+        const journey = pickJourney(result, variant);
+        journeyName ??= journey?.name ?? null;
+        etas = journey?.etas ?? null;
       }
-      if (!calib) continue;
-      const s = calibrateSpeed(
-        geom,
-        anchorIdx,
-        anchor.etas,
-        calibIdx,
-        calib.etas,
+      probed.set(index, {
+        index,
+        stopId: stop.id,
+        externalId: stop.externalId,
+        etas,
+      });
+    };
+
+    // Coarse pass. An interior index snaps to a neighbour already fetched for
+    // another variant of this line, which keeps sibling variants that share a
+    // trunk from paying twice.
+    const plan = coarseIndices(n, budget).map((index) => {
+      if (index === 0 || index === n - 1) return index;
+      for (const candidate of [index, index - 1, index + 1]) {
+        if (
+          candidate > 0 &&
+          candidate < n - 1 &&
+          fetched.has(variant.stops[candidate]!.externalId)
+        ) {
+          return candidate;
+        }
+      }
+      return index;
+    });
+    await Promise.all([...new Set(plan)].map(probeIndex));
+
+    // Refinement: bisect every occupied bracket, widest first, one round at a
+    // time (the probes of a round run concurrently through the throttle) until
+    // every bus sits in a single stop segment or the budget is spent. A mid
+    // stop that turns out unavailable is not retried; the bracket stays wide
+    // and honest.
+    let refineLeft = budget.refineProbes;
+    while (refineLeft > 0) {
+      const targets = analyseChain([...probed.values()], geom)
+        .filter(
+          (b) =>
+            b.alignment.between.length > 0 && b.to.index - b.from.index > 1,
+        )
+        .sort((x, y) => y.to.index - y.from.index - (x.to.index - x.from.index))
+        .map((b) => nearestUnprobed(b.from.index, b.to.index, probed))
+        .filter((k): k is number => k !== -1)
+        .slice(0, refineLeft);
+      if (targets.length === 0) break;
+      refineLeft -= targets.length;
+      await Promise.all(targets.map(probeIndex));
+    }
+
+    const trace: VariantTrace = {
+      direction: variant.direction,
+      description: variant.description,
+      journeyName,
+      loop: geom.loop,
+      stopCount: n,
+      stopArcs: geom.stopArcs,
+      totalArc: geom.total,
+      probed: [...probed.values()].sort((x, y) => x.index - y.index),
+      placed: [],
+    };
+
+    for (const bracket of analyseChain(trace.probed, geom)) {
+      for (const eta of bracket.alignment.between) {
+        const p = placeInBracket(geom, bracket, eta);
+        const position: BusPosition = {
+          lineCode,
+          journeyName: journeyName ?? variant.description,
+          direction: variant.direction,
+          lat: p.lat,
+          lng: p.lng,
+          segment: {
+            fromStopId: bracket.from.stopId,
+            toStopId: bracket.to.stopId,
+          },
+          spanStops: bracket.to.index - bracket.from.index,
+          fraction: clamp(p.fraction, 0, 1),
+          etaSeconds: Math.max(0, eta),
+          confidence: confidenceFor(bracket),
+        };
+        trace.placed.push({
+          position,
+          fromIndex: bracket.from.index,
+          toIndex: bracket.to.index,
+        });
+        positions.push(position);
+      }
+    }
+    traces.push(trace);
+  }
+
+  return { positions, variants: traces, probeCount: fetched.size };
+}
+
+// ─── Consistency check ─────────────────────────────────────────────────────
+
+export interface ConsistencyVerdict {
+  position: BusPosition;
+  ok: boolean;
+  /** Human-readable reasons for a failure; empty when ok. */
+  problems: string[];
+  /** Soft observations that do not fail the verdict (e.g. downstream cap cut). */
+  notes: string[];
+}
+
+/**
+ * Re-derive, from a trace, which stop lists each emitted bus must and must not
+ * appear in, and check that against the lists the locator was given. This is
+ * the locator's promise stated independently of how it pairs entries:
+ *
+ *   - **present downstream**: the bus's ETA is in the bracket's downstream
+ *     list, and no larger than that bracket's travel-time bound;
+ *   - **absent upstream**: every entry at the bracket's upstream stop that
+ *     could be this bus (within the bound of its ETA) is accounted for by a
+ *     *distinct* earlier entry at the downstream stop — i.e. it is some other
+ *     trip that has been listed at both. If any such entry has no earlier
+ *     downstream entry to explain it, the upstream stop is listing this bus
+ *     and the bracket is wrong;
+ *   - **still listed further on** (note only): at every later available
+ *     probed stop the bus should reappear, later by the measured travel time,
+ *     unless that list is at the cap and ends before it.
+ *
+ * Also runs against extra stops a script may have probed beyond the locator's
+ * plan, because the check needs only the trace shape.
+ */
+export function checkConsistency(trace: VariantTrace): ConsistencyVerdict[] {
+  const geom = {
+    stopArcs: trace.stopArcs,
+    total: trace.totalArc,
+    loop: trace.loop,
+  };
+  const brackets = analyseChain(trace.probed, geom);
+  const byIndex = new Map(trace.probed.map((p) => [p.index, p]));
+  const verdicts: ConsistencyVerdict[] = [];
+
+  for (const { position, fromIndex, toIndex } of trace.placed) {
+    const problems: string[] = [];
+    const notes: string[] = [];
+    const from = byIndex.get(fromIndex);
+    const to = byIndex.get(toIndex);
+    if (!from?.etas || !to?.etas) {
+      verdicts.push({
+        position,
+        ok: false,
+        problems: ["bracket stops were not probed"],
+        notes,
+      });
+      continue;
+    }
+    const bracket = brackets.find(
+      (b) => b.from.index === fromIndex && b.to.index === toIndex,
+    );
+    if (!bracket) {
+      verdicts.push({
+        position,
+        ok: false,
+        problems: ["bracket is not a consecutive pair of probed stops"],
+        notes,
+      });
+      continue;
+    }
+    const eta = position.etaSeconds;
+    const near = (x: number, y: number) => Math.abs(x - y) <= SAME_TRIP_SLACK_S;
+
+    // Present downstream, within the bracket's reach. The matched entry's
+    // index (not its value) delimits the entries "earlier" than this bus, so a
+    // duplicate entry or a slightly negative "at stop" ETA cannot explain itself.
+    const downstream = [...to.etas].sort(asc);
+    const at = downstream.findIndex((x) => near(Math.max(0, x), eta));
+    if (at === -1) {
+      problems.push(
+        `not listed at downstream stop #${to.index} (${to.externalId})`,
       );
-      if (s !== null) {
-        speed = s;
-        calibrated = true;
+    }
+    if (eta > bracket.maxTravel) {
+      problems.push(
+        `ETA ${eta.toFixed(0)}s exceeds the bracket bound ${bracket.maxTravel.toFixed(0)}s`,
+      );
+    }
+
+    // Absent upstream: greedy injective assignment of the suspects to earlier
+    // downstream entries, in order (both sorted, windows monotone).
+    const suspects = from.etas.filter(
+      (y) => y >= eta - bracket.maxTravel && y <= eta + SAME_TRIP_SLACK_S,
+    );
+    const earlier = at === -1 ? [] : downstream.slice(0, at);
+    let cursor = 0;
+    for (const y of [...suspects].sort(asc)) {
+      while (
+        cursor < earlier.length &&
+        earlier[cursor]! - y < -SAME_TRIP_SLACK_S
+      )
+        cursor++;
+      if (
+        cursor < earlier.length &&
+        earlier[cursor]! - y <= bracket.maxTravel
+      ) {
+        cursor++;
+      } else {
+        problems.push(
+          `upstream stop #${from.index} (${from.externalId}) lists ${y.toFixed(0)}s, which could be this bus and matches no earlier entry downstream`,
+        );
         break;
       }
     }
 
-    // Step C — place every bus (API already caps the list at ~5 nearest).
-    for (const etaSeconds of anchor.etas) {
-      const p = placeBus(geom, anchorIdx, etaSeconds, speed, calibrated);
-      const from = variant.stops[p.fromIdx]!;
-      const to = variant.stops[p.toIdx]!;
-      out.push({
-        lineCode,
-        journeyName: anchor.name,
-        direction: variant.direction,
-        lat: p.lat,
-        lng: p.lng,
-        segment: { fromStopId: from.id, toStopId: to.id },
-        fraction: clamp(p.fraction, 0, 1),
-        etaSeconds,
-        confidence: p.confidence,
-      });
+    // Still listed further on (soft). A loop's terminal is its origin and
+    // lists departures, not this trip's arrival, so the walk stops before it.
+    let expected = eta;
+    for (const b of brackets) {
+      if (b.from.index < to.index) continue;
+      if (b.travel === null) break;
+      if (trace.loop && b.to.index === trace.stopCount - 1) break;
+      expected += b.travel;
+      const list = b.to.etas!;
+      const found = list.some(
+        (x) =>
+          Math.abs(x - expected) <=
+          Math.max(SAME_TRIP_SLACK_S, 0.15 * expected),
+      );
+      if (found) continue;
+      const capped =
+        list.length >= REALTIME_LIST_CAP &&
+        (list[list.length - 1] ?? 0) < expected;
+      notes.push(
+        capped
+          ? `beyond the cap at stop #${b.to.index}`
+          : `expected around ${expected.toFixed(0)}s at stop #${b.to.index} (${b.to.externalId}), not listed`,
+      );
+      break;
     }
-  }
 
-  return out;
+    verdicts.push({ position, ok: problems.length === 0, problems, notes });
+  }
+  return verdicts;
 }

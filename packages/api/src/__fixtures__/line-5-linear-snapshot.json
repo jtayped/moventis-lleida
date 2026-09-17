@@ -1,0 +1,1827 @@
+{
+  "source": "Real capture of every stop of the line, one request per stop, spaced ~250 ms apart (see README).",
+  "capturedAt": "2026-09-17T18:25:03.484Z",
+  "routeCode": "5",
+  "routeExternalId": "133",
+  "variants": [
+    {
+      "direction": "V",
+      "description": "arnau de vilanova - estacio d'autobusos",
+      "stops": [
+        "13056",
+        "27481",
+        "25044",
+        "10796",
+        "10795",
+        "10794",
+        "11606",
+        "13102",
+        "10183",
+        "13064",
+        "10321",
+        "10315",
+        "10198",
+        "14402",
+        "14399",
+        "14400",
+        "14401",
+        "10465",
+        "10326",
+        "10244"
+      ]
+    },
+    {
+      "direction": "I",
+      "description": "estacio d'autobusos - arnau de vilanova",
+      "stops": [
+        "10244",
+        "10214",
+        "10339",
+        "13057",
+        "13506",
+        "13065",
+        "13063",
+        "13044",
+        "13068",
+        "10206",
+        "10345",
+        "10809",
+        "10808",
+        "10798",
+        "13033",
+        "10314",
+        "10237",
+        "10261",
+        "10219",
+        "13056"
+      ]
+    }
+  ],
+  "stops": {
+    "10183": {
+      "name": "jeroni pujades / baró de maials",
+      "lat": 41.622455196602,
+      "lng": 0.63583392130374,
+      "fetchedAt": "2026-09-17T18:25:24.154Z",
+      "body": [
+        {
+          "idLinea": 132,
+          "desc_linea": "4 - PARDINYES-MARIOLA",
+          "trayectos": {
+            "J.PUJADES-BLOCS J.C.": [
+              { "minutos": "08 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "19 min 16 s", "adaptada": null, "real": "S" },
+              { "minutos": "27 min 06 s", "adaptada": null, "real": "S" },
+              { "minutos": "42 min 06 s", "adaptada": null, "real": "S" },
+              { "minutos": "57 min 06 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 12 min 06 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 27 min 06 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 42 min 06 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "10 min 20 s", "adaptada": null, "real": "S" },
+              { "minutos": "34 min 06 s", "adaptada": null, "real": "S" },
+              { "minutos": "55 min 06 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 20 min 06 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 06 min 06 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "10198": {
+      "name": "camps elisis 2",
+      "lat": 41.613694072296,
+      "lng": 0.63004147568118,
+      "fetchedAt": "2026-09-17T18:25:36.232Z",
+      "body": [
+        {
+          "idLinea": 130,
+          "desc_linea": "2 - RONDA - HOSPITALS",
+          "trayectos": {
+            "RONDA HOSPITALS": [
+              { "minutos": "13 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "25 min 55 s", "adaptada": null, "real": "S" },
+              { "minutos": "50 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 07 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 21 min 34 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "00 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "14 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "38 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 01 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 24 min 34 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 135,
+          "desc_linea": "7 - COSTA MANGRANERS-AV.SANT PERE",
+          "trayectos": {
+            "SECÀ -AEM - MANGRANERS": [
+              { "minutos": "11 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "23 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "48 min 38 s", "adaptada": null, "real": "S" },
+              { "minutos": "50 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 15 min 47 s", "adaptada": null, "real": "S" }
+            ],
+            "SECÀ - MANGRANERS": [
+              { "minutos": "01 h 12 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 25 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 37 min 34 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10206": {
+      "name": "cap balàfia - pardinyes 2",
+      "lat": 41.626091958543,
+      "lng": 0.63058431127857,
+      "fetchedAt": "2026-09-17T18:26:22.108Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "27 min 26 s", "adaptada": null, "real": "S" },
+              { "minutos": "43 min 01 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 29 min 01 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 135,
+          "desc_linea": "7 - COSTA MANGRANERS-AV.SANT PERE",
+          "trayectos": {
+            "MANGRANERS - SECÀ": [
+              { "minutos": "08 min 23 s", "adaptada": null, "real": "S" },
+              { "minutos": "09 min 54 s", "adaptada": null, "real": "S" },
+              { "minutos": "33 min 01 s", "adaptada": null, "real": "S" },
+              { "minutos": "35 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "58 min 01 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 00 min 08 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 08 min 01 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 45 min 01 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 58 min 01 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 10 min 01 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10214": {
+      "name": "cavallers 2",
+      "lat": 41.612760509636,
+      "lng": 0.62522455010853,
+      "fetchedAt": "2026-09-17T18:26:00.647Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "15 min 54 s", "adaptada": null, "real": "S" },
+              { "minutos": "31 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "54 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 17 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 40 min 34 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 135,
+          "desc_linea": "7 - COSTA MANGRANERS-AV.SANT PERE",
+          "trayectos": {
+            "SECÀ -AEM - MANGRANERS": [
+              { "minutos": "08 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "20 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "45 min 38 s", "adaptada": null, "real": "S" },
+              { "minutos": "47 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 12 min 47 s", "adaptada": null, "real": "S" }
+            ],
+            "SECÀ - MANGRANERS": [
+              { "minutos": "01 h 10 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 23 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 35 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 42 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 18 min 34 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 136,
+          "desc_linea": "8 - BALÀFIA - CLOT - CENTRE",
+          "trayectos": {
+            "ESTACIÓ D'AUTOBUSOS - LAUREÀ FIGUEROLA": [
+              { "minutos": "00 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "30 min 34 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 05 min 34 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 138,
+          "desc_linea": "10 - GRAN DE LLIVIA-CAPARRELLA",
+          "trayectos": {
+            "CAPARRELLA - LLÍVIA": [
+              { "minutos": "03 min 39 s", "adaptada": null, "real": "S" },
+              { "minutos": "52 min 34 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10219": {
+      "name": "onze de setembre 2",
+      "lat": 41.624832370046,
+      "lng": 0.6136869504844,
+      "fetchedAt": "2026-09-17T18:26:38.499Z",
+      "body": [
+        {
+          "idLinea": 130,
+          "desc_linea": "2 - RONDA - HOSPITALS",
+          "trayectos": {
+            "RONDA HOSPITALS": [
+              { "minutos": "00 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "25 min 27 s", "adaptada": null, "real": "S" },
+              { "minutos": "42 min 27 s", "adaptada": null, "real": "S" },
+              { "minutos": "56 min 27 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 13 min 27 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 131,
+          "desc_linea": "3 - EXTERIOR - HOSPITALS",
+          "trayectos": {
+            "EXTERIOR HOSPITALS": [
+              { "minutos": "15 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "30 min 27 s", "adaptada": null, "real": "S" },
+              { "minutos": "48 min 27 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 03 min 27 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 18 min 27 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": {
+              "0": { "minutos": "08 min 38 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "43 min 56 s", "adaptada": null, "real": "S" },
+              "2": { "minutos": "59 min 27 s", "adaptada": null, "real": "S" },
+              "00146": {
+                "minutos": "46' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:12",
+                "tiempo": "01 h 46 min"
+              }
+            }
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 134,
+          "desc_linea": "6 - MERCAT BORDETA AGRONOMS TANATORI",
+          "trayectos": {
+            "PLA D'URGELL - VILA MONTCADA": [
+              { "minutos": "00 min 07 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 01 min 27 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - AGRÒNOMS": [
+              { "minutos": "06 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "39 min 18 s", "adaptada": null, "real": "S" },
+              { "minutos": "49 min 27 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 28 min 27 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - TANATORI": [
+              { "minutos": "39 min 57 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10237": {
+      "name": "ronda / rovira roure",
+      "lat": 41.622083689894,
+      "lng": 0.61834083679591,
+      "fetchedAt": "2026-09-17T18:26:34.248Z",
+      "body": [
+        {
+          "idLinea": 131,
+          "desc_linea": "3 - EXTERIOR - HOSPITALS",
+          "trayectos": {
+            "EXTERIOR HOSPITALS": [
+              { "minutos": "11 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "27 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "45 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 00 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 15 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 33 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 48 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 03 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 16 min 00 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "06 min 03 s", "adaptada": null, "real": "S" },
+              { "minutos": "39 min 25 s", "adaptada": null, "real": "S" },
+              { "minutos": "55 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 41 min 00 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "10244": {
+      "name": "plaça espanya / pont universitiat",
+      "lat": 41.610657288319,
+      "lng": 0.62281760522546,
+      "fetchedAt": "2026-09-17T18:25:57.565Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": {
+              "0": { "minutos": "14 min 53 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "29 min 56 s", "adaptada": null, "real": "S" },
+              "2": { "minutos": "53 min 33 s", "adaptada": null, "real": "S" },
+              "00117": {
+                "minutos": "17' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "21:42",
+                "tiempo": "01 h 17 min"
+              },
+              "00140": {
+                "minutos": "40' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:05",
+                "tiempo": "01 h 40 min"
+              }
+            },
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": {
+              "0": { "minutos": "14 min 53 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "30 min 33 s", "adaptada": null, "real": "S" },
+              "2": { "minutos": "53 min 33 s", "adaptada": null, "real": "S" },
+              "00117": {
+                "minutos": "17' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "21:42",
+                "tiempo": "01 h 17 min"
+              },
+              "00140": {
+                "minutos": "40' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:05",
+                "tiempo": "01 h 40 min"
+              }
+            }
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 134,
+          "desc_linea": "6 - MERCAT BORDETA AGRONOMS TANATORI",
+          "trayectos": {
+            "PISTES ATLETISME ESTACIÓ AUTOBUSOS": [
+              { "minutos": "34 min 33 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 135,
+          "desc_linea": "7 - COSTA MANGRANERS-AV.SANT PERE",
+          "trayectos": {
+            "SECÀ -AEM - MANGRANERS": [
+              { "minutos": "07 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "19 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "44 min 37 s", "adaptada": null, "real": "S" },
+              { "minutos": "46 min 55 s", "adaptada": null, "real": "S" }
+            ],
+            "SECÀ - MANGRANERS": {
+              "0": {
+                "minutos": "01 h 09 min 33 s",
+                "adaptada": null,
+                "real": "S"
+              },
+              "00123": {
+                "minutos": "23' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "21:48",
+                "tiempo": "01 h 23 min"
+              },
+              "00135": {
+                "minutos": "35' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:00",
+                "tiempo": "01 h 35 min"
+              },
+              "00141": {
+                "minutos": "41' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:06",
+                "tiempo": "01 h 41 min"
+              },
+              "00217": {
+                "minutos": "17' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:42",
+                "tiempo": "02 h 17 min"
+              }
+            }
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 136,
+          "desc_linea": "8 - BALÀFIA - CLOT - CENTRE",
+          "trayectos": {
+            "LAUREÀ FIGUEROLA - ESTACIÓ D'AUTOBUSOS": {
+              "0": { "minutos": "00 min 00 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "33 min 57 s", "adaptada": null, "real": "S" },
+              "2": {
+                "minutos": "01 h 04 min 33 s",
+                "adaptada": null,
+                "real": "S"
+              },
+              "00139": {
+                "minutos": "39' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:05",
+                "tiempo": "01 h 39 min"
+              }
+            },
+            "GERMANETES DELS POBRES - ESTACIÓ D'AUTOBUSOS": [
+              { "minutos": "22 min 49 s", "adaptada": null, "real": "S" }
+            ],
+            "ESTACIÓ D'AUTOBUSOS - LAUREÀ FIGUEROLA": [
+              { "minutos": "29 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 04 min 33 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 138,
+          "desc_linea": "10 - GRAN DE LLIVIA-CAPARRELLA",
+          "trayectos": {
+            "CAPARRELLA - LLÍVIA": [
+              { "minutos": "02 min 38 s", "adaptada": null, "real": "S" },
+              { "minutos": "51 min 33 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10261": {
+      "name": "hospital santa maria 2",
+      "lat": 41.622844687211,
+      "lng": 0.61641032068563,
+      "fetchedAt": "2026-09-17T18:26:35.659Z",
+      "body": [
+        {
+          "idLinea": 130,
+          "desc_linea": "2 - RONDA - HOSPITALS",
+          "trayectos": {
+            "RONDA HOSPITALS": [
+              { "minutos": "24 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "41 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "55 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 12 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 29 min 00 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 131,
+          "desc_linea": "3 - EXTERIOR - HOSPITALS",
+          "trayectos": {
+            "EXTERIOR HOSPITALS": [
+              { "minutos": "13 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "29 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "47 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 02 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 17 min 00 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": {
+              "0": { "minutos": "08 min 03 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "41 min 25 s", "adaptada": null, "real": "S" },
+              "2": { "minutos": "57 min 00 s", "adaptada": null, "real": "S" },
+              "00143": {
+                "minutos": "43' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:09",
+                "tiempo": "01 h 43 min"
+              }
+            }
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 134,
+          "desc_linea": "6 - MERCAT BORDETA AGRONOMS TANATORI",
+          "trayectos": {
+            "PLA D'URGELL - VILA MONTCADA": [
+              { "minutos": "00 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 01 min 00 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - AGRÒNOMS": [
+              { "minutos": "05 min 25 s", "adaptada": null, "real": "S" },
+              { "minutos": "37 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "48 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 27 min 00 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - TANATORI": [
+              { "minutos": "39 min 21 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10314": {
+      "name": "ronda / plaça europa 2",
+      "lat": 41.625092237348,
+      "lng": 0.6222751694705,
+      "fetchedAt": "2026-09-17T18:26:32.834Z",
+      "body": [
+        {
+          "idLinea": 131,
+          "desc_linea": "3 - EXTERIOR - HOSPITALS",
+          "trayectos": {
+            "EXTERIOR HOSPITALS": [
+              { "minutos": "09 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "25 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "43 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "58 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 13 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 31 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 46 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 01 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 14 min 00 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "04 min 03 s", "adaptada": null, "real": "S" },
+              { "minutos": "37 min 25 s", "adaptada": null, "real": "S" },
+              { "minutos": "53 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 39 min 00 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "10315": {
+      "name": "pont vell / francesc macia",
+      "lat": 41.616367097168,
+      "lng": 0.62863837703435,
+      "fetchedAt": "2026-09-17T18:25:32.705Z",
+      "body": [
+        {
+          "idLinea": 129,
+          "desc_linea": "1 - INTERIOR",
+          "trayectos": {
+            "ESTACIÓ D'AUTOBUSOS": [
+              { "minutos": "12 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "25 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "36 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "47 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "58 min 33 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 130,
+          "desc_linea": "2 - RONDA - HOSPITALS",
+          "trayectos": {
+            "RONDA HOSPITALS": {
+              "0": { "minutos": "11 min 58 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "23 min 54 s", "adaptada": null, "real": "S" },
+              "2": { "minutos": "48 min 33 s", "adaptada": null, "real": "S" },
+              "00106": {
+                "minutos": "06' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "21:31",
+                "tiempo": "01 h 06 min"
+              },
+              "00120": {
+                "minutos": "20' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "21:45",
+                "tiempo": "01 h 20 min"
+              }
+            }
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": {
+              "0": { "minutos": "13 min 56 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "37 min 33 s", "adaptada": null, "real": "S" },
+              "2": { "minutos": "59 min 33 s", "adaptada": null, "real": "S" },
+              "00124": {
+                "minutos": "24' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "21:49",
+                "tiempo": "01 h 24 min"
+              },
+              "00210": {
+                "minutos": "10' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:35",
+                "tiempo": "02 h 10 min"
+              }
+            }
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 138,
+          "desc_linea": "10 - GRAN DE LLIVIA-CAPARRELLA",
+          "trayectos": {
+            "LLÍVIA - CAPARRELLA": [
+              { "minutos": "33 min 38 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 332,
+          "desc_linea": "20 - RONDA",
+          "trayectos": {
+            "RONDA": [
+              { "minutos": "05 min 21 s", "adaptada": null, "real": "S" },
+              { "minutos": "13 min 18 s", "adaptada": null, "real": "S" },
+              { "minutos": "18 min 39 s", "adaptada": null, "real": "S" },
+              { "minutos": "39 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "41 min 18 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10321": {
+      "name": "passarel·la camps elisis",
+      "lat": 41.616853697143,
+      "lng": 0.63260605737903,
+      "fetchedAt": "2026-09-17T18:25:30.340Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "13 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "37 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "58 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 23 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 09 min 33 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "10326": {
+      "name": "pont universitat",
+      "lat": 41.609161647611,
+      "lng": 0.62474348743443,
+      "fetchedAt": "2026-09-17T18:25:55.892Z",
+      "body": [
+        {
+          "idLinea": 130,
+          "desc_linea": "2 - RONDA - HOSPITALS",
+          "trayectos": {
+            "RONDA HOSPITALS": [
+              { "minutos": "03 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "20 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "32 min 54 s", "adaptada": null, "real": "S" },
+              { "minutos": "57 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 14 min 33 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "12 min 53 s", "adaptada": null, "real": "S" },
+              { "minutos": "27 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "51 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 13 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 37 min 33 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 134,
+          "desc_linea": "6 - MERCAT BORDETA AGRONOMS TANATORI",
+          "trayectos": {
+            "PLA D'URGELL - TANATORI": [
+              { "minutos": "25 min 34 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - AGRÒNOMS": [
+              { "minutos": "28 min 39 s", "adaptada": null, "real": "S" },
+              { "minutos": "38 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 17 min 33 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 40 min 33 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - VILA MONTCADA": [
+              { "minutos": "51 min 33 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - ARNAU DE VILANOVA": [
+              { "minutos": "01 h 30 min 33 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10339": {
+      "name": "pont vell / av. segre",
+      "lat": 41.615303477016,
+      "lng": 0.62815252438928,
+      "fetchedAt": "2026-09-17T18:26:09.692Z",
+      "body": [
+        {
+          "idLinea": 131,
+          "desc_linea": "3 - EXTERIOR - HOSPITALS",
+          "trayectos": {
+            "EXTERIOR HOSPITALS": [
+              { "minutos": "00 min 00 s", "adaptada": null, "real": "S" },
+              { "minutos": "14 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "32 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "47 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 02 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 20 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 35 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 50 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 05 min 59 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "17 min 24 s", "adaptada": null, "real": "S" },
+              { "minutos": "32 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "55 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 18 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 41 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 27 min 59 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "10345": {
+      "name": "baró de maials / sabadell 2",
+      "lat": 41.627860480734,
+      "lng": 0.62853541788929,
+      "fetchedAt": "2026-09-17T18:26:23.646Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "28 min 24 s", "adaptada": null, "real": "S" },
+              { "minutos": "43 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 29 min 59 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 135,
+          "desc_linea": "7 - COSTA MANGRANERS-AV.SANT PERE",
+          "trayectos": {
+            "MANGRANERS - SECÀ": [
+              { "minutos": "10 min 21 s", "adaptada": null, "real": "S" },
+              { "minutos": "11 min 52 s", "adaptada": null, "real": "S" },
+              { "minutos": "34 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "37 min 03 s", "adaptada": null, "real": "S" },
+              { "minutos": "59 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 02 min 06 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 08 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 45 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 58 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 10 min 59 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10465": {
+      "name": "estudi general / joan fuster",
+      "lat": 41.607480514789,
+      "lng": 0.6275303613392,
+      "fetchedAt": "2026-09-17T18:25:49.388Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "09 min 52 s", "adaptada": null, "real": "S" },
+              { "minutos": "24 min 55 s", "adaptada": null, "real": "S" },
+              { "minutos": "48 min 32 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 10 min 32 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 34 min 32 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 20 min 32 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 134,
+          "desc_linea": "6 - MERCAT BORDETA AGRONOMS TANATORI",
+          "trayectos": {
+            "PLA D'URGELL - TANATORI": [
+              { "minutos": "23 min 33 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - AGRÒNOMS": [
+              { "minutos": "26 min 38 s", "adaptada": null, "real": "S" },
+              { "minutos": "36 min 32 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 04 min 32 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 15 min 32 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 39 min 32 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 51 min 32 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 17 min 32 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 32 min 32 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - VILA MONTCADA": [
+              { "minutos": "49 min 32 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - ARNAU DE VILANOVA": [
+              { "minutos": "01 h 29 min 32 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10794": {
+      "name": "cap balàfia - pardinyes",
+      "lat": 41.626099352952,
+      "lng": 0.63055561545066,
+      "fetchedAt": "2026-09-17T18:25:17.779Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "04 min 19 s", "adaptada": null, "real": "S" },
+              { "minutos": "28 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "51 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 14 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 00 min 05 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 135,
+          "desc_linea": "7 - COSTA MANGRANERS-AV.SANT PERE",
+          "trayectos": {
+            "SECÀ -AEM - MANGRANERS": [
+              { "minutos": "11 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "35 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "37 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 03 min 11 s", "adaptada": null, "real": "S" }
+            ],
+            "SECÀ - MANGRANERS": [
+              { "minutos": "01 h 00 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 13 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 25 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 31 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 08 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 12 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 33 min 05 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 138,
+          "desc_linea": "10 - GRAN DE LLIVIA-CAPARRELLA",
+          "trayectos": {
+            "LLÍVIA - CAPARRELLA": [
+              { "minutos": "31 min 44 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10795": {
+      "name": "baró de maials / sabadell",
+      "lat": 41.627740020665,
+      "lng": 0.62837178176006,
+      "fetchedAt": "2026-09-17T18:25:16.261Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "02 min 19 s", "adaptada": null, "real": "S" },
+              { "minutos": "26 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "49 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 12 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 58 min 05 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 135,
+          "desc_linea": "7 - COSTA MANGRANERS-AV.SANT PERE",
+          "trayectos": {
+            "SECÀ -AEM - MANGRANERS": [
+              { "minutos": "10 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "34 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "36 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 02 min 11 s", "adaptada": null, "real": "S" }
+            ],
+            "SECÀ - MANGRANERS": [
+              { "minutos": "59 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 12 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 24 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 30 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 07 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 12 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 32 min 05 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10796": {
+      "name": "baró de maials / vic",
+      "lat": 41.629138327538,
+      "lng": 0.62630382589594,
+      "fetchedAt": "2026-09-17T18:25:07.435Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "00 min 19 s", "adaptada": null, "real": "S" },
+              { "minutos": "24 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "47 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 10 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 56 min 05 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 135,
+          "desc_linea": "7 - COSTA MANGRANERS-AV.SANT PERE",
+          "trayectos": {
+            "SECÀ -AEM - MANGRANERS": [
+              { "minutos": "09 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "33 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "35 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 01 min 11 s", "adaptada": null, "real": "S" }
+            ],
+            "SECÀ - MANGRANERS": [
+              { "minutos": "58 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 11 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 23 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 29 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 06 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 11 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 31 min 05 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10798": {
+      "name": "mercat balàfia",
+      "lat": 41.629251252616,
+      "lng": 0.62195400699636,
+      "fetchedAt": "2026-09-17T18:26:28.002Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "01 min 02 s", "adaptada": null, "real": "S" },
+              { "minutos": "34 min 23 s", "adaptada": null, "real": "S" },
+              { "minutos": "49 min 59 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 35 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 136,
+          "desc_linea": "8 - BALÀFIA - CLOT - CENTRE",
+          "trayectos": {
+            "GERMANETES DELS POBRES - ESTACIÓ D'AUTOBUSOS": [
+              { "minutos": "10 min 26 s", "adaptada": null, "real": "S" }
+            ],
+            "LAUREÀ FIGUEROLA - ESTACIÓ D'AUTOBUSOS": [
+              { "minutos": "19 min 43 s", "adaptada": null, "real": "S" },
+              { "minutos": "49 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 24 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "10808": {
+      "name": "jardins de les magnolies",
+      "lat": 41.629671291621,
+      "lng": 0.62333124575239,
+      "fetchedAt": "2026-09-17T18:26:26.782Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "32 min 23 s", "adaptada": null, "real": "S" },
+              { "minutos": "47 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 33 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "10809": {
+      "name": "baró de maials / vic 2",
+      "lat": 41.629612079507,
+      "lng": 0.6261303839007,
+      "fetchedAt": "2026-09-17T18:26:25.241Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "30 min 23 s", "adaptada": null, "real": "S" },
+              { "minutos": "45 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 31 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 135,
+          "desc_linea": "7 - COSTA MANGRANERS-AV.SANT PERE",
+          "trayectos": {
+            "MANGRANERS - SECÀ": [
+              { "minutos": "12 min 20 s", "adaptada": null, "real": "S" },
+              { "minutos": "13 min 51 s", "adaptada": null, "real": "S" },
+              { "minutos": "36 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "39 min 02 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 01 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 04 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 09 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 46 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 59 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 11 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "11606": {
+      "name": "barris nord",
+      "lat": 41.626095874067,
+      "lng": 0.63317258189454,
+      "fetchedAt": "2026-09-17T18:25:19.488Z",
+      "body": [
+        {
+          "idLinea": 132,
+          "desc_linea": "4 - PARDINYES-MARIOLA",
+          "trayectos": {
+            "BLOCS J.C.-J.PUJADES": [
+              { "minutos": "08 min 15 s", "adaptada": null, "real": "S" },
+              { "minutos": "18 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "31 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "46 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 01 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 16 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 31 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 46 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 01 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 16 min 05 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "06 min 19 s", "adaptada": null, "real": "S" },
+              { "minutos": "30 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "53 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 16 min 05 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 02 min 05 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "13033": {
+      "name": "alcalde porqueres / pl. europa",
+      "lat": 41.627107829345,
+      "lng": 0.62256547811225,
+      "fetchedAt": "2026-09-17T18:26:29.827Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "03 min 01 s", "adaptada": null, "real": "S" },
+              { "minutos": "36 min 23 s", "adaptada": null, "real": "S" },
+              { "minutos": "51 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 37 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 136,
+          "desc_linea": "8 - BALÀFIA - CLOT - CENTRE",
+          "trayectos": {
+            "GERMANETES DELS POBRES - ESTACIÓ D'AUTOBUSOS": [
+              { "minutos": "12 min 25 s", "adaptada": null, "real": "S" }
+            ],
+            "LAUREÀ FIGUEROLA - ESTACIÓ D'AUTOBUSOS": [
+              { "minutos": "21 min 42 s", "adaptada": null, "real": "S" },
+              { "minutos": "51 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 26 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "13044": {
+      "name": "rambla corregidor escofet 2",
+      "lat": 41.624041241011,
+      "lng": 0.63681354670075,
+      "fetchedAt": "2026-09-17T18:26:19.732Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "24 min 23 s", "adaptada": null, "real": "S" },
+              { "minutos": "39 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 25 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "13056": {
+      "name": "arnau de vilanova 2",
+      "lat": 41.626170937709,
+      "lng": 0.61087749332872,
+      "fetchedAt": "2026-09-17T18:25:03.485Z",
+      "body": [
+        {
+          "idLinea": 130,
+          "desc_linea": "2 - RONDA - HOSPITALS",
+          "trayectos": {
+            "RONDA HOSPITALS": {
+              "0": { "minutos": "06 min 43 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "31 min 37 s", "adaptada": null, "real": "S" },
+              "2": { "minutos": "48 min 37 s", "adaptada": null, "real": "S" },
+              "3": {
+                "minutos": "01 h 02 min 37 s",
+                "adaptada": null,
+                "real": "S"
+              },
+              "00120": {
+                "minutos": "20' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "21:44",
+                "tiempo": "01 h 20 min"
+              }
+            }
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 131,
+          "desc_linea": "3 - EXTERIOR - HOSPITALS",
+          "trayectos": {
+            "EXTERIOR HOSPITALS": {
+              "0": { "minutos": "00 min 00 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "19 min 54 s", "adaptada": null, "real": "S" },
+              "2": { "minutos": "34 min 37 s", "adaptada": null, "real": "S" },
+              "3": { "minutos": "52 min 37 s", "adaptada": null, "real": "S" },
+              "00108": {
+                "minutos": "08' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "21:32",
+                "tiempo": "01 h 08 min"
+              }
+            }
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": {
+              "0": { "minutos": "15 min 54 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "46 min 52 s", "adaptada": null, "real": "S" },
+              "2": {
+                "minutos": "01 h 03 min 37 s",
+                "adaptada": null,
+                "real": "S"
+              },
+              "00150": {
+                "minutos": "50' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:14",
+                "tiempo": "01 h 50 min"
+              }
+            },
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": {
+              "0": { "minutos": "17 min 37 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "40 min 37 s", "adaptada": null, "real": "S" },
+              "2": {
+                "minutos": "01 h 03 min 37 s",
+                "adaptada": null,
+                "real": "S"
+              },
+              "00150": {
+                "minutos": "50' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "22:14",
+                "tiempo": "01 h 50 min"
+              }
+            }
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 134,
+          "desc_linea": "6 - MERCAT BORDETA AGRONOMS TANATORI",
+          "trayectos": {
+            "PLA D'URGELL - VILA MONTCADA": [
+              { "minutos": "03 min 52 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 05 min 37 s", "adaptada": null, "real": "S" }
+            ],
+            "PLA D'URGELL - AGRÒNOMS": {
+              "0": { "minutos": "12 min 28 s", "adaptada": null, "real": "S" },
+              "1": { "minutos": "43 min 10 s", "adaptada": null, "real": "S" },
+              "2": { "minutos": "53 min 37 s", "adaptada": null, "real": "S" },
+              "00133": {
+                "minutos": "33' 00''",
+                "adaptada": null,
+                "real": "N",
+                "hora": "21:57",
+                "tiempo": "01 h 33 min"
+              }
+            },
+            "PLA D'URGELL - TANATORI": [
+              { "minutos": "44 min 49 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "13057": {
+      "name": "audiència / museu morera 2",
+      "lat": 41.618482568988,
+      "lng": 0.63109722638478,
+      "fetchedAt": "2026-09-17T18:26:12.349Z",
+      "body": [
+        {
+          "idLinea": 131,
+          "desc_linea": "3 - EXTERIOR - HOSPITALS",
+          "trayectos": {
+            "EXTERIOR HOSPITALS": [
+              { "minutos": "01 min 54 s", "adaptada": null, "real": "S" },
+              { "minutos": "16 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "34 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "49 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 04 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 22 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 37 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 52 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 07 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "19 min 23 s", "adaptada": null, "real": "S" },
+              { "minutos": "34 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "56 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 20 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 42 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 28 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 136,
+          "desc_linea": "8 - BALÀFIA - CLOT - CENTRE",
+          "trayectos": {
+            "ESTACIÓ D'AUTOBUSOS - LAUREÀ FIGUEROLA": [
+              { "minutos": "01 min 56 s", "adaptada": null, "real": "S" },
+              { "minutos": "31 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 06 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        },
+        {
+          "idLinea": 138,
+          "desc_linea": "10 - GRAN DE LLIVIA-CAPARRELLA",
+          "trayectos": {
+            "CAPARRELLA - LLÍVIA": [
+              { "minutos": "06 min 53 s", "adaptada": null, "real": "S" },
+              { "minutos": "53 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "13063": {
+      "name": "jeroni pujades / baró de maials 2",
+      "lat": 41.622321675564,
+      "lng": 0.63599295408072,
+      "fetchedAt": "2026-09-17T18:26:18.466Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "22 min 23 s", "adaptada": null, "real": "S" },
+              { "minutos": "37 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 23 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "13064": {
+      "name": "la llotja",
+      "lat": 41.619146605543,
+      "lng": 0.63622192548314,
+      "fetchedAt": "2026-09-17T18:25:27.980Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "12 min 18 s", "adaptada": null, "real": "S" },
+              { "minutos": "36 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "57 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 22 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 08 min 04 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "13065": {
+      "name": "la llotja 2",
+      "lat": 41.6193957674,
+      "lng": 0.63627864347179,
+      "fetchedAt": "2026-09-17T18:26:17.269Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "21 min 23 s", "adaptada": null, "real": "S" },
+              { "minutos": "36 min 58 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 22 min 58 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "13068": {
+      "name": "barris nord 2",
+      "lat": 41.62521963648,
+      "lng": 0.63374606051593,
+      "fetchedAt": "2026-09-17T18:26:20.916Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "26 min 22 s", "adaptada": null, "real": "S" },
+              { "minutos": "41 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 27 min 57 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "13102": {
+      "name": "rambla corregidor escofet",
+      "lat": 41.624172184451,
+      "lng": 0.63590743470445,
+      "fetchedAt": "2026-09-17T18:25:22.930Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "08 min 18 s", "adaptada": null, "real": "S" },
+              { "minutos": "32 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "54 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 18 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 04 min 04 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "13506": {
+      "name": "pont princep de viana",
+      "lat": 41.61981012739,
+      "lng": 0.63302233357034,
+      "fetchedAt": "2026-09-17T18:26:14.759Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ESTACIO D'AUTOBUSOS - ARNAU DE VILANOVA": [
+              { "minutos": "20 min 22 s", "adaptada": null, "real": "S" },
+              { "minutos": "35 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "57 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 21 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 43 min 57 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 29 min 57 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 138,
+          "desc_linea": "10 - GRAN DE LLIVIA-CAPARRELLA",
+          "trayectos": {
+            "LLÍVIA - CAPARRELLA": [
+              { "minutos": "32 min 52 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    },
+    "14399": {
+      "name": "pont de suert",
+      "lat": 41.612330069394,
+      "lng": 0.63581228256226,
+      "fetchedAt": "2026-09-17T18:25:44.526Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "02 min 51 s", "adaptada": null, "real": "S" },
+              { "minutos": "17 min 54 s", "adaptada": null, "real": "S" },
+              { "minutos": "41 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 04 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 27 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 13 min 31 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "14400": {
+      "name": "agustins / garrigues",
+      "lat": 41.609987757621,
+      "lng": 0.63454627990723,
+      "fetchedAt": "2026-09-17T18:25:46.882Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "04 min 51 s", "adaptada": null, "real": "S" },
+              { "minutos": "19 min 54 s", "adaptada": null, "real": "S" },
+              { "minutos": "43 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 06 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 29 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 15 min 31 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "14401": {
+      "name": "barcelona / riu ebre",
+      "lat": 41.60780580165,
+      "lng": 0.63154220581055,
+      "fetchedAt": "2026-09-17T18:25:48.184Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "06 min 51 s", "adaptada": null, "real": "S" },
+              { "minutos": "21 min 54 s", "adaptada": null, "real": "S" },
+              { "minutos": "45 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 08 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 31 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 17 min 31 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "14402": {
+      "name": "alacant / garrigues",
+      "lat": 41.612137553826,
+      "lng": 0.63188552856445,
+      "fetchedAt": "2026-09-17T18:25:43.651Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "00 min 51 s", "adaptada": null, "real": "S" },
+              { "minutos": "15 min 54 s", "adaptada": null, "real": "S" },
+              { "minutos": "39 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 02 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 02 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 25 min 31 s", "adaptada": null, "real": "S" },
+              { "minutos": "02 h 11 min 31 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "25044": {
+      "name": "jardins de les magnolies2",
+      "lat": 41.62954,
+      "lng": 0.62312,
+      "fetchedAt": "2026-09-17T18:25:06.073Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "22 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "45 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 08 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 54 min 04 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        }
+      ]
+    },
+    "27481": {
+      "name": "av. pinyana",
+      "lat": 41.627904229433,
+      "lng": 0.61263289994471,
+      "fetchedAt": "2026-09-17T18:25:04.630Z",
+      "body": [
+        {
+          "idLinea": 133,
+          "desc_linea": "5 - CAPPONT - ARNAU DE VILANOVA",
+          "trayectos": {
+            "ARNAU DE VILANOVA - ESTACIO D'AUTOBUSOS": [
+              { "minutos": "18 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "41 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 04 min 04 s", "adaptada": null, "real": "S" },
+              { "minutos": "01 h 50 min 04 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 1
+        },
+        {
+          "idLinea": 134,
+          "desc_linea": "6 - MERCAT BORDETA AGRONOMS TANATORI",
+          "trayectos": {
+            "PLA D'URGELL - TANATORI": [
+              { "minutos": "45 min 29 s", "adaptada": null, "real": "S" }
+            ]
+          },
+          "incidencias": null,
+          "selected": 0
+        }
+      ]
+    }
+  }
+}
