@@ -26,6 +26,7 @@ const mockFeed = (lines: MoventisLine[]) => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("nextDates", () => {
@@ -101,5 +102,18 @@ describe("representativeDates", () => {
 
   it("returns nothing when given no dates", () => {
     expect(representativeDates([])).toEqual([]);
+  });
+
+  it("reads the weekday in UTC, not in the host's zone", () => {
+    // The container runs in UTC, a laptop may not. 2026-08-03T00:00Z is a
+    // Monday, but 20:00 on Sunday in New York; 2026-08-09T00:00Z is a Sunday,
+    // but Saturday there. Reading either locally swaps both dates into the
+    // wrong day-of-week group, and the line gets probed on the wrong days.
+    vi.stubEnv("TZ", "America/New_York");
+
+    expect(representativeDates(["20260803", "20260809"])).toEqual([
+      "20260803",
+      "20260809",
+    ]);
   });
 });

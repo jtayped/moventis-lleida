@@ -142,11 +142,15 @@ export function nextDates(from: Date, count: number, stepDays = 1): string[] {
 /**
  * Returns one representative date per day-of-week group (weekday/Sat/Sun)
  * from the given list of YYYYMMDD strings.
+ *
+ * The weekday is read in UTC: `parseDateStr` builds a UTC-midnight date, so
+ * `getDay()` would answer in the host's zone and slide a Monday back to Sunday
+ * anywhere west of Greenwich — correct in the UTC container, wrong on a laptop.
  */
 export function representativeDates(operatingDates: string[]): string[] {
   const byDow = new Map<number, string>();
   for (const d of operatingDates) {
-    const dow = parseDateStr(d).getDay();
+    const dow = parseDateStr(d).getUTCDay();
     if (!byDow.has(dow)) byDow.set(dow, d);
   }
   // Group Mon–Fri together; keep Sat and Sun separate
