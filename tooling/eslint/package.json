@@ -9,9 +9,9 @@
     "./expo": "./expo.js"
   },
   "dependencies": {
-    "@eslint/js": "^9.0.0",
-    "eslint-config-next": "^15.2.3",
-    "typescript-eslint": "^8.27.0"
+    "@eslint/js": "^9.39.5",
+    "eslint-config-next": "^15.5.25",
+    "typescript-eslint": "^8.70.0"
   },
   "peerDependencies": {
     "eslint": "^9.0.0",

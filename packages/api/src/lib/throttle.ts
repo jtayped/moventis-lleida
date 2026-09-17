@@ -34,7 +34,7 @@ export class ThrottledQueue {
         try {
           void Promise.resolve(fn()).then(resolve, reject);
         } catch (error) {
-          reject(error as Error);
+          reject(error instanceof Error ? error : new Error(String(error)));
         }
       });
       void this.dispatch();

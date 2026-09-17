@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Lines, Schedules } from "@moventis/shared";
+import type { Schedules } from "@moventis/shared";
 import type * as StopScheduleModule from "../lib/stop-schedule";
 
 // Avoid constructing the real Prisma client (the router gets `db` via ctx instead).
@@ -37,7 +37,7 @@ function line(
   return [
     {
       externalLineId: ROUTE_EXT,
-      lineCode: "9" as Lines,
+      lineCode: "9",
       lineName: "x",
       selected: false,
       incidencias: null,
