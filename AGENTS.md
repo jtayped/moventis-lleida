@@ -69,6 +69,8 @@ All env vars live in a single `.env` at the monorepo root. Copy `.env.example` t
 DATABASE_URL="postgresql://postgres:password@localhost:5432/moventis-lleida"
 NEXT_PUBLIC_MAPS_API_KEY=""   # Google Maps JavaScript API key
 NEXT_PUBLIC_MAPS_MAP_ID=""    # Google Cloud Map ID (required for AdvancedMarker)
+NEXT_PUBLIC_UMAMI_SCRIPT_URL="" # self-hosted Umami tracker; optional — see Analytics below
+NEXT_PUBLIC_UMAMI_WEBSITE_ID="" # optional; both unset means no tracker is rendered at all
 ANDROID_HOME=                 # Android SDK path (Expo only)
 ```
 
@@ -148,6 +150,14 @@ Selection is shareable: `/?lines=1,4&stop=10211`. `lines` is a comma-separated l
 The flow is one-directional. `apps/web/src/app/page.tsx` reads `searchParams` server-side and seeds `BusFinderProvider` (no `useSearchParams`, so no Suspense boundary and no hydration flash); unknown line codes are filtered out against `routes.getAll`, while an unknown `stop` is left to `stops.get` and surfaces as the drawer's error state. `useUrlSelection` (`apps/web/src/hooks/use-url-selection.ts`) then only ever *writes*, via `window.history.replaceState` — `router.replace` would re-run the server render on every badge tap, and `replaceState` keeps toggles out of the history stack. Nothing reads the URL after mount, so back/forward does not restore a previous selection.
 
 Search query is deliberately not in the URL.
+
+### Analytics
+
+Umami, self-hosted at `analytics.joeltaylor.business`. `layout.tsx` renders the script only when both `NEXT_PUBLIC_UMAMI_*` vars are set, with `data-domains` pinned to the production host so local dev and previews never reach it.
+
+`apps/web/src/lib/analytics.ts` is the only place `window.umami` is touched, and its `AnalyticsEvents` union is the complete list of what gets sent — a renamed event is a type error, not a dead metric. No event carries user-typed text.
+
+The opt-out is `analytics` in `useSettings` (on by default). It is mirrored into Umami's own `umami.disabled` localStorage key because the script's automatic pageview never passes through the wrapper and can only be stopped by the key the script itself reads.
 
 ### Database Schema
 

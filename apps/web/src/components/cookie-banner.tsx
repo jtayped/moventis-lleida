@@ -61,7 +61,8 @@ const CookieBanner = () => {
         <p className="text-muted-foreground text-sm leading-relaxed">
           Aquest lloc guarda al teu navegador les parades que marquis com a
           preferides, només en aquest dispositiu. No fem servir cookies de
-          seguiment ni analítica de tercers.
+          seguiment. Comptem visites de forma anònima amb una eina pròpia, i
+          pots desactivar-ho a la configuració.
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
