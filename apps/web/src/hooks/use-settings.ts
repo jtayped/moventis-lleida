@@ -4,10 +4,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "moventis:settings";
 
+/**
+ * Umami's own opt-out key. The tracker reads it itself and sends nothing at all
+ * while it is set — including the automatic pageview it fires on load, which
+ * never passes through `lib/analytics.ts` and so can't be gated by our setting
+ * alone. Hence two keys for one choice: ours is the one the panel shows and the
+ * wrapper reads, this one is the one the script obeys.
+ */
+const UMAMI_DISABLED_KEY = "umami.disabled";
+
 export type ThemeSetting = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
 
 interface SettingsState {
+  /**
+   * Anonymous usage analytics (see `lib/analytics.ts`). On by default — it is
+   * cookieless and stores nothing that identifies the device — with the opt-out
+   * in the same panel as everything else here.
+   */
+  analytics: boolean;
   /**
    * Opt-in to the live bus position prediction. Off by default — it's an
    * experimental feature (the prediction is still being tuned), not a stable
@@ -17,7 +32,11 @@ interface SettingsState {
   theme: ThemeSetting;
 }
 
-const DEFAULT: SettingsState = { liveBusPrediction: false, theme: "system" };
+const DEFAULT: SettingsState = {
+  analytics: true,
+  liveBusPrediction: false,
+  theme: "system",
+};
 
 /**
  * Same-document fan-out, same reason as `use-cookie-consent.ts`: `storage`
@@ -39,8 +58,12 @@ function parse(raw: string | null): SettingsState {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return DEFAULT;
-    const { liveBusPrediction, theme } = parsed as Partial<SettingsState>;
+    const { analytics, liveBusPrediction, theme } =
+      parsed as Partial<SettingsState>;
     return {
+      // Only an explicit `false` opts out: a settings blob written before this
+      // key existed has to keep the default rather than read as a refusal.
+      analytics: analytics !== false,
       liveBusPrediction: liveBusPrediction === true,
       theme:
         theme === "light" || theme === "dark" || theme === "system"
@@ -49,6 +72,23 @@ function parse(raw: string | null): SettingsState {
     };
   } catch {
     return DEFAULT;
+  }
+}
+
+/**
+ * The analytics opt-in, read straight from storage rather than through the hook.
+ * `lib/analytics.ts` fires from event handlers and effects all over the tree,
+ * plenty of them nowhere near a component that could hold this in state.
+ *
+ * Defaults to on for the same reason `parse` does: an unreadable or absent value
+ * is "never answered", not "refused".
+ */
+export function isAnalyticsEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return parse(window.localStorage.getItem(STORAGE_KEY)).analytics;
+  } catch {
+    return DEFAULT.analytics;
   }
 }
 
@@ -75,7 +115,8 @@ function initialResolvedTheme(): ResolvedTheme {
 }
 
 /**
- * Device-local app settings: the live-bus-prediction opt-in and the theme.
+ * Device-local app settings: the analytics opt-out, the live-bus-prediction
+ * opt-in and the theme.
  * Grouped in one hook, and one storage key, because they're both answered from
  * the same settings panel — unlike `use-preferides.ts` and
  * `use-cookie-consent.ts`, neither has enough shape on its own to earn a
@@ -138,6 +179,23 @@ export function useSettings() {
     return () => media.removeEventListener("change", apply);
   }, [settings.theme, hydrated]);
 
+  // Mirrors the opt-out into the key the tracker itself reads. Gated on
+  // `hydrated` for the same reason the theme effect is: before the real value
+  // loads, `settings` is still the default (`analytics: true`), and writing that
+  // out would clear an opt-out set on a previous visit for the one tick before
+  // it is read back.
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      if (settings.analytics) window.localStorage.removeItem(UMAMI_DISABLED_KEY);
+      else window.localStorage.setItem(UMAMI_DISABLED_KEY, "1");
+    } catch {
+      // Private mode, or quota. `isAnalyticsEnabled` still holds the line for
+      // everything that goes through `track`; only the script's own automatic
+      // pageview can slip past, and only in a session that stores nothing.
+    }
+  }, [settings.analytics, hydrated]);
+
   useEffect(() => {
     if (!hydrated) return;
     const next = JSON.stringify(settings);
@@ -159,6 +217,11 @@ export function useSettings() {
     for (const listener of listeners) listener(next);
   }, []);
 
+  const setAnalytics = useCallback(
+    (analytics: boolean) => write({ analytics }),
+    [write],
+  );
+
   const setLiveBusPrediction = useCallback(
     (liveBusPrediction: boolean) => write({ liveBusPrediction }),
     [write],
@@ -175,6 +238,7 @@ export function useSettings() {
     hydrated,
     /** The actual light/dark result of `settings.theme`, with "system" resolved. */
     resolvedTheme,
+    setAnalytics,
     setLiveBusPrediction,
     setTheme,
   };

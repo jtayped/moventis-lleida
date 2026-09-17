@@ -34,6 +34,11 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_MAPS_API_KEY: z.string(),
     NEXT_PUBLIC_MAPS_MAP_ID: z.string().optional().default(""),
+    // Self-hosted Umami. Both optional: with either one missing, `layout.tsx`
+    // renders no tracker at all and the app is otherwise unchanged, so a build
+    // without them (a preview, a fork, a local dev box) still succeeds.
+    NEXT_PUBLIC_UMAMI_SCRIPT_URL: z.string().url().optional(),
+    NEXT_PUBLIC_UMAMI_WEBSITE_ID: z.string().optional(),
   },
 
   /**
@@ -45,6 +50,8 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_MAPS_API_KEY: process.env.NEXT_PUBLIC_MAPS_API_KEY,
     NEXT_PUBLIC_MAPS_MAP_ID: process.env.NEXT_PUBLIC_MAPS_MAP_ID,
+    NEXT_PUBLIC_UMAMI_SCRIPT_URL: process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL,
+    NEXT_PUBLIC_UMAMI_WEBSITE_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -3,6 +3,8 @@ import "@/styles/globals.css";
 
 import type { Viewport, Metadata } from "next";
 import { Geist } from "next/font/google";
+import Script from "next/script";
+import { env } from "@/env";
 import RootProviders from "./providers";
 
 export const metadata: Metadata = ROOT_METADATA;
@@ -26,9 +28,20 @@ const geist = Geist({
  */
 const THEME_INIT_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem("moventis:settings")||"{}");var t=s&&s.theme;var dark=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(dark)document.documentElement.classList.add("dark");}catch(e){}})();`;
 
+/**
+ * The only host whose traffic belongs in the numbers. Umami's `data-domains`
+ * makes the script ignore every other one, so a `pnpm dev` on localhost, a
+ * preview deploy, or anyone running a fork with our website id inherited from
+ * `.env.example` never lands in production's counts.
+ */
+const UMAMI_DOMAIN = "moventis-lleida.joeltaylor.business";
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const umamiScriptUrl = env.NEXT_PUBLIC_UMAMI_SCRIPT_URL;
+  const umamiWebsiteId = env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
+
   return (
     // suppressHydrationWarning: the script above may add `class="dark"` to this
     // element before React hydrates, which would otherwise flag as a mismatch
@@ -43,6 +56,21 @@ export default function RootLayout({
       </head>
       <body className="lowercase">
         <RootProviders>{children}</RootProviders>
+        {/* Both env vars or no tracker at all: they're optional (a fork, a
+            preview, a build with no analytics host), and half a configuration
+            would load a script that can't attribute anything it sends. The
+            device's own opt-out is separate and lives in `useSettings` —
+            the script honours it through the `umami.disabled` key, since the
+            pageview it fires on load never passes through `lib/analytics.ts`. */}
+        {umamiScriptUrl && umamiWebsiteId && (
+          <Script
+            defer
+            strategy="afterInteractive"
+            src={umamiScriptUrl}
+            data-website-id={umamiWebsiteId}
+            data-domains={UMAMI_DOMAIN}
+          />
+        )}
       </body>
     </html>
   );
