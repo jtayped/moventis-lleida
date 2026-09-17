@@ -46,7 +46,7 @@ export function useGeolocation() {
     // reported when the watch started.
     if (watchIdRef.current !== null) return;
 
-    setState((s) => ({ ...s, status: "loading" }));
+    setState((s) => ({ ...s, status: "loading", error: null }));
     reportedRef.current = false;
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -55,8 +55,19 @@ export function useGeolocation() {
         reportOutcome("active");
       },
       (error) => {
-        setState({ status: "error", position: null, error });
-        watchIdRef.current = null;
+        // Dropping the id without clearing the watch left the GPS running: it
+        // kept re-firing this callback, and the next tap started a second watch
+        // on top of it. Stop it first, then forget it, so a retry starts clean.
+        if (watchIdRef.current !== null) {
+          navigator.geolocation.clearWatch(watchIdRef.current);
+          watchIdRef.current = null;
+        }
+        // A timeout in a tunnel doesn't invalidate the fix from a minute ago —
+        // the blue dot is still roughly right, and blanking it is worse than
+        // leaving it. `shouldPan` is dropped, though: panning to a stale
+        // position in answer to a tap that failed would be a lie.
+        setState((s) => ({ status: "error", position: s.position, error }));
+        setShouldPan(false);
         reportOutcome("error");
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
@@ -69,6 +80,7 @@ export function useGeolocation() {
     return () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
       }
     };
   }, []);
