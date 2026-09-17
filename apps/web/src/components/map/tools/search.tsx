@@ -9,7 +9,18 @@ import { useBusFinder } from "@/context/buses";
 import { Spinner } from "@/components/ui/spinner";
 
 const SearchInput = () => {
-  const { stops, searchQuery, setSearchQuery, isLoadingStops } = useBusFinder();
+  const {
+    stops,
+    searchQuery,
+    setSearchQuery,
+    debouncedSearchQuery,
+    isLoadingStops,
+    stopsError,
+  } = useBusFinder();
+
+  // Only once the debounce has fired, or the first keystroke would report no
+  // matches for a search that hasn't run yet.
+  const hasSearched = debouncedSearchQuery.trim().length > 0;
 
   return (
     // `InputGroup` carries `dark:bg-input/30` and no unprefixed background of
@@ -19,6 +30,7 @@ const SearchInput = () => {
     <InputGroup className="bg-card dark:bg-card">
       <InputGroupInput
         placeholder="busca la teva parada"
+        aria-label="busca la teva parada"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
@@ -31,8 +43,15 @@ const SearchInput = () => {
             carregant
             <Spinner />
           </>
+        ) : stopsError ? (
+          // Zero results used to render nothing at all — identical to an idle
+          // field, so a failed search looked like a search for something that
+          // doesn't exist.
+          <span className="text-destructive">error</span>
+        ) : stops.length > 0 ? (
+          `${stops.length} parades`
         ) : (
-          stops.length > 0 && `${stops.length} parades`
+          hasSearched && "cap parada"
         )}
       </InputGroupAddon>
     </InputGroup>

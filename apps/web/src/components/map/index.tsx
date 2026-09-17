@@ -14,7 +14,7 @@ import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { env } from "@/env";
 import LinesPanel from "@/components/map/lines-panel";
-import { LayoutList, LocateFixed, Loader2 } from "lucide-react";
+import { LayoutList, LocateFixed, Loader2, TriangleAlert } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useSettings } from "@/hooks/use-settings";
 import UserLocationLayer from "@/components/map/user-location-layer";
@@ -22,7 +22,8 @@ import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 
 const BusMap = () => {
-  const { stops, routes, busPositions, preferidesStops } = useBusFinder();
+  const { stops, routes, busPositions, preferidesStops, stopsError, retryStops } =
+    useBusFinder();
   const { resolvedTheme } = useSettings();
   const [linesOpen, setLinesOpen] = useState(false);
   const { status, position, shouldPan, requestLocation, onPanned } = useGeolocation();
@@ -49,6 +50,27 @@ const BusMap = () => {
           <SettingsButton />
         </div>
         <BusRoutes />
+        {/* Without this a failed stop query is a map with no pins on it, which
+            reads as "this line has no stops" rather than "we couldn't ask". */}
+        {stopsError && (
+          <div
+            role="status"
+            className="border-destructive/30 bg-destructive/10 text-destructive flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
+          >
+            <TriangleAlert size={14} className="shrink-0" />
+            <span className="min-w-0 flex-1">
+              no s&apos;han pogut carregar les parades
+            </span>
+            <Button
+              onClick={retryStops}
+              variant="ghost"
+              size="sm"
+              className="h-7 shrink-0 px-2 text-xs underline underline-offset-2"
+            >
+              torna-ho a provar
+            </Button>
+          </div>
+        )}
       </Card>
       <MapComponent
         mapId={env.NEXT_PUBLIC_MAPS_MAP_ID || undefined}
