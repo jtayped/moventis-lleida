@@ -1,3 +1,12 @@
+# Production compose, deployed by Coolify.
+#
+# It names prebuilt images and must never gain a `build:` key again: GitHub
+# Actions builds and pushes both images (.github/workflows/release.yml) and the
+# VPS only pulls. Adding `build:` back here silently moves a Next compile onto a
+# shared host — see docs/decisions/0001-build-in-ci-deploy-images.md.
+#
+# ${TAG} pins a specific image (the commit sha) for a manual rollback; it
+# defaults to `main`, the tag every release moves.
 services:
   postgres:
     image: postgres:18-alpine
@@ -15,16 +24,15 @@ services:
       retries: 5
 
   web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-      args:
-        NEXT_PUBLIC_MAPS_API_KEY: ${NEXT_PUBLIC_MAPS_API_KEY}
-        NEXT_PUBLIC_MAPS_MAP_ID: ${NEXT_PUBLIC_MAPS_MAP_ID}
-        NEXT_PUBLIC_UMAMI_SCRIPT_URL: ${NEXT_PUBLIC_UMAMI_SCRIPT_URL:-}
-        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
+    image: ghcr.io/jtayped/moventis-lleida-web:${TAG:-main}
+    pull_policy: always
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # The NEXT_PUBLIC_* values the browser actually uses were inlined into
+      # the bundle when the image was built in CI, from GitHub repository
+      # variables. These runtime copies reach server code only; changing one
+      # here does nothing to the page a visitor loads. Changing what the
+      # browser sees means changing the repository variable and rebuilding.
       NEXT_PUBLIC_MAPS_API_KEY: ${NEXT_PUBLIC_MAPS_API_KEY}
       NEXT_PUBLIC_MAPS_MAP_ID: ${NEXT_PUBLIC_MAPS_MAP_ID}
       NEXT_PUBLIC_UMAMI_SCRIPT_URL: ${NEXT_PUBLIC_UMAMI_SCRIPT_URL:-}
@@ -37,9 +45,8 @@ services:
     restart: unless-stopped
 
   scraper:
-    build:
-      context: .
-      dockerfile: apps/scraper/Dockerfile
+    image: ghcr.io/jtayped/moventis-lleida-scraper:${TAG:-main}
+    pull_policy: always
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
