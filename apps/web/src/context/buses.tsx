@@ -7,6 +7,7 @@ import { useLineBuses, type BusLineStatus } from "@/hooks/use-line-buses";
 import { usePreferides } from "@/hooks/use-preferides";
 import { useSettings } from "@/hooks/use-settings";
 import { useUrlSelection } from "@/hooks/use-url-selection";
+import { track, type StopOpenSource } from "@/lib/analytics";
 import { keepPreviousData } from "@tanstack/react-query";
 import type { BusPosition, Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
@@ -14,7 +15,9 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -27,8 +30,14 @@ interface BusFinderValue {
   isRouteSelected: (routeId: Lines) => boolean;
   /** Routes that have at least one operating day today. */
   activeRouteCodes: Lines[];
-  /** Opens the stop drawer. Takes a `Stop.externalId` (the `?stop=` param). */
-  selectStop: (externalId: string) => void;
+  /**
+   * Opens the stop drawer. Takes a `Stop.externalId` (the `?stop=` param).
+   *
+   * `source` is for the analytics event only — it never changes what opens, and
+   * defaults to "pin" because the map is where most of these come from and
+   * every other caller is a single known place.
+   */
+  selectStop: (externalId: string, source?: StopOpenSource) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   /** `externalId` of the stop whose drawer is open, if any. */
@@ -223,6 +232,10 @@ export const BusFinderProvider = ({
   }, [showPreferides, preferidesIds, savedStops, stops]);
 
   function toggleRoute(routeCode: Lines) {
+    track("line toggled", {
+      code: routeCode,
+      selected: !selectedRoutes.includes(routeCode),
+    });
     setSelectedRoutes((currentRoutes) =>
       currentRoutes.includes(routeCode)
         ? currentRoutes.filter((id) => id !== routeCode)
@@ -236,9 +249,52 @@ export const BusFinderProvider = ({
   }
 
   // Stable so the memoized map pins don't re-render on every provider update.
-  const selectStop = useCallback((externalId: string) => {
-    setSelectedStopId(externalId);
-  }, []);
+  const selectStop = useCallback(
+    (externalId: string, source: StopOpenSource = "pin") => {
+      track("stop opened", { source });
+      setSelectedStopId(externalId);
+    },
+    [],
+  );
+
+  // The `?stop=` open, which `selectStop` never sees: the drawer is already open
+  // on the first render, seeded from `initialStopId`. Fired from a mount effect
+  // rather than at module scope so it counts once per visit, not once per render
+  // — and only once, since `initialStopId` is a prop that can't change here.
+  const reportedInitialStop = useRef(false);
+  useEffect(() => {
+    if (!initialStopId || reportedInitialStop.current) return;
+    reportedInitialStop.current = true;
+    track("stop opened", { source: "url" });
+  }, [initialStopId]);
+
+  // One event per search, not one per keystroke: fired on the edge from an empty
+  // debounced query to a non-empty one, and reset when the field is cleared. The
+  // query text is deliberately never sent — see `lib/analytics.ts`.
+  const hadQuery = useRef(false);
+  useEffect(() => {
+    const hasQuery = debouncedQuery.trim().length > 0;
+    if (hasQuery && !hadQuery.current) track("search used");
+    hadQuery.current = hasQuery;
+  }, [debouncedQuery]);
+
+  // Wrapped rather than tracked inside `usePreferides`: the hook is the storage
+  // layer and has no business knowing about analytics, and `saved` is the state
+  // the toggle is moving *to*, which only the caller's side of it can name.
+  // Both wrappers stay silent when saving is off, since nothing then happens.
+  const trackedTogglePreferida = useCallback(
+    (externalId: string) => {
+      if (preferidesDisabled) return;
+      track("preferida toggled", { saved: !isPreferida(externalId) });
+      togglePreferida(externalId);
+    },
+    [preferidesDisabled, isPreferida, togglePreferida],
+  );
+
+  const trackedTogglePreferides = useCallback(() => {
+    track("preferides visibility toggled", { visible: !showPreferides });
+    togglePreferides();
+  }, [showPreferides, togglePreferides]);
 
   // Live bus prediction runs for every selected line, independent of any open
   // stop. Lifted here so both the map markers and the stop drawer read one source
@@ -264,9 +320,9 @@ export const BusFinderProvider = ({
     preferidesStops,
     preferidesCount: preferidesIds.length,
     showPreferides,
-    togglePreferides,
+    togglePreferides: trackedTogglePreferides,
     isPreferida,
-    togglePreferida,
+    togglePreferida: trackedTogglePreferida,
     preferidesDisabled,
     clearPreferides,
   } satisfies BusFinderValue;

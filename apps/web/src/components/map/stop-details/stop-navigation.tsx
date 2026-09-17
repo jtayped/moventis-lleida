@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { api, type RouterOutputs } from "@/trpc/react";
 import { useBusFinder } from "@/context/buses";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -184,6 +184,12 @@ function CorridorRow({
 export function StopNavigation({ externalId }: { externalId: string }) {
   const { selectedRoutes, selectStop } = useBusFinder();
 
+  // Walking the line is its own way in, and worth telling apart from a pin tap.
+  const openStop = useCallback(
+    (id: string) => selectStop(id, "navigation"),
+    [selectStop],
+  );
+
   // One query per selected line, all sharing the cache with everything else that
   // reads a line's variants. Grouping needs every line's answer at once, which a
   // query per row can't provide.
@@ -245,7 +251,7 @@ export function StopNavigation({ externalId }: { externalId: string }) {
           key={corridor.key}
           corridor={corridor}
           gutter={gutter}
-          onSelect={selectStop}
+          onSelect={openStop}
         />
       ))}
     </div>
