@@ -59,14 +59,24 @@ async function upsertStop(
   return stop.id;
 }
 
+/** What a synced variant contributes to its line's stop set and variant list. */
+interface SyncedVariant {
+  externalId: number;
+  stopIds: string[];
+}
+
+/**
+ * Syncs one variant. Returns `null` when the trayecto carries no usable primary
+ * id — nothing was written, and the line's variant list is therefore incomplete.
+ */
 async function syncVariant(
   routeId: string,
   lineId: string,
   trayecto: MoventisTrayecto,
   seen: SeenStops,
-): Promise<void> {
+): Promise<SyncedVariant | null> {
   const primaryId = primaryTrayectoId(trayecto);
-  if (primaryId == null) return;
+  if (primaryId == null) return null;
 
   // Fetch KML geometry for each segment in parallel
   const kmlResults = await Promise.allSettled(
@@ -144,13 +154,7 @@ async function syncVariant(
     });
   }
 
-  // Connect all stops from this variant to the route (many-to-many)
-  if (stopIds.length > 0) {
-    await db.route.update({
-      where: { id: routeId },
-      data: { stops: { connect: stopIds.map((id) => ({ id })) } },
-    });
-  }
+  return { externalId: primaryId, stopIds };
 }
 
 async function syncLine(line: ResolvedLine, seen: SeenStops): Promise<void> {
@@ -193,8 +197,50 @@ async function syncLine(line: ResolvedLine, seen: SeenStops): Promise<void> {
     }
   }
 
+  // A line's stop set and variant list may only be *replaced* when this run saw
+  // the whole line: every trayecto synced, from probes that all answered. On
+  // anything less, a stop or a variant missing from this run's view is missing
+  // because a request failed, not because it is gone upstream.
+  let complete = line.calendarProbed;
+  const variantIds: number[] = [];
+  const stopIds = new Set<string>();
+
   for (const trayecto of line.trayectos) {
-    await syncVariant(route.id, line.externalId, trayecto, seen);
+    const synced = await syncVariant(route.id, line.externalId, trayecto, seen);
+    if (!synced) {
+      complete = false;
+      continue;
+    }
+    variantIds.push(synced.externalId);
+    for (const id of synced.stopIds) stopIds.add(id);
+  }
+
+  if (complete && stopIds.size > 0) {
+    // `set` (not `connect`) is what lets a stop dropped from this line upstream
+    // stop drawing on it — the relation used to be append-only, so a removed
+    // stop stayed on the line forever and kept costing a live Moventis probe.
+    await db.route.update({
+      where: { id: route.id },
+      data: { stops: { set: [...stopIds].map((id) => ({ id })) } },
+    });
+  } else if (stopIds.size > 0) {
+    // Incomplete run: additive only. Never drops a stop on the strength of a
+    // failed fetch, but still attaches the ones this run did see, so they are
+    // not left orphaned (pruning hard-deletes stops that belong to no route).
+    await db.route.update({
+      where: { id: route.id },
+      data: { stops: { connect: [...stopIds].map((id) => ({ id })) } },
+    });
+  }
+
+  if (complete && variantIds.length > 0) {
+    // Variants that vanished upstream would otherwise keep their stale stop list
+    // and geometry, and keep being offered as a tab. The length check is not
+    // cosmetic: Prisma reads `notIn: []` as *match every row*.
+    // RouteVariantStop rows go with them by cascade.
+    await db.routeVariant.deleteMany({
+      where: { routeId: route.id, externalId: { notIn: variantIds } },
+    });
   }
 
   // Derive aggregated Route.path from the principal outbound variants
