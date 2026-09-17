@@ -33,17 +33,61 @@ const MINIMAL_MAP_STYLES: google.maps.MapTypeStyle[] = [
   { featureType: "poi", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
   { elementType: "geometry", stylers: [{ color: "#f4f6f8" }] },
-  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#eef1f4" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e2e6ea" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#f0f2f5" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#d8dde3" }] },
-  { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#6b7280" }] },
-  { featureType: "road.local", elementType: "labels.text.fill", stylers: [{ color: "#9ca3af" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#d6e4f5" }] },
-  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#7ea8c9" }] },
-  { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#374151" }] },
-  { featureType: "administrative.neighborhood", elementType: "labels.text.fill", stylers: [{ color: "#6b7280" }] },
+  {
+    featureType: "landscape.natural",
+    elementType: "geometry",
+    stylers: [{ color: "#eef1f4" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }],
+  },
+  {
+    featureType: "road",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#e2e6ea" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#f0f2f5" }],
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#d8dde3" }],
+  },
+  {
+    featureType: "road.arterial",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#6b7280" }],
+  },
+  {
+    featureType: "road.local",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#9ca3af" }],
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#d6e4f5" }],
+  },
+  {
+    featureType: "water",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#7ea8c9" }],
+  },
+  {
+    featureType: "administrative.locality",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#374151" }],
+  },
+  {
+    featureType: "administrative.neighborhood",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#6b7280" }],
+  },
 ];
 
 const MapComponent = ({
@@ -74,8 +118,8 @@ const MapComponent = ({
       <div className={className}>
         <div className="bg-muted/40 flex h-full w-full flex-col items-center justify-center gap-4 p-6 text-center">
           <p className="text-muted-foreground max-w-xs text-sm">
-            no s&apos;ha pogut carregar el mapa. comprova la connexió i
-            torna-ho a provar.
+            no s&apos;ha pogut carregar el mapa. comprova la connexió i torna-ho
+            a provar.
           </p>
           <Button variant="outline" onClick={() => window.location.reload()}>
             recarrega
@@ -99,7 +143,9 @@ const MapComponent = ({
           style={{ width: "100%", height: "100%" }}
           defaultBounds={camera ? undefined : bounds}
           restriction={restrictions}
-          defaultCenter={camera ? camera.center : bounds ? undefined : defaultCenter}
+          defaultCenter={
+            camera ? camera.center : bounds ? undefined : defaultCenter
+          }
           defaultZoom={camera ? camera.zoom : bounds ? undefined : defaultZoom}
           onCameraChanged={({ detail }) => {
             cameraRef.current = { center: detail.center, zoom: detail.zoom };

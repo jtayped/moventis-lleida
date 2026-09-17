@@ -21,7 +21,8 @@ describe("geo", () => {
   it("cumulativeArcLengths is increasing and starts at 0", () => {
     const cum = cumulativeArcLengths(line);
     expect(cum[0]).toBe(0);
-    for (let i = 1; i < cum.length; i++) expect(cum[i]!).toBeGreaterThan(cum[i - 1]!);
+    for (let i = 1; i < cum.length; i++)
+      expect(cum[i]!).toBeGreaterThan(cum[i - 1]!);
   });
 
   it("pointAtArc midpoint of first segment lands halfway", () => {

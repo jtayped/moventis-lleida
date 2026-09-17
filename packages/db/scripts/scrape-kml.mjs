@@ -68,7 +68,9 @@ async function main() {
     return { code, externalId };
   });
   if (pairs.length === 0) {
-    console.error("No lines given. Usage: node scrape-kml.mjs code:externalId ...");
+    console.error(
+      "No lines given. Usage: node scrape-kml.mjs code:externalId ...",
+    );
     process.exit(1);
   }
   await fs.mkdir(RAW_DIR, { recursive: true });

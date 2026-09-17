@@ -15,7 +15,9 @@ const ROOT = path.resolve(__dirname, "../data/route-paths");
 const MATCHED_DIR = path.join(ROOT, "matched");
 
 async function main() {
-  const files = (await fs.readdir(MATCHED_DIR)).filter((f) => f.endsWith(".json"));
+  const files = (await fs.readdir(MATCHED_DIR)).filter((f) =>
+    f.endsWith(".json"),
+  );
   const summary = [];
 
   for (const file of files) {
@@ -61,7 +63,9 @@ async function main() {
     });
   }
 
-  summary.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+  summary.sort((a, b) =>
+    a.code.localeCompare(b.code, undefined, { numeric: true }),
+  );
   for (const s of summary) {
     console.log(
       `line ${s.code}: ${s.variations} variations, ${s.rawPoints} raw pts -> ${s.paths} paths, ${s.outPoints} pts`,

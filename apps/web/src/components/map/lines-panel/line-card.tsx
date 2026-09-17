@@ -37,7 +37,9 @@ const PathPreview = ({ code, color }: { code: string; color: string }) => {
   const lngRange = maxLng - minLng || 1;
   const latRange = maxLat - minLat || 1;
 
-  const W = 80, H = 32, PAD = 3;
+  const W = 80,
+    H = 32,
+    PAD = 3;
   const toX = (lng: number) =>
     PAD + ((lng - minLng) / lngRange) * (W - PAD * 2);
   // Flip y: higher lat = lower SVG y
@@ -53,7 +55,10 @@ const PathPreview = ({ code, color }: { code: string; color: string }) => {
             <polyline
               key={i}
               points={path
-                .map(([lng, lat]) => `${toX(lng).toFixed(1)},${toY(lat).toFixed(1)}`)
+                .map(
+                  ([lng, lat]) =>
+                    `${toX(lng).toFixed(1)},${toY(lat).toFixed(1)}`,
+                )
                 .join(" ")}
               fill="none"
               stroke={color}
@@ -73,7 +78,7 @@ const LineCard = ({ route, isActive, onClick }: LineCardProps) => {
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50 ${!isActive ? "opacity-50" : ""}`}
+      className={`hover:bg-muted/50 flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${!isActive ? "opacity-50" : ""}`}
     >
       <span
         className="flex size-10 shrink-0 items-center justify-center rounded-md text-sm font-bold"
@@ -82,13 +87,17 @@ const LineCard = ({ route, isActive, onClick }: LineCardProps) => {
         {route.code}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium leading-snug">{route.name}</p>
+        <p className="truncate text-sm leading-snug font-medium">
+          {route.name}
+        </p>
         {!isActive && (
-          <p className="text-xs text-muted-foreground">fora d&apos;horari avui</p>
+          <p className="text-muted-foreground text-xs">
+            fora d&apos;horari avui
+          </p>
         )}
       </div>
       <PathPreview code={route.code} color={route.color} />
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      <ChevronRight className="text-muted-foreground size-4 shrink-0" />
     </button>
   );
 };

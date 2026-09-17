@@ -328,8 +328,10 @@ export const BusFinderProvider = ({
   // Live bus prediction runs for every selected line, independent of any open
   // stop. Lifted here so both the map markers and the stop drawer read one source
   // (aggregated positions + per-line status).
-  const { positions: busPositions, statusByLine: lineBusStatus } =
-    useLineBuses(selectedRoutes, isBusLocationEnabled);
+  const { positions: busPositions, statusByLine: lineBusStatus } = useLineBuses(
+    selectedRoutes,
+    isBusLocationEnabled,
+  );
 
   const value = {
     routes: routes as Line[],

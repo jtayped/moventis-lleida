@@ -7,7 +7,10 @@ const NOW = new Date(2026, 5, 19, 5, 0, 0);
 
 describe("toProbeResult", () => {
   it("keeps only real-time, future arrivals and drops scheduled ones", () => {
-    const schedules = parseSchedulesResponse(loadFixture("schedule-mixed.json"), NOW);
+    const schedules = parseSchedulesResponse(
+      loadFixture("schedule-mixed.json"),
+      NOW,
+    );
     // Line 130 has one real-time bus (~11 s) plus several scheduled times.
     const probe = toProbeResult(schedules, "130", NOW.getTime());
     expect([...probe.keys()]).toEqual(["ronda hospitals"]);
@@ -15,18 +18,27 @@ describe("toProbeResult", () => {
   });
 
   it("returns an empty map for a line with only scheduled arrivals", () => {
-    const schedules = parseSchedulesResponse(loadFixture("schedule-mixed.json"), NOW);
+    const schedules = parseSchedulesResponse(
+      loadFixture("schedule-mixed.json"),
+      NOW,
+    );
     // Line 137 in the capture is all real:"N".
     expect(toProbeResult(schedules, "137", NOW.getTime()).size).toBe(0);
   });
 
   it("returns an empty map when the route id is absent from the response", () => {
-    const schedules = parseSchedulesResponse(loadFixture("schedule-mixed.json"), NOW);
+    const schedules = parseSchedulesResponse(
+      loadFixture("schedule-mixed.json"),
+      NOW,
+    );
     expect(toProbeResult(schedules, "999", NOW.getTime()).size).toBe(0);
   });
 
   it("drops arrivals that have moved into the past relative to `now`", () => {
-    const schedules = parseSchedulesResponse(loadFixture("schedule-realtime.json"), NOW);
+    const schedules = parseSchedulesResponse(
+      loadFixture("schedule-realtime.json"),
+      NOW,
+    );
     // Buses at +330 s and +720 s; advance now past the first one.
     const later = NOW.getTime() + 400_000;
     const etas = toProbeResult(schedules, "137", later).get("poligons - ronda");
@@ -34,8 +46,13 @@ describe("toProbeResult", () => {
   });
 
   it("sorts ETAs ascending", () => {
-    const schedules = parseSchedulesResponse(loadFixture("schedule-realtime.json"), NOW);
-    const etas = toProbeResult(schedules, "137", NOW.getTime()).get("poligons - ronda")!;
+    const schedules = parseSchedulesResponse(
+      loadFixture("schedule-realtime.json"),
+      NOW,
+    );
+    const etas = toProbeResult(schedules, "137", NOW.getTime()).get(
+      "poligons - ronda",
+    )!;
     expect(etas).toEqual([...etas].sort((a, b) => a - b));
     expect(etas).toEqual([330, 720]);
   });

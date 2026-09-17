@@ -8,7 +8,10 @@ if (typeof window === "undefined") {
   try {
     const dotenv = await import("dotenv");
     const path = await import("path");
-    dotenv.config({ path: path.resolve(process.cwd(), "../../.env"), override: false });
+    dotenv.config({
+      path: path.resolve(process.cwd(), "../../.env"),
+      override: false,
+    });
   } catch {
     // ignore missing dotenv in production environments
   }

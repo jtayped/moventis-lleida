@@ -28,7 +28,9 @@ function filterSentinel(raw: unknown): unknown {
 }
 
 /** Flatten every arrival detail out of a line's `trayectos` (object- or array-form). */
-function details(line: { trayectos: Record<string, unknown> }): Record<string, unknown>[] {
+function details(line: {
+  trayectos: Record<string, unknown>;
+}): Record<string, unknown>[] {
   return Object.values(line.trayectos).flatMap((v) =>
     Array.isArray(v)
       ? (v as Record<string, unknown>[])
@@ -45,7 +47,9 @@ const VALID_FIXTURES = [
 
 describe("API response contract", () => {
   it.each(VALID_FIXTURES)("%s validates against apiScheduleSchema", (name) => {
-    const result = apiScheduleSchema.safeParse(filterSentinel(loadFixture(name)));
+    const result = apiScheduleSchema.safeParse(
+      filterSentinel(loadFixture(name)),
+    );
     expect(result.success).toBe(true);
   });
 
@@ -56,12 +60,18 @@ describe("API response contract", () => {
   });
 
   it("rejects a malformed response (unknown `real` value) — the canary has teeth", () => {
-    const result = apiScheduleSchema.safeParse(filterSentinel(loadFixture("schedule-malformed.json")));
+    const result = apiScheduleSchema.safeParse(
+      filterSentinel(loadFixture("schedule-malformed.json")),
+    );
     expect(result.success).toBe(false);
   });
 
   it("discriminates real-time vs scheduled by `real`", () => {
-    const realtime = scheduleSchema.parse({ minutos: "05 min 30 s", adaptada: "S", real: "S" });
+    const realtime = scheduleSchema.parse({
+      minutos: "05 min 30 s",
+      adaptada: "S",
+      real: "S",
+    });
     expect(realtime.real).toBe("S");
 
     const scheduled = scheduleSchema.parse({

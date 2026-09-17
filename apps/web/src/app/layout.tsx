@@ -46,11 +46,7 @@ export default function RootLayout({
     // suppressHydrationWarning: the script above may add `class="dark"` to this
     // element before React hydrates, which would otherwise flag as a mismatch
     // against the class-less server render. Scoped to this one element only.
-    <html
-      lang="ca"
-      className={`${geist.variable}`}
-      suppressHydrationWarning
-    >
+    <html lang="ca" className={`${geist.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

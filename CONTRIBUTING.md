@@ -6,15 +6,15 @@ Short form of how this repo is worked on. CLAUDE.md (mirrored as AGENTS.md) is t
 
 pnpm + Turborepo workspace.
 
-| path               | what it is                                                     |
-| ------------------ | -------------------------------------------------------------- |
-| `apps/web`         | Next.js 15 app: the map, the stop drawer, the settings panel   |
-| `apps/scraper`     | nightly job that discovers lines, stops and operating days     |
-| `apps/expo`        | React Native shell, early stage                                |
-| `packages/api`     | tRPC routers and all business logic                            |
-| `packages/db`      | Prisma client and schema                                       |
-| `packages/shared`  | types, Zod schemas, constants and pure geometry helpers        |
-| `tooling/*`        | shared ESLint and TypeScript configs                           |
+| path              | what it is                                                   |
+| ----------------- | ------------------------------------------------------------ |
+| `apps/web`        | Next.js 15 app: the map, the stop drawer, the settings panel |
+| `apps/scraper`    | nightly job that discovers lines, stops and operating days   |
+| `apps/expo`       | React Native shell, early stage                              |
+| `packages/api`    | tRPC routers and all business logic                          |
+| `packages/db`     | Prisma client and schema                                     |
+| `packages/shared` | types, Zod schemas, constants and pure geometry helpers      |
+| `tooling/*`       | shared ESLint and TypeScript configs                         |
 
 ## getting it running
 

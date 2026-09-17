@@ -22,11 +22,18 @@ import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 
 const BusMap = () => {
-  const { stops, routes, busPositions, preferidesStops, stopsError, retryStops } =
-    useBusFinder();
+  const {
+    stops,
+    routes,
+    busPositions,
+    preferidesStops,
+    stopsError,
+    retryStops,
+  } = useBusFinder();
   const { resolvedTheme } = useSettings();
   const [linesOpen, setLinesOpen] = useState(false);
-  const { status, position, shouldPan, requestLocation, onPanned } = useGeolocation();
+  const { status, position, shouldPan, requestLocation, onPanned } =
+    useGeolocation();
 
   const colorByLine = useMemo(
     () => Object.fromEntries(routes.map((r) => [r.code, r.color])),
@@ -42,7 +49,7 @@ const BusMap = () => {
 
   return (
     <div className="relative">
-      <Card className="bg-transparent shadow-none md:bg-card md:border-border absolute top-0 z-10 mx-auto w-full space-y-2 rounded-none rounded-br-xl border-none p-4 md:max-w-md md:p-6 md:shadow-lg">
+      <Card className="md:bg-card md:border-border absolute top-0 z-10 mx-auto w-full space-y-2 rounded-none rounded-br-xl border-none bg-transparent p-4 shadow-none md:max-w-md md:p-6 md:shadow-lg">
         <div className="flex items-start gap-2">
           <div className="flex-1">
             <SearchInput />
@@ -88,9 +95,16 @@ const BusMap = () => {
           <MapPinsRenderer stops={preferidesStops} />
         )}
         {busPositions.length > 0 && (
-          <BusMarkersRenderer positions={busPositions} colorByLine={colorByLine} />
+          <BusMarkersRenderer
+            positions={busPositions}
+            colorByLine={colorByLine}
+          />
         )}
-        <UserLocationLayer position={position} shouldPan={shouldPan} onPanned={onPanned} />
+        <UserLocationLayer
+          position={position}
+          shouldPan={shouldPan}
+          onPanned={onPanned}
+        />
       </MapComponent>
       <div className="pointer-events-none absolute bottom-0 z-10 flex w-full items-end justify-between p-4 md:p-6">
         <Button
@@ -114,7 +128,7 @@ const BusMap = () => {
           // alone doesn't displace `dark:bg-input/30`, it just loses to it.
           // Matching the modifier is what lets `twMerge` drop the variant's
           // class instead. Same fix `SettingsButton` and `SearchInput` need.
-          className="pointer-events-auto bg-card dark:bg-card dark:hover:bg-accent h-12 gap-2.5 rounded-xl px-5 shadow-lg"
+          className="bg-card dark:bg-card dark:hover:bg-accent pointer-events-auto h-12 gap-2.5 rounded-xl px-5 shadow-lg"
         >
           <LayoutList className="size-5" />
           <span className="font-medium">Línies</span>
@@ -125,7 +139,7 @@ const BusMap = () => {
           title={locateTitle}
           disabled={status === "unsupported"}
           className={cn(
-            "pointer-events-auto bg-card dark:bg-card dark:hover:bg-accent h-12 gap-2.5 rounded-xl px-5 shadow-lg",
+            "bg-card dark:bg-card dark:hover:bg-accent pointer-events-auto h-12 gap-2.5 rounded-xl px-5 shadow-lg",
             status === "active" && "border-blue-500 text-blue-500",
             status === "error" && "border-destructive text-destructive",
           )}

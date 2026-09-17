@@ -19,7 +19,7 @@ export const INITIAL_BOUNDS = {
 // Covers all intercity lines: Alcarràs (NW), Torres de Segre (SE),
 // el Cogul & l'Albagés (S) — roughly 35 km from city centre.
 export const RESTRICTED_BOUNDS = {
-  north: 41.80,
+  north: 41.8,
   south: 41.38,
   east: 0.96,
   west: 0.46,

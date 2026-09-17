@@ -101,7 +101,9 @@ describe("ThrottledQueue", () => {
         throw new Error("sync boom");
       }),
     ).rejects.toThrow("sync boom");
-    const after = expect(queue.schedule(() => Promise.resolve("ok"))).resolves.toBe("ok");
+    const after = expect(
+      queue.schedule(() => Promise.resolve("ok")),
+    ).resolves.toBe("ok");
 
     await vi.advanceTimersByTimeAsync(1000);
     await Promise.all([failed, threwSync, after]);
@@ -117,7 +119,9 @@ describe("ThrottledQueue", () => {
         return "slow";
       })
       .then((v) => settled.push(v));
-    const fast = queue.schedule(() => Promise.resolve("fast")).then((v) => settled.push(v));
+    const fast = queue
+      .schedule(() => Promise.resolve("fast"))
+      .then((v) => settled.push(v));
 
     await vi.advanceTimersByTimeAsync(2000);
     await Promise.all([slow, fast]);

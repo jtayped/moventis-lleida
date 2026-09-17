@@ -25,7 +25,7 @@ const toMeters = (dLng, dLat, lat) => {
 const bearing = (a, b) => {
   const lat = (a[1] + b[1]) / 2;
   const [dx, dy] = toMeters(b[0] - a[0], b[1] - a[1], lat);
-  return (((Math.atan2(dx, dy) * 180) / Math.PI) + 360) % 360;
+  return ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
 };
 
 const angleDiff = (a, b) => {
@@ -63,13 +63,14 @@ export function mergeCarriageways(variations, opts = {}) {
     return arr.map((cur, i) => {
       const prev = arr[i - 1];
       const next = arr[i + 1];
-      const b = next && prev
-        ? bearing(prev, next)
-        : next
-          ? bearing(cur, next)
-          : prev
-            ? bearing(prev, cur)
-            : 0;
+      const b =
+        next && prev
+          ? bearing(prev, next)
+          : next
+            ? bearing(cur, next)
+            : prev
+              ? bearing(prev, cur)
+              : 0;
       return { p: [cur[0], cur[1]], b, vi };
     });
   });
@@ -104,13 +105,17 @@ export function mergeCarriageways(variations, opts = {}) {
             if (!bucket) continue;
             for (const q of bucket) {
               if (q === pt) continue;
-              const opposite = angleDiff(pt.b, (q.b + 180) % 360) <= oppositeTol;
-              const same =
-                q.vi !== pt.vi && angleDiff(pt.b, q.b) <= sameTol;
+              const opposite =
+                angleDiff(pt.b, (q.b + 180) % 360) <= oppositeTol;
+              const same = q.vi !== pt.vi && angleDiff(pt.b, q.b) <= sameTol;
               const maxD = opposite ? radius : same ? sameRadius : -1;
               if (maxD < 0) continue;
               const lat = (pt.p[1] + q.p[1]) / 2;
-              const [dx, dy] = toMeters(q.p[0] - pt.p[0], q.p[1] - pt.p[1], lat);
+              const [dx, dy] = toMeters(
+                q.p[0] - pt.p[0],
+                q.p[1] - pt.p[1],
+                lat,
+              );
               const d = Math.hypot(dx, dy);
               if (d < bestD && d <= maxD) {
                 bestD = d;

@@ -16,7 +16,10 @@ const sortByCodes = (a: { code: string }, b: { code: string }) => {
 };
 
 const Divider = () => (
-  <li className="mx-0.5 self-stretch w-px bg-border shrink-0" aria-hidden="true" />
+  <li
+    className="bg-border mx-0.5 w-px shrink-0 self-stretch"
+    aria-hidden="true"
+  />
 );
 
 /**
@@ -79,7 +82,10 @@ const BusRoutes = () => {
     showPreferides,
   } = useBusFinder();
 
-  const activeSet = useMemo(() => new Set(activeRouteCodes), [activeRouteCodes]);
+  const activeSet = useMemo(
+    () => new Set(activeRouteCodes),
+    [activeRouteCodes],
+  );
 
   const { selected, unselected, unavailable } = useMemo(() => {
     const selected = [];
@@ -159,15 +165,14 @@ const BusRoutes = () => {
             {selected.map((r) => renderBadge(r, true))}
             {selected.length > 0 && unselected.length > 0 && <Divider />}
             {unselected.map((r) => renderBadge(r, true))}
-            {(selected.length > 0 || unselected.length > 0) && unavailable.length > 0 && (
-              <Divider />
-            )}
+            {(selected.length > 0 || unselected.length > 0) &&
+              unavailable.length > 0 && <Divider />}
             {unavailable.map((r) => renderBadge(r, false))}
           </ol>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-transparent to-transparent md:from-card"
+          className="md:from-card pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-transparent to-transparent"
           aria-hidden="true"
         />
       </div>
@@ -177,7 +182,7 @@ const BusRoutes = () => {
       {selectedRoutes.length === 0 &&
         !searchQuery &&
         !(showPreferides && preferidesCount > 0) && (
-          <p className="mt-1 text-xs text-foreground md:text-muted-foreground">
+          <p className="text-foreground md:text-muted-foreground mt-1 text-xs">
             Selecciona una línia per veure les parades al mapa
           </p>
         )}

@@ -27,9 +27,7 @@ export interface PruneInput {
   knownStopCount: number;
 }
 
-export type PruneDecision =
-  | { safe: true }
-  | { safe: false; reason: string };
+export type PruneDecision = { safe: true } | { safe: false; reason: string };
 
 /**
  * Decides whether this run's coverage is trustworthy enough to delete with.

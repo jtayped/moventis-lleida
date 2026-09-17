@@ -27,7 +27,10 @@ function pointToSegmentDist(p, a, b) {
   if (dx === 0 && dy === 0) return Math.hypot(p[0] - a[0], p[1] - a[1]);
   const t = Math.max(
     0,
-    Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)),
+    Math.min(
+      1,
+      ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy),
+    ),
   );
   return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
 }
@@ -37,7 +40,11 @@ function douglasPeucker(points, epsilon) {
   let maxDist = 0;
   let maxIdx = 0;
   for (let i = 1; i < points.length - 1; i++) {
-    const d = pointToSegmentDist(points[i], points[0], points[points.length - 1]);
+    const d = pointToSegmentDist(
+      points[i],
+      points[0],
+      points[points.length - 1],
+    );
     if (d > maxDist) {
       maxDist = d;
       maxIdx = i;
@@ -130,7 +137,10 @@ async function main() {
       try {
         const matched = await matchVariation(variation.points);
         console.log(`${matched.length} matched pts`);
-        matchedVariations.push({ trayectoId: variation.trayectoId, points: matched });
+        matchedVariations.push({
+          trayectoId: variation.trayectoId,
+          points: matched,
+        });
       } catch (err) {
         console.log(`ERROR (${err.message}), keeping raw points`);
         matchedVariations.push(variation);

@@ -48,7 +48,9 @@ describe("nextDates", () => {
 
   it("ignores the time of day it is called at", () => {
     // The nightly run fires at 03:00 local, which is still the same UTC day.
-    expect(nextDates(new Date("2026-08-04T22:45:00Z"), 1)).toEqual(["20260804"]);
+    expect(nextDates(new Date("2026-08-04T22:45:00Z"), 1)).toEqual([
+      "20260804",
+    ]);
   });
 
   it("returns nothing for a zero-length horizon", () => {
@@ -81,7 +83,10 @@ describe("fetchLleidaLines", () => {
   });
 
   it("throws when the feed responds with an error status", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503 }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 503 }),
+    );
 
     await expect(fetchLleidaLines()).rejects.toThrow("/lines 503");
   });

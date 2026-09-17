@@ -27,7 +27,11 @@ export default function TimeSourceBadge({
   if (isRealTime) {
     return (
       <span
-        className={cn(base, "text-emerald-700 dark:text-emerald-400", className)}
+        className={cn(
+          base,
+          "text-emerald-700 dark:text-emerald-400",
+          className,
+        )}
         title="hora en temps real: el bus està enviant la seva posició"
       >
         <span aria-hidden className="relative flex size-1.5 shrink-0">

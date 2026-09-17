@@ -20,9 +20,9 @@ import { getStopSchedule } from "../lib/stop-schedule";
  */
 describe("stops.getByExternalIds", () => {
   function caller(
-    findMany = vi.fn<(args: { where: Record<string, unknown> }) => Promise<never[]>>(
-      () => Promise.resolve([]),
-    ),
+    findMany = vi.fn<
+      (args: { where: Record<string, unknown> }) => Promise<never[]>
+    >(() => Promise.resolve([])),
   ) {
     const db = { stop: { findMany } };
     return {
@@ -48,7 +48,10 @@ describe("stops.getByExternalIds", () => {
     // alone would not catch (it ignores undefined-valued keys).
     const where = findMany.mock.calls[0]?.[0];
     expect(where?.where).toHaveProperty("deletedAt", undefined);
-    expect(where?.where).toEqual({ deletedAt: undefined, externalId: { in: ["10211"] } });
+    expect(where?.where).toEqual({
+      deletedAt: undefined,
+      externalId: { in: ["10211"] },
+    });
   });
 
   it("short-circuits an empty list without touching the database", async () => {
@@ -93,7 +96,9 @@ interface FakeStop {
 }
 
 function stopCaller(stop: FakeStop | null) {
-  const findUnique = vi.fn((_args: Record<string, unknown>) => Promise.resolve(stop));
+  const findUnique = vi.fn((_args: Record<string, unknown>) =>
+    Promise.resolve(stop),
+  );
   const db = { stop: { findUnique } };
   return {
     findUnique,

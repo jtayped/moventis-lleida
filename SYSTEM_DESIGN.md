@@ -10,16 +10,17 @@ Design principles, architectural standards, and patterns to follow when extendin
 
 The repo is a pnpm + Turborepo workspace. Package responsibilities are fixed:
 
-| Package | Responsibility | May import from |
-|---|---|---|
-| `packages/db` | Prisma client singleton, model types | nothing internal |
-| `packages/shared` | Types, Zod schemas, constants | `packages/db` (types only) |
-| `packages/api` | tRPC routers, all business logic | `packages/db`, `packages/shared` |
-| `apps/web` | Next.js UI, tRPC client | `packages/api`, `packages/db`, `packages/shared` |
-| `apps/expo` | React Native UI, tRPC client | `packages/api`, `packages/shared` |
-| `tooling/*` | ESLint + TypeScript configs | nothing internal |
+| Package           | Responsibility                       | May import from                                  |
+| ----------------- | ------------------------------------ | ------------------------------------------------ |
+| `packages/db`     | Prisma client singleton, model types | nothing internal                                 |
+| `packages/shared` | Types, Zod schemas, constants        | `packages/db` (types only)                       |
+| `packages/api`    | tRPC routers, all business logic     | `packages/db`, `packages/shared`                 |
+| `apps/web`        | Next.js UI, tRPC client              | `packages/api`, `packages/db`, `packages/shared` |
+| `apps/expo`       | React Native UI, tRPC client         | `packages/api`, `packages/shared`                |
+| `tooling/*`       | ESLint + TypeScript configs          | nothing internal                                 |
 
 **Rules:**
+
 - `packages/api` must never import from `apps/*`.
 - `packages/shared` must never contain server-only code (no Prisma queries, no axios calls).
 - Path aliases (`@/`) are scoped to the app that defines them. Cross-package imports always use the workspace package name (e.g. `@moventis/shared`), never a relative path or a foreign app's alias.
@@ -48,6 +49,7 @@ The repo is a pnpm + Turborepo workspace. Package responsibilities are fixed:
 Prisma model types expose relation fields (`stops[]`, `operatingDays[]`) that are `undefined` at runtime unless the query includes them. Never use a raw Prisma type as a DTO sent over tRPC.
 
 Define explicit DTO types in `packages/shared`:
+
 ```ts
 // packages/shared/src/types/lines.ts
 export type Line = {
@@ -77,6 +79,7 @@ The rule: if a type crosses a package boundary or is serialized over the wire, i
 ### 3.2 Caching
 
 Static data (routes, stops) is cached with `unstable_cache` from `next/cache`. Rules:
+
 - The `unstable_cache` wrapper is always defined at **module scope**, not inside the procedure handler. Defining it inside the handler recreates the wrapper on every request.
 - The cached function uses the global `db` singleton directly, not `ctx.db`, so it does not close over a per-request object.
 - Cache tags follow the pattern `["entity-name"]` (e.g. `["all-bus-routes"]`).
@@ -87,6 +90,7 @@ Static data (routes, stops) is cached with `unstable_cache` from `next/cache`. R
 All interaction with the Moventis API is contained in `packages/api/src/lib/stop-schedule.ts`. The public contract of that module is the single exported function `getStopSchedule`.
 
 **Error handling within `getStopSchedule`:**
+
 - `z.ZodError` (schema contract broken) → rethrow as `TRPCError` with code `"INTERNAL_SERVER_ERROR"`. This is not a transient fault; it surfaces a change in the upstream API.
 - `AxiosError` (network failure) → log to console, return `null`. The UI shows an empty/error state.
 - Unknown errors → log to console, return `null`.
@@ -155,17 +159,19 @@ export type * from "./src/types/schedule";
 
 The app uses a two-tier fetching strategy:
 
-| Data | Where fetched | Caching |
-|---|---|---|
-| Routes (static) | RSC in `page.tsx` | Next.js `unstable_cache`, 1 week |
-| Stops (semi-static, filtered) | Client via tRPC `useQuery` | TanStack Query, 30 s stale |
-| Stop schedules (real-time) | Client via tRPC `useQuery` on stop selection | No cache (`staleTime: 0`) |
+| Data                          | Where fetched                                | Caching                          |
+| ----------------------------- | -------------------------------------------- | -------------------------------- |
+| Routes (static)               | RSC in `page.tsx`                            | Next.js `unstable_cache`, 1 week |
+| Stops (semi-static, filtered) | Client via tRPC `useQuery`                   | TanStack Query, 30 s stale       |
+| Stop schedules (real-time)    | Client via tRPC `useQuery` on stop selection | No cache (`staleTime: 0`)        |
 
 **Rules:**
+
 - Static data that can be fetched once and cached is always fetched in an RSC and passed as props — never re-fetched on the client.
 - Client queries that depend on user state (selected routes, search query) use the `enabled` option to suppress unnecessary network requests:
   ```ts
-  enabled: debouncedSelectedRoutes.length > 0 || debouncedQuery.trim().length > 0
+  enabled: debouncedSelectedRoutes.length > 0 ||
+    debouncedQuery.trim().length > 0;
   ```
 - Real-time queries (`stops.get`) set `staleTime: 0` and `refetchInterval` appropriate to the update frequency of the underlying data (suggest 30 s for arrival times).
 
@@ -180,6 +186,7 @@ All bus-finder state lives in `BusFinderContext` (`apps/web/src/context/buses.ts
 ### 5.3 Component Rules
 
 **Memoization:**
+
 - List-rendered components are wrapped in `React.memo`.
 - Expensive computations inside components are wrapped in `useMemo` with correct dependency arrays.
 - Stable callbacks passed to memoized children are wrapped in `useCallback`.
@@ -188,6 +195,7 @@ All bus-finder state lives in `BusFinderContext` (`apps/web/src/context/buses.ts
 **Key props:** `key` belongs on the JSX element returned by `.map()` at the call site, not on the root element inside the component definition. A `key` on a component's own root element is silently ignored.
 
 **Client/server split:**
+
 - Components that use hooks, browser APIs, or context are `"use client"`.
 - Components that are pure server-fetched data displays are RSCs by default (no directive needed).
 - The pattern is: RSC fetches and passes data → client component owns interactivity.
@@ -195,6 +203,7 @@ All bus-finder state lives in `BusFinderContext` (`apps/web/src/context/buses.ts
 ### 5.4 Environment Variables
 
 All environment variables are declared and validated in `apps/web/src/env.js` using `@t3-oss/env-nextjs`. New variables must be:
+
 1. Added to the `server` or `client` section of `createEnv`.
 2. Added to `runtimeEnv`.
 3. Added to `apps/web/.env.example` with a placeholder value and a comment.
@@ -202,6 +211,7 @@ All environment variables are declared and validated in `apps/web/src/env.js` us
 Never access `process.env` directly in application code outside `env.js`.
 
 **Current required variables:**
+
 ```
 DATABASE_URL           — PostgreSQL connection string
 NEXT_PUBLIC_MAPS_API_KEY — Google Maps JavaScript API key
@@ -214,13 +224,13 @@ NEXT_PUBLIC_MAPS_MAP_ID  — Google Cloud Map ID (required for AdvancedMarker)
 
 ### 6.1 Failure Mode Taxonomy
 
-| Error origin | Expected handling |
-|---|---|
-| Moventis API network failure | Return `null` from `getStopSchedule`; UI shows error state with retry button |
-| Moventis API schema change (Zod failure) | Throw `TRPCError` `INTERNAL_SERVER_ERROR`; surfaces in UI as error state |
-| DB not found | Throw `TRPCError` `NOT_FOUND`; handled at the call site |
-| Invalid user input | Zod schema on the procedure input; tRPC returns a typed `zodError` |
-| Unknown runtime error | Log to console, do not swallow silently |
+| Error origin                             | Expected handling                                                            |
+| ---------------------------------------- | ---------------------------------------------------------------------------- |
+| Moventis API network failure             | Return `null` from `getStopSchedule`; UI shows error state with retry button |
+| Moventis API schema change (Zod failure) | Throw `TRPCError` `INTERNAL_SERVER_ERROR`; surfaces in UI as error state     |
+| DB not found                             | Throw `TRPCError` `NOT_FOUND`; handled at the call site                      |
+| Invalid user input                       | Zod schema on the procedure input; tRPC returns a typed `zodError`           |
+| Unknown runtime error                    | Log to console, do not swallow silently                                      |
 
 ### 6.2 UI Error States
 
@@ -231,6 +241,7 @@ Loading states use `Skeleton` components — not animated progress bars with fak
 ### 6.3 No Silent Swallowing
 
 A `catch` block that only calls `console.error` and returns `null`/`undefined` is acceptable only for recoverable network failures where the UI has a defined empty/error fallback. It is never acceptable for:
+
 - Zod parse failures (indicates upstream API contract change)
 - DB errors
 - Logic errors (errors that should never happen)
@@ -252,17 +263,19 @@ Every interactive element meets the following baseline:
 
 The Moventis API provides two arrival data modes, distinguished by the `real` field:
 
-| `real` value | Meaning | Format |
-|---|---|---|
-| `"S"` | GPS-tracked real-time position | Relative offset: `"5 min 30 s"` |
-| `"N"` | Published timetable | Absolute clock time: `"14:35"` |
+| `real` value | Meaning                        | Format                          |
+| ------------ | ------------------------------ | ------------------------------- |
+| `"S"`        | GPS-tracked real-time position | Relative offset: `"5 min 30 s"` |
+| `"N"`        | Published timetable            | Absolute clock time: `"14:35"`  |
 
 **Parsing rules:**
+
 - Real-time offsets are added to `Date.now()` as total milliseconds — never via successive `setHours`/`setMinutes`/`setSeconds` calls.
 - Scheduled times use a single `now` reference captured once per request for both construction and the day-wrap comparison.
 - The day-wrap check adds 24 hours only when `arrivalDate` is strictly before `now` — meaning the bus has already passed and must be due the next calendar day.
 
 **UI display rules:**
+
 - Past arrivals (where `arrivalTime < now`) are filtered out before rendering.
 - The countdown for the next upcoming arrival uses `CountdownTimer` and clears its interval when `secondsRemaining` reaches zero.
 - Non-countdown times refresh their displayed text on a 30-second interval to prevent stale relative times.
@@ -274,6 +287,7 @@ The Moventis API provides two arrival data modes, distinguished by the `real` fi
 ## 9. Code Style
 
 ### Naming
+
 - Files: `kebab-case.tsx`
 - Components: `PascalCase`
 - Hooks: `camelCase` prefixed with `use`
@@ -281,7 +295,9 @@ The Moventis API provides two arrival data modes, distinguished by the `real` fi
 - Constants: `SCREAMING_SNAKE_CASE` for values exported from `packages/shared`; `camelCase` for local constants
 
 ### Comments
+
 Comments explain **why**, not what. Acceptable comment subjects:
+
 - A non-obvious constraint from the external API (e.g. why `trayectos` values can be either arrays or objects)
 - A workaround for a specific upstream behaviour
 - A magic number's real-world meaning (e.g. the 0.035° map padding)
@@ -289,12 +305,14 @@ Comments explain **why**, not what. Acceptable comment subjects:
 Never comment what the code already says clearly through naming.
 
 ### TypeScript
+
 - Prefer `type` imports (`import type { X }`) wherever no runtime value is used.
 - Type-only barrel exports use `export type *`.
 - `interface` declarations belong at module scope, never inside a function body.
 - `as` type casts are preceded by a runtime guard or a comment explaining why the guard is unnecessary.
 
 ### Hooks
+
 - Custom hooks live in `apps/web/src/hooks/`.
 - Every hook that sets up a `setInterval` or `setTimeout` returns a cleanup function from its `useEffect`.
 - State that drives network requests is debounced via `useDebounce` before being passed to `useQuery`.

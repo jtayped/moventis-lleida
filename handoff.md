@@ -3,13 +3,14 @@
 Feature branch: `feat/bus-position-prediction`
 
 > **This plan supersedes the original per-stop prediction plan.** That first version shipped and
-> works (back-projection from the *open stop's* ETAs), but it has a fatal UX flaw: bus markers only
+> works (back-projection from the _open stop's_ ETAs), but it has a fatal UX flaw: bus markers only
 > appear while a stop **drawer** is open, and the drawer (a bottom sheet) covers most of the
 > viewport — so the user can't actually see the buses it predicts. This redesign **decouples bus
 > display from the drawer**: live buses render on the open map whenever a **line is selected**.
 >
 > Decisions locked with the user (2026-06-19):
-> 1. **Show live buses for every *selected* line** (each in its line colour), not just when exactly
+>
+> 1. **Show live buses for every _selected_ line** (each in its line colour), not just when exactly
 >    one line is selected.
 > 2. **Fully replace** the per-stop prediction trigger with the line-level one (one code path).
 > 3. **Two-probe self-calibration** for placement accuracy (derive each line's real speed from the
@@ -23,12 +24,12 @@ The worry was cost: lines 7 and n1 are long (~34–38 stops per variant; ~70 acr
 Probing every stop would be far too many calls. **It isn't necessary.** Empirical probe results
 (`GetTiemposParada/es/{stop}/{route}/0`, counting `real:"S"` arrivals for the line's own `idLinea`):
 
-| Line | externalId | Variants | Terminal probe | Midpoint probe |
-|---|---|---|---|---|
-| **7** | 135 | I: 34 stops, V: 38 | I→**5** (ETAs 17→67 min), V→5(+) | 5 / 0 |
-| **1** (loop) | 129 | 1: 14 stops | **0** (loop terminal quirk) | **5** |
-| **2** | 130 | 2 variants (~28) | **5** each | 5 |
-| **n1** (night) | 717 | 2: 34 stops | **0** (night bus — not running daytime) | 0 |
+| Line           | externalId | Variants           | Terminal probe                          | Midpoint probe |
+| -------------- | ---------- | ------------------ | --------------------------------------- | -------------- |
+| **7**          | 135        | I: 34 stops, V: 38 | I→**5** (ETAs 17→67 min), V→5(+)        | 5 / 0          |
+| **1** (loop)   | 129        | 1: 14 stops        | **0** (loop terminal quirk)             | **5**          |
+| **2**          | 130        | 2 variants (~28)   | **5** each                              | 5              |
+| **n1** (night) | 717        | 2: 34 stops        | **0** (night bus — not running daytime) | 0              |
 
 **Key facts learned:**
 
@@ -44,7 +45,7 @@ Probing every stop would be far too many calls. **It isn't necessary.** Empirica
 
 **Net cost per line: ~2–3 probes per variant (terminal + 1 calibration anchor, +1 loop fallback),
 so ~2–6 calls per line per refresh, independent of stop count.** With per-request caching of shared
-stops (e.g. line 7's "mangraners" is terminal of V *and* first of I) it's often fewer.
+stops (e.g. line 7's "mangraners" is terminal of V _and_ first of I) it's often fewer.
 
 ---
 
@@ -61,8 +62,8 @@ The first implementation left clean, tested primitives. Keep them:
   a bus `etaSeconds × speed` of arc back from an anchor stop along the geometry, wraps on closed
   loops, clamps on linear routes, and returns `{lat,lng,fromIdx,toIdx,fraction,confidence}`. Its
   `matchVariant()` (exact + diacritic-folded) maps an API journey key to a stored variant. **Reuse
-  and generalise** (see §4): the anchor becomes the *terminal*, not the user's stop, and the speed
-  becomes a *calibrated per-variant value*, not the fixed `AVG_SPEED_MPS`.
+  and generalise** (see §4): the anchor becomes the _terminal_, not the user's stop, and the speed
+  becomes a _calibrated per-variant value_, not the fixed `AVG_SPEED_MPS`.
 - **`packages/api/src/lib/probe.ts`** — `toProbeResult(schedules, routeExtId, now)` reduces a stop's
   schedule to per-journey real-time ETAs (filters `real:"S"`, drops past). `toGeometry()` parses
   variant geometry. **Reuse both.**
@@ -97,14 +98,14 @@ The first implementation left clean, tested primitives. Keep them:
 When the user selects one or more lines, the map shows that line's **live buses** (`real:"S"` only)
 as moving-vehicle markers, **without needing a stop drawer open**. Markers refresh on an interval
 (~25 s) while the line stays selected. Selecting a stop is now orthogonal — the drawer still shows
-the timetable and a "N autobusos en directe" status, but it no longer *gates* the buses.
+the timetable and a "N autobusos en directe" status, but it no longer _gates_ the buses.
 
 ### Constraints retained
 
 - **Real-time only** (`real:"S"`); never place `real:"N"` scheduled times.
 - **Timetable independence** — `stops.get` stays fast/unchanged; a failing bus query never affects it.
 - **Bounded cost** — anchor on terminals (≤2–3 probes/variant), cache shared stops per request,
-  refresh on a timer, only for *selected* lines.
+  refresh on a timer, only for _selected_ lines.
 
 ---
 
@@ -131,13 +132,15 @@ Ordered stops `S = [s₀ … s_{n-1}]`, destination terminal `s_{n-1}`. Let `arc
 `loop` = `isClosedLoop(polyline)`.
 
 **Step A — choose the anchor and read buses.**
+
 1. Primary anchor `A = n-1` (terminal). Probe `s_{n-1}`; via `toProbeResult` + `matchVariant`, take
-   journey `J`'s real-time ETAs `E = [e₀<e₁<…]` (each a bus *heading to the terminal*).
+   journey `J`'s real-time ETAs `E = [e₀<e₁<…]` (each a bus _heading to the terminal_).
 2. If `E` is empty **and** `loop` → set `A = floor(n/2)` (midpoint) and re-probe (handles the line-1
    loop-terminal-returns-0 quirk; loops wrap correctly in back-projection).
 3. If still empty → this variant has no live buses; yield nothing.
 
 **Step B — calibrate speed (two-probe).**
+
 - Pick a **calibration anchor** `A₂` upstream of `A` (e.g. `floor(n/2)` when `A` is the terminal; if
   `A` is already the midpoint, use `floor(n/4)`). Probe it → ETAs `E₂` for journey `J`.
 - Buses appearing at `A₂` are a subset of those at `A` (only the ones upstream of `A₂`). For a bus in
@@ -148,13 +151,14 @@ Ordered stops `S = [s₀ … s_{n-1}]`, destination terminal `s_{n-1}`. Let `arc
   the existing `AVG_SPEED_MPS` constant (≈4 m/s) → mark those positions `confidence:"medium"`.
 
 **Step C — place each bus (reuse `backProject`, generalised).**
+
 - For each `eᵢ` in `E` (buses at anchor `A`): target arc = `arc(A) − eᵢ × speed_v`; on `loop`,
   `((targetArc % total) + total) % total`; else `max(0, targetArc)`. `pointAtArc` → lat/lng;
   `segmentAtArc` → `{fromIdx,toIdx,fraction}`.
 - `confidence`: `"high"` when calibrated + geometry present; `"medium"` when fixed-speed fallback or
   no geometry; `"low"` when clamped at origin (linear, ETA predates route start).
 - Emit `BusPosition { journeyName: J, direction, lat, lng, segment, fraction, etaSeconds: eᵢ,
-  confidence, lineCode }`. **`etaSeconds` now means "ETA to the terminal,"** not to a user stop —
+confidence, lineCode }`. **`etaSeconds` now means "ETA to the terminal,"** not to a user stop —
   rename the doc comment accordingly (the field is still just "seconds until this bus reaches its
   reference anchor"; keep it for the marker tooltip / future use).
 
@@ -221,19 +225,19 @@ Ordered stops `S = [s₀ … s_{n-1}]`, destination terminal `s_{n-1}`. Let `arc
 
 ## 6. Failure modes & handling
 
-| # | Mode | Handling |
-|---|------|----------|
-| 1 | Loop terminal returns 0 (line 1) | Fallback to midpoint anchor when `isClosedLoop` and terminal empty. |
-| 2 | API caps at ~5 buses/journey | Accept; show the ~5 nearest-to-terminal. Document limit. |
-| 3 | Night line (n1) — all `real:"N"` | Render nothing. Never place scheduled times. |
-| 4 | Calibration: <2 matchable buses / nonsense speed | Clamp speed; else fall back to `AVG_SPEED_MPS`, `confidence:"medium"`. |
-| 5 | Journey↔variant string mismatch | `matchVariant` (description + diacritic-fold); log & skip unmatched sub-variants. |
-| 6 | Shared terminal lists 2 journeys (line 7 "mangraners" → 10) | Filter probe result to the variant's own journey `J`; per-request cache the fetch. |
-| 7 | Far bus (ETA > route traversal) on linear line | Clamp at origin, `confidence:"low"`. On loops, wrap. |
-| 8 | Geometry missing | Back-project along straight stop-lines; `confidence:"medium"`. |
-| 9 | Probe network failure | `getStopSchedule` returns null → treat variant/anchor as no-data; never break the line query or the timetable. |
-| 10 | Many lines selected → many calls | Cost = Σ variants × ~2–3, every 25 s. Acceptable; optional future cap or viewport-gating (§8). |
-| 11 | Clock/latency skew | One `now` per request; ETAs relative to server `now`. |
+| #   | Mode                                                        | Handling                                                                                                       |
+| --- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | Loop terminal returns 0 (line 1)                            | Fallback to midpoint anchor when `isClosedLoop` and terminal empty.                                            |
+| 2   | API caps at ~5 buses/journey                                | Accept; show the ~5 nearest-to-terminal. Document limit.                                                       |
+| 3   | Night line (n1) — all `real:"N"`                            | Render nothing. Never place scheduled times.                                                                   |
+| 4   | Calibration: <2 matchable buses / nonsense speed            | Clamp speed; else fall back to `AVG_SPEED_MPS`, `confidence:"medium"`.                                         |
+| 5   | Journey↔variant string mismatch                             | `matchVariant` (description + diacritic-fold); log & skip unmatched sub-variants.                              |
+| 6   | Shared terminal lists 2 journeys (line 7 "mangraners" → 10) | Filter probe result to the variant's own journey `J`; per-request cache the fetch.                             |
+| 7   | Far bus (ETA > route traversal) on linear line              | Clamp at origin, `confidence:"low"`. On loops, wrap.                                                           |
+| 8   | Geometry missing                                            | Back-project along straight stop-lines; `confidence:"medium"`.                                                 |
+| 9   | Probe network failure                                       | `getStopSchedule` returns null → treat variant/anchor as no-data; never break the line query or the timetable. |
+| 10  | Many lines selected → many calls                            | Cost = Σ variants × ~2–3, every 25 s. Acceptable; optional future cap or viewport-gating (§8).                 |
+| 11  | Clock/latency skew                                          | One `now` per request; ETAs relative to server `now`.                                                          |
 
 ---
 

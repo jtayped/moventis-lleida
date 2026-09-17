@@ -75,14 +75,14 @@ const LineStopList = ({ code, onBack }: LineStopListProps) => {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         {isLoading ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
+          <p className="text-muted-foreground py-8 text-center text-sm">
             carregant...
           </p>
         ) : isError ? (
           // Falling through to "no hi ha parades" said something false about
           // the line when the only thing that failed was the request.
           <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               no s&apos;han pogut carregar les parades d&apos;aquesta línia
             </p>
             <Button
@@ -95,14 +95,17 @@ const LineStopList = ({ code, onBack }: LineStopListProps) => {
             </Button>
           </div>
         ) : activeVariant ? (
-          <ol className="relative ml-3 border-l border-border">
+          <ol className="border-border relative ml-3 border-l">
             {activeVariant.stops.map((stop, idx) => {
               const isTerminus =
                 idx === 0 || idx === activeVariant.stops.length - 1;
               return (
-                <li key={`${stop.id}-${idx}`} className="relative pb-4 pl-5 last:pb-0">
+                <li
+                  key={`${stop.id}-${idx}`}
+                  className="relative pb-4 pl-5 last:pb-0"
+                >
                   <span
-                    className="absolute -left-[7px] top-[3px] size-3.5 rounded-full border-2 border-background"
+                    className="border-background absolute top-[3px] -left-[7px] size-3.5 rounded-full border-2"
                     style={{
                       backgroundColor: isTerminus
                         ? (route?.color ?? "hsl(var(--foreground))")
@@ -119,7 +122,7 @@ const LineStopList = ({ code, onBack }: LineStopListProps) => {
             })}
           </ol>
         ) : (
-          <p className="py-8 text-center text-sm text-muted-foreground">
+          <p className="text-muted-foreground py-8 text-center text-sm">
             no hi ha parades
           </p>
         )}

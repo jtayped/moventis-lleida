@@ -42,4 +42,4 @@ Things to decide before step 1: the long-press gesture has no discoverable affor
 
 ## what this does not solve
 
-Following a bus you are *on*, or a bus approaching a stop you have not opened yet, would need either the per-line locator (`buses.byLine`, still experimental) or the follow to hop stops along the variant. Neither is in scope; the stop-scoped follow covers the "should I leave the house now" case, which is the one described.
+Following a bus you are _on_, or a bus approaching a stop you have not opened yet, would need either the per-line locator (`buses.byLine`, still experimental) or the follow to hop stops along the variant. Neither is in scope; the stop-scoped follow covers the "should I leave the house now" case, which is the one described.
