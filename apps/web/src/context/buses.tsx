@@ -26,6 +26,14 @@ interface BusFinderValue {
   stops: Stop[];
   selectedRoutes: Lines[];
   isLoadingStops: boolean;
+  /**
+   * Any of the stop queries behind the map failed. They all fall back to an
+   * empty list, which on a map is indistinguishable from a line that genuinely
+   * has no stops — so the failure has to be said out loud somewhere.
+   */
+  stopsError: boolean;
+  /** Refetches only the stop queries that failed. */
+  retryStops: () => void;
   toggleRoute: (routeId: Lines) => void;
   isRouteSelected: (routeId: Lines) => boolean;
   /** Routes that have at least one operating day today. */
@@ -40,6 +48,12 @@ interface BusFinderValue {
   selectStop: (externalId: string, source?: StopOpenSource) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  /**
+   * The query `stops` actually reflects. The field needs it to tell "no matches"
+   * apart from "the debounce hasn't fired yet" — on the raw query, the first
+   * keystroke would report zero results before anything had been searched.
+   */
+  debouncedSearchQuery: string;
   /** `externalId` of the stop whose drawer is open, if any. */
   selectedStopId: string | null;
   /**
@@ -141,15 +155,19 @@ export const BusFinderProvider = ({
 
   // Search-only query: only runs when there are no selected routes but the user
   // is typing a name search.
-  const { data: searchStops, isLoading: isSearchLoading } =
-    api.stops.getMany.useQuery(
-      { routeCodes: [], query: debouncedQuery },
-      {
-        enabled:
-          debouncedSelectedRoutes.length === 0 &&
-          debouncedQuery.trim().length > 0,
-      },
-    );
+  const {
+    data: searchStops,
+    isLoading: isSearchLoading,
+    isError: isSearchError,
+    refetch: refetchSearch,
+  } = api.stops.getMany.useQuery(
+    { routeCodes: [], query: debouncedQuery },
+    {
+      enabled:
+        debouncedSelectedRoutes.length === 0 &&
+        debouncedQuery.trim().length > 0,
+    },
+  );
 
   // Stops of all selected routes, deduplicated (lines share stops).
   const routeStops = useMemo(() => {
@@ -177,6 +195,17 @@ export const BusFinderProvider = ({
   const isLoadingStops =
     routeQueries.some((q) => q.isLoading) ||
     (debouncedSelectedRoutes.length === 0 && isSearchLoading);
+
+  // Every one of these queries falls back to `[]`, so a failure draws an empty
+  // map or an empty search instead of saying anything went wrong.
+  const stopsError = routeQueries.some((q) => q.isError) || isSearchError;
+
+  const retryStops = () => {
+    for (const q of routeQueries) {
+      if (q.isError) void q.refetch();
+    }
+    if (isSearchError) void refetchSearch();
+  };
 
   const {
     ids: preferidesIds,
@@ -307,12 +336,15 @@ export const BusFinderProvider = ({
     stops,
     selectedRoutes,
     isLoadingStops,
+    stopsError,
+    retryStops,
     toggleRoute,
     isRouteSelected,
     activeRouteCodes,
     selectStop,
     searchQuery,
     setSearchQuery,
+    debouncedSearchQuery: debouncedQuery,
     selectedStopId,
     busPositions,
     lineBusStatus,

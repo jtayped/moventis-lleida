@@ -14,7 +14,13 @@ interface LineStopListProps {
 const LineStopList = ({ code, onBack }: LineStopListProps) => {
   const { routes } = useBusFinder();
   const route = routes.find((r) => r.code === code);
-  const { data: variants, isLoading } = api.routes.getVariantStops.useQuery({ code });
+  const {
+    data: variants,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = api.routes.getVariantStops.useQuery({ code });
   const [activeVariantIdx, setActiveVariantIdx] = useState(0);
 
   const activeVariant = variants?.[activeVariantIdx];
@@ -72,6 +78,22 @@ const LineStopList = ({ code, onBack }: LineStopListProps) => {
           <p className="py-8 text-center text-sm text-muted-foreground">
             carregant...
           </p>
+        ) : isError ? (
+          // Falling through to "no hi ha parades" said something false about
+          // the line when the only thing that failed was the request.
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              no s&apos;han pogut carregar les parades d&apos;aquesta línia
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+            >
+              torna-ho a provar
+            </Button>
+          </div>
         ) : activeVariant ? (
           <ol className="relative ml-3 border-l border-border">
             {activeVariant.stops.map((stop, idx) => {
