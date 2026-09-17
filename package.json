@@ -12,11 +12,17 @@
     "dev:expo": "turbo run dev --filter=@moventis/expo",
     "dev:scraper": "turbo run dev --filter=@moventis/scraper",
     "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:live": "turbo run test:live"
+    "test:live": "turbo run test:live",
+    "format:check": "prettier --check .",
+    "format:write": "prettier --write ."
   },
   "devDependencies": {
+    "@types/react": "^19.2.14",
     "globals": "^17.4.0",
-    "turbo": "latest"
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "turbo": "^2.9.3"
   }
 }

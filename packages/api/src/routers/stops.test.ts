@@ -11,7 +11,11 @@ import { createCaller } from "../root";
  * "cleaned up" by someone reading the file top to bottom.
  */
 describe("stops.getByExternalIds", () => {
-  function caller(findMany = vi.fn(() => Promise.resolve([]))) {
+  function caller(
+    findMany = vi.fn<(args: { where: Record<string, unknown> }) => Promise<never[]>>(
+      () => Promise.resolve([]),
+    ),
+  ) {
     const db = { stop: { findMany } };
     return {
       findMany,
@@ -27,11 +31,9 @@ describe("stops.getByExternalIds", () => {
     // The one query here that must see deleted stops: a saved stop that leaves the
     // network still needs a pin, because the drawer that pin opens holds the only
     // control that can unsave it. A `deletedAt: null` here strands it forever.
-    const where = findMany.mock.calls[0]?.[0] as {
-      where: Record<string, unknown>;
-    };
-    expect(where.where).not.toHaveProperty("deletedAt");
-    expect(where.where).toEqual({ externalId: { in: ["10211"] } });
+    const where = findMany.mock.calls[0]?.[0];
+    expect(where?.where).not.toHaveProperty("deletedAt");
+    expect(where?.where).toEqual({ externalId: { in: ["10211"] } });
   });
 
   it("short-circuits an empty list without touching the database", async () => {

@@ -20,7 +20,7 @@ const line = (over: Partial<MoventisLine>): MoventisLine => ({
 const mockFeed = (lines: MoventisLine[]) => {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue({ ok: true, json: async () => lines }),
+    vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(lines) }),
   );
 };
 

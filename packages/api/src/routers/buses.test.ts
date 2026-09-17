@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Lines, Schedules } from "@moventis/shared";
+import type * as StopScheduleModule from "../lib/stop-schedule";
 
 // Avoid constructing the real Prisma client (the router gets `db` via ctx instead).
 vi.mock("@moventis/db", () => ({ db: {} }));
 // Stub the only network call; keep the real normalizeText the router relies on.
 vi.mock("../lib/stop-schedule", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../lib/stop-schedule")>();
+  const actual = await importOriginal<typeof StopScheduleModule>();
   return { ...actual, getStopSchedule: vi.fn() };
 });
 

@@ -26,15 +26,15 @@ describe("mapWithConcurrency", () => {
   });
 
   it("handles an empty input", async () => {
-    expect(await mapWithConcurrency([], 4, async () => 1)).toEqual([]);
+    expect(await mapWithConcurrency([], 4, () => Promise.resolve(1))).toEqual([]);
   });
 
   it("does not spawn more workers than there are items", async () => {
     let started = 0;
 
-    await mapWithConcurrency([1, 2], 10, async (n) => {
+    await mapWithConcurrency([1, 2], 10, (n) => {
       started++;
-      return n;
+      return Promise.resolve(n);
     });
 
     expect(started).toBe(2);

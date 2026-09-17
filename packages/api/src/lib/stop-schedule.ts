@@ -1,5 +1,4 @@
 import {
-  type Lines,
   type Journey,
   type Schedules,
   type scheduleSchema,
@@ -113,7 +112,7 @@ function mapLine(line: ApiScheduleLine, now: Date): Schedules[number] {
 
   return {
     externalLineId: String(line.idLinea),
-    lineCode: desc.slice(0, sepIdx) as Lines,
+    lineCode: desc.slice(0, sepIdx),
     lineName: desc.slice(sepIdx + 3),
     selected: line.selected,
     incidencias: line.incidencias,

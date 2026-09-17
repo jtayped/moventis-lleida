@@ -1,0 +1,11 @@
+node_modules
+.next
+.turbo
+.expo
+dist
+pnpm-lock.yaml
+packages/db/data
+packages/db/prisma/migrations
+apps/web/src/styles/map-style-dark.json
+.claude
+.impeccable
