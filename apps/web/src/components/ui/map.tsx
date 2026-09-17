@@ -108,9 +108,10 @@ const MapComponent = ({
           disableDefaultUI
           mapId={mapId}
           colorScheme={mapId ? colorScheme : undefined}
-          // A Map ID's dark-mode style only combines with `colorScheme` under
-          // vector rendering — the default raster (`<div>`-based) map ignores
-          // the dark slot entirely and falls back to plain default colors.
+          // Vector rendering is what production has always run and the Map
+          // ID's light/dark styles verifiably apply under it. Before changing
+          // this, test in a *visible* tab: WebGL and raster tiles both stall in
+          // a hidden tab, which reads as "the style is not applied".
           renderingType={mapId ? "VECTOR" : undefined}
           styles={!mapId ? MINIMAL_MAP_STYLES : undefined}
         >
