@@ -15,7 +15,9 @@ describe("toWallClock", () => {
   });
 
   it("applies the winter offset", () => {
-    expect(toWallClock(new Date("2026-01-15T12:00:00Z"))).toMatchObject({ hour: 13 });
+    expect(toWallClock(new Date("2026-01-15T12:00:00Z"))).toMatchObject({
+      hour: 13,
+    });
   });
 
   it("reports the next calendar day when Lleida has rolled over but UTC has not", () => {
@@ -28,17 +30,24 @@ describe("toWallClock", () => {
   });
 
   it("uses a 24-hour clock rather than wrapping midnight to 24", () => {
-    expect(toWallClock(new Date("2026-07-15T22:00:00Z"))).toMatchObject({ day: 16, hour: 0 });
+    expect(toWallClock(new Date("2026-07-15T22:00:00Z"))).toMatchObject({
+      day: 16,
+      hour: 0,
+    });
   });
 });
 
 describe("fromWallClock", () => {
   it("resolves a summer wall clock to the matching instant", () => {
-    expect(fromWallClock(2026, 7, 15, 14, 0).toISOString()).toBe("2026-07-15T12:00:00.000Z");
+    expect(fromWallClock(2026, 7, 15, 14, 0).toISOString()).toBe(
+      "2026-07-15T12:00:00.000Z",
+    );
   });
 
   it("resolves a winter wall clock to the matching instant", () => {
-    expect(fromWallClock(2026, 1, 15, 13, 0).toISOString()).toBe("2026-01-15T12:00:00.000Z");
+    expect(fromWallClock(2026, 1, 15, 13, 0).toISOString()).toBe(
+      "2026-01-15T12:00:00.000Z",
+    );
   });
 
   it("carries an overflowing day into the next month", () => {
@@ -55,9 +64,9 @@ describe("fromWallClock", () => {
     for (let day = 0; day < 365; day++) {
       const instant = new Date(Date.UTC(2026, 0, 1, 9, 43) + day * 86_400_000);
       const w = toWallClock(instant);
-      expect(fromWallClock(w.year, w.month, w.day, w.hour, w.minute).toISOString()).toBe(
-        instant.toISOString(),
-      );
+      expect(
+        fromWallClock(w.year, w.month, w.day, w.hour, w.minute).toISOString(),
+      ).toBe(instant.toISOString());
     }
   });
 
@@ -70,21 +79,23 @@ describe("fromWallClock", () => {
 
   it("picks the second pass of the repeated autumn hour", () => {
     // 02:30 happens twice on 25 October 2026; the later (CET) one wins.
-    expect(fromWallClock(2026, 10, 25, 2, 30).toISOString()).toBe("2026-10-25T01:30:00.000Z");
+    expect(fromWallClock(2026, 10, 25, 2, 30).toISOString()).toBe(
+      "2026-10-25T01:30:00.000Z",
+    );
   });
 });
 
 describe("utcStartOfLocalDay", () => {
   it("returns midnight UTC of the day Lleida is currently on", () => {
-    expect(utcStartOfLocalDay(new Date("2026-07-15T12:00:00Z")).toISOString()).toBe(
-      "2026-07-15T00:00:00.000Z",
-    );
+    expect(
+      utcStartOfLocalDay(new Date("2026-07-15T12:00:00Z")).toISOString(),
+    ).toBe("2026-07-15T00:00:00.000Z");
   });
 
   it("has already advanced while UTC is still on the previous day", () => {
     // 01:30 on the 16th in Lleida — an OperatingDay query must not answer with the 15th.
-    expect(utcStartOfLocalDay(new Date("2026-07-15T23:30:00Z")).toISOString()).toBe(
-      "2026-07-16T00:00:00.000Z",
-    );
+    expect(
+      utcStartOfLocalDay(new Date("2026-07-15T23:30:00Z")).toISOString(),
+    ).toBe("2026-07-16T00:00:00.000Z");
   });
 });

@@ -18,7 +18,9 @@ const SEG_SECONDS = SEG_METERS / AVG_SPEED_MPS;
 const TERMINAL = N - 1; // anchor index for a linear variant
 const LINE = "9";
 
-function linearVariant(overrides: Partial<LocatorVariant> = {}): LocatorVariant {
+function linearVariant(
+  overrides: Partial<LocatorVariant> = {},
+): LocatorVariant {
   const stops = Array.from({ length: N }, (_, i) => ({
     id: `id${i}`,
     externalId: `s${i}`,
@@ -26,7 +28,13 @@ function linearVariant(overrides: Partial<LocatorVariant> = {}): LocatorVariant 
     lng: 0.62 + i * LNG_STEP,
   }));
   const geometry: LngLat[] = stops.map((s) => [s.lng, s.lat]);
-  return { direction: "I", description: "test line", stops, geometry, ...overrides };
+  return {
+    direction: "I",
+    description: "test line",
+    stops,
+    geometry,
+    ...overrides,
+  };
 }
 
 /** Build an injected probe from a `stopExternalId → journey → etas[]` world. */
@@ -58,7 +66,9 @@ describe("locateLineBuses — terminal anchoring", () => {
       anchorWorld(TERMINAL, [SEG_SECONDS * 1.5, SEG_SECONDS * 3.5]),
     );
     expect(out).toHaveLength(2);
-    const segs = new Set(out.map((p) => `${p.segment.fromStopId}->${p.segment.toStopId}`));
+    const segs = new Set(
+      out.map((p) => `${p.segment.fromStopId}->${p.segment.toStopId}`),
+    );
     expect(segs).toEqual(new Set(["id9->id10", "id7->id8"]));
     // Uncalibrated (no second probe) ⇒ medium confidence, tagged with the line.
     expect(out.every((p) => p.confidence === "medium")).toBe(true);
@@ -66,7 +76,10 @@ describe("locateLineBuses — terminal anchoring", () => {
   });
 
   it("clamps to the origin with low confidence when the ETA predates the route start", async () => {
-    const out = await locate([linearVariant()], anchorWorld(TERMINAL, [SEG_SECONDS * 100]));
+    const out = await locate(
+      [linearVariant()],
+      anchorWorld(TERMINAL, [SEG_SECONDS * 100]),
+    );
     expect(out[0]!.segment).toEqual({ fromStopId: "id0", toStopId: "id1" });
     expect(out[0]!.fraction).toBe(0);
     expect(out[0]!.confidence).toBe("low");
@@ -133,7 +146,11 @@ describe("locateLineBuses — two-probe calibration", () => {
     });
     expect(out).toHaveLength(3);
     expect(out.every((p) => p.confidence === "high")).toBe(true);
-    expect(out.every((p) => p.segment.fromStopId === "id4" && p.segment.toStopId === "id5")).toBe(true);
+    expect(
+      out.every(
+        (p) => p.segment.fromStopId === "id4" && p.segment.toStopId === "id5",
+      ),
+    ).toBe(true);
   });
 
   it("falls back to the fixed speed (medium) with too few matchable buses", async () => {
@@ -177,7 +194,12 @@ describe("locateLineBuses — closed loop", () => {
   const loopVariant: LocatorVariant = {
     direction: "I",
     description: "loop line",
-    stops: corners.map(([lng, lat], i) => ({ id: `id${i}`, externalId: `s${i}`, lat, lng })),
+    stops: corners.map(([lng, lat], i) => ({
+      id: `id${i}`,
+      externalId: `s${i}`,
+      lat,
+      lng,
+    })),
     geometry: [A, B, C, D, A], // closed
   };
 

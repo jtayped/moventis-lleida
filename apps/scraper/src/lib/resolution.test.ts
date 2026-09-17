@@ -47,7 +47,10 @@ describe("summarizeProbes", () => {
   });
 
   it("flags a batch containing a failed request", () => {
-    const summary = summarizeProbes([serving("20260804", [3]), failed("20260805")]);
+    const summary = summarizeProbes([
+      serving("20260804", [3]),
+      failed("20260805"),
+    ]);
 
     expect(summary.allAnswered).toBe(false);
     expect(summary.operatingDates).toEqual(["20260804"]);
@@ -106,7 +109,10 @@ describe("runningOutcome", () => {
   });
 
   it("marks the calendar unprobed when a request failed", () => {
-    const near = summarizeProbes([serving("20260804", [3]), failed("20260805")]);
+    const near = summarizeProbes([
+      serving("20260804", [3]),
+      failed("20260805"),
+    ]);
 
     expect(runningOutcome(near).calendarProbed).toBe(false);
   });
@@ -134,7 +140,9 @@ describe("dormantOutcome", () => {
   it("declares a line withdrawn when every probe answered and none served", () => {
     const far = summarizeProbes([idle("20260804"), idle("20260915")]);
 
-    expect(dormantOutcome(quietFortnight, far)).toEqual({ status: "withdrawn" });
+    expect(dormantOutcome(quietFortnight, far)).toEqual({
+      status: "withdrawn",
+    });
   });
 
   it("refuses to call a line withdrawn when the far scan errored", () => {
@@ -161,6 +169,9 @@ describe("dormantOutcome", () => {
     const outcome = dormantOutcome(near, far);
 
     // Resolved, but the half-known calendar must not overwrite the stored one.
-    expect(outcome).toMatchObject({ status: "resolved", calendarProbed: false });
+    expect(outcome).toMatchObject({
+      status: "resolved",
+      calendarProbed: false,
+    });
   });
 });

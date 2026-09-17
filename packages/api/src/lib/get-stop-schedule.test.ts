@@ -35,7 +35,9 @@ describe("getStopSchedule (HTTP wiring)", () => {
     const schedules = await getStopSchedule("10336", "137");
     expect(schedules).not.toBeNull();
     expect(schedules![0]!.externalLineId).toBe("137");
-    expect(schedules![0]!.journeys[0]!.scheduledTimes[0]!.isRealTime).toBe(true);
+    expect(schedules![0]!.journeys[0]!.scheduledTimes[0]!.isRealTime).toBe(
+      true,
+    );
   });
 
   it("filters the sentinel response to an empty list", async () => {

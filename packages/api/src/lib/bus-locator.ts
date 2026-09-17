@@ -79,7 +79,8 @@ export interface LineLocatorInput {
   probe: ProbeFn;
 }
 
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.max(lo, Math.min(hi, v));
 
 /** Strip combining diacritics for an accent-insensitive comparison. */
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -177,7 +178,11 @@ interface VariantGeometry {
  * selection) correct regardless of which of the two equivalent arc values
  * `projectToPolyline` happened to pick.
  */
-function upstreamDistance(geom: VariantGeometry, anchorArc: number, candidateArc: number): number {
+function upstreamDistance(
+  geom: VariantGeometry,
+  anchorArc: number,
+  candidateArc: number,
+): number {
   const raw = anchorArc - candidateArc;
   return geom.loop && raw < 0 ? raw + geom.total : raw;
 }
@@ -187,7 +192,10 @@ function calibCandidates(geom: VariantGeometry, anchorIdx: number): number[] {
   const minIdx = Math.max(0, anchorIdx - CALIB_MAX_STOPS_BACK);
   const candidates: number[] = [];
   for (let idx = anchorIdx - 1; idx >= minIdx; idx--) {
-    if (upstreamDistance(geom, anchorArc, geom.stopArcs[idx]!) >= CALIB_MIN_VIABLE_DISTANCE_M) {
+    if (
+      upstreamDistance(geom, anchorArc, geom.stopArcs[idx]!) >=
+      CALIB_MIN_VIABLE_DISTANCE_M
+    ) {
       candidates.push(idx);
     }
   }
@@ -223,14 +231,22 @@ function segmentAtArc(
     if (arc <= stopArcs[i]!) {
       const lo = stopArcs[i - 1]!;
       const span = stopArcs[i]! - lo;
-      return { from: i - 1, to: i, fraction: span <= 0 ? 0 : clamp((arc - lo) / span, 0, 1) };
+      return {
+        from: i - 1,
+        to: i,
+        fraction: span <= 0 ? 0 : clamp((arc - lo) / span, 0, 1),
+      };
     }
   }
   // Past the last stop's arc: only reachable on a wrapped loop (closing segment).
   if (loop) {
     const lo = stopArcs[n - 1]!;
     const span = total - lo + stopArcs[0]!;
-    return { from: n - 1, to: 0, fraction: span <= 0 ? 0 : clamp((arc - lo) / span, 0, 1) };
+    return {
+      from: n - 1,
+      to: 0,
+      fraction: span <= 0 ? 0 : clamp((arc - lo) / span, 0, 1),
+    };
   }
   return { from: Math.max(0, n - 2), to: n - 1, fraction: 1 };
 }
@@ -310,7 +326,11 @@ function calibrateSpeed(
   calibIdx: number,
   calibEtas: number[],
 ): number | null {
-  const arcBetween = upstreamDistance(geom, geom.stopArcs[anchorIdx]!, geom.stopArcs[calibIdx]!);
+  const arcBetween = upstreamDistance(
+    geom,
+    geom.stopArcs[anchorIdx]!,
+    geom.stopArcs[calibIdx]!,
+  );
   if (arcBetween <= 0) return null;
 
   // Both lists are already capped to REALTIME_BUS_CAP by pickJourney.

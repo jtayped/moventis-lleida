@@ -18,7 +18,10 @@ const M_PER_DEG_LNG = 111_320;
 
 /** Project [lng, lat] into a local planar frame (metres) around `refLat`. */
 function toMeters([lng, lat]: LngLat, refLat: number): [number, number] {
-  return [lng * M_PER_DEG_LNG * Math.cos((refLat * Math.PI) / 180), lat * M_PER_DEG_LAT];
+  return [
+    lng * M_PER_DEG_LNG * Math.cos((refLat * Math.PI) / 180),
+    lat * M_PER_DEG_LAT,
+  ];
 }
 
 /** Equirectangular distance between two coordinates, in metres. */
@@ -73,7 +76,13 @@ export function projectToPolyline(
     const dx = bx - ax;
     const dy = by - ay;
     const segLenSq = dx * dx + dy * dy;
-    const t = segLenSq === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / segLenSq));
+    const t =
+      segLenSq === 0
+        ? 0
+        : Math.max(
+            0,
+            Math.min(1, ((px - ax) * dx + (py - ay) * dy) / segLenSq),
+          );
     const footX = ax + dx * t;
     const footY = ay + dy * t;
     const dist = Math.hypot(px - footX, py - footY);

@@ -15,18 +15,24 @@ describe("mapWithConcurrency", () => {
     let inFlight = 0;
     let peak = 0;
 
-    await mapWithConcurrency(Array.from({ length: 20 }, (_, i) => i), 4, async () => {
-      inFlight++;
-      peak = Math.max(peak, inFlight);
-      await new Promise((r) => setTimeout(r, 1));
-      inFlight--;
-    });
+    await mapWithConcurrency(
+      Array.from({ length: 20 }, (_, i) => i),
+      4,
+      async () => {
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        await new Promise((r) => setTimeout(r, 1));
+        inFlight--;
+      },
+    );
 
     expect(peak).toBeLessThanOrEqual(4);
   });
 
   it("handles an empty input", async () => {
-    expect(await mapWithConcurrency([], 4, () => Promise.resolve(1))).toEqual([]);
+    expect(await mapWithConcurrency([], 4, () => Promise.resolve(1))).toEqual(
+      [],
+    );
   });
 
   it("does not spawn more workers than there are items", async () => {

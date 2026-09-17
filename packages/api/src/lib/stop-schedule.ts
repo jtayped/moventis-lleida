@@ -60,16 +60,22 @@ function parseArrivalTime(detail: ApiJourneyDetail, now: Date): Date {
   // deploys to, which is why nothing scheduled ever counted down below two hours.
   const { year, month, day } = toWallClock(now);
   const arrival = fromWallClock(year, month, day, hours, minutes);
-  if (arrival.getTime() >= now.getTime() - STALE_SCHEDULE_TOLERANCE_MS) return arrival;
+  if (arrival.getTime() >= now.getTime() - STALE_SCHEDULE_TOLERANCE_MS)
+    return arrival;
   return fromWallClock(year, month, day + 1, hours, minutes);
 }
 
-function buildJourneys(trayectos: ApiScheduleLine["trayectos"], now: Date): Journey[] {
+function buildJourneys(
+  trayectos: ApiScheduleLine["trayectos"],
+  now: Date,
+): Journey[] {
   const map = new Map<string, Journey>();
 
   for (const [rawName, value] of Object.entries(trayectos)) {
     const name = normalizeText(rawName);
-    const details: ApiJourneyDetail[] = Array.isArray(value) ? value : Object.values(value);
+    const details: ApiJourneyDetail[] = Array.isArray(value)
+      ? value
+      : Object.values(value);
 
     const scheduledTimes = details.map((d) => ({
       isRealTime: d.real === "S",

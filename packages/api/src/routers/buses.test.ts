@@ -64,7 +64,11 @@ function nightWorld(): Schedules {
         {
           name: JOURNEY,
           scheduledTimes: [
-            { isRealTime: false, arrivalTime: new Date(Date.now() + 3_600_000), accessible: null },
+            {
+              isRealTime: false,
+              arrivalTime: new Date(Date.now() + 3_600_000),
+              accessible: null,
+            },
           ],
         },
       ],
@@ -74,7 +78,14 @@ function nightWorld(): Schedules {
 
 const singleVariantRoute = {
   externalId: ROUTE_EXT,
-  variants: [{ direction: "I", description: JOURNEY, geometry: null, stops: variantStops() }],
+  variants: [
+    {
+      direction: "I",
+      description: JOURNEY,
+      geometry: null,
+      stops: variantStops(),
+    },
+  ],
 };
 
 interface FakeDb {
@@ -95,7 +106,9 @@ function byLine(db: FakeDb) {
 
 beforeEach(() => {
   // NB: a block body — returning the mock would register it as a teardown hook.
-  mockedSchedule.mockImplementation(() => Promise.resolve(realtimeWorld([JOURNEY])));
+  mockedSchedule.mockImplementation(() =>
+    Promise.resolve(realtimeWorld([JOURNEY])),
+  );
 });
 afterEach(() => {
   vi.clearAllMocks();
@@ -146,7 +159,9 @@ describe("buses.byLine", () => {
 
     const out = await byLine(makeDb());
 
-    expect(mockedSchedule.mock.calls.some(([stopExt]) => stopExt === "e0")).toBe(true);
+    expect(
+      mockedSchedule.mock.calls.some(([stopExt]) => stopExt === "e0"),
+    ).toBe(true);
     expect(out.length).toBeGreaterThan(0);
   });
 
@@ -169,7 +184,9 @@ describe("buses.byLine", () => {
 
     await byLine(makeDb(route));
 
-    const e5Calls = mockedSchedule.mock.calls.filter(([stopExt]) => stopExt === "e5");
+    const e5Calls = mockedSchedule.mock.calls.filter(
+      ([stopExt]) => stopExt === "e5",
+    );
     expect(e5Calls).toHaveLength(1);
   });
 });

@@ -1,3 +1,9 @@
 [
-  { "idLinea": "N", "desc_linea": "", "trayectos": {}, "incidencias": null, "selected": 0 }
+  {
+    "idLinea": "N",
+    "desc_linea": "",
+    "trayectos": {},
+    "incidencias": null,
+    "selected": 0
+  }
 ]

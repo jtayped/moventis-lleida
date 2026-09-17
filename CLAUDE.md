@@ -29,12 +29,13 @@ pnpm build        # build all packages/apps
 pnpm lint         # lint every package (web, expo, api, db, shared, scraper)
 pnpm typecheck    # tsc --noEmit in every package that has one (not expo)
 pnpm test         # deterministic suite, no network/DB
-pnpm format:check # prettier — not enforced by CI yet
+pnpm format:check # prettier; CI runs it, `pnpm format:write` fixes
 ```
 
 CI (`.github/workflows/ci.yml`) runs `lint`, `typecheck`, `test`, the web build and both Docker builds on every pull request; `main` is protected, so everything lands through a PR. Tooling is pinned in one place each: Node in `.nvmrc`, pnpm in `packageManager`. `@types/react` is also pinned at the root on purpose — `apps/expo` wants 19.1 and `apps/web` 19.2, and with `shamefully-hoist` whichever one lands in the root `node_modules` is what `lucide-react`'s types resolve to; a root pin makes that the web one, otherwise `tsc` in `apps/web` fails on every machine that has not run `next dev` (which is every CI runner).
 
 Package-specific (run from `packages/db`):
+
 ```bash
 pnpm db:generate  # prisma generate after schema changes
 pnpm db:push      # push schema to DB without migration
@@ -48,12 +49,14 @@ Deploys: merging to `main` is the only deploy path — a GitHub webhook tells Co
 ## Testing
 
 Vitest, in `packages/api` and `packages/shared` (run from root via Turbo):
+
 ```bash
 pnpm test       # default suite — deterministic, no network/DB
 pnpm test:live  # opt-in Moventis API contract canary (needs DATABASE_URL + internet)
 ```
 
 The suite is tiered to keep the non-deterministic live API at the edge:
+
 - **Contract layer** (`packages/api/src/lib/schedule-contract.test.ts`) validates recorded fixtures in `packages/api/src/__fixtures__/` against the Zod schemas — answers "did the API shape change?" before any logic test.
 - **Logic** tests are pure: `stop-schedule.ts` parsing, `probe.ts`, `bus-locator.ts`, `geo.ts`. `now` is injected so arrival-time math never depends on the wall clock.
 - **Mocked-I/O**: `getStopSchedule` with a mocked axios; `buses.byLine` via `createCaller` with a fake `ctx.db` + stubbed `getStopSchedule` (the locator's probe is injected, so `bus-locator.ts` tests stay pure).
@@ -85,8 +88,9 @@ The two map styles live in **`map-styles/`** (`light.json`, `dark.json`) with a 
 There is only **one** Map ID (`NEXT_PUBLIC_MAPS_MAP_ID`), carrying one style per colour scheme. `map/index.tsx` passes `colorScheme` (`"LIGHT"` / `"DARK"`, driven by `resolvedTheme`) and Google picks the matching variant; Map IDs are never swapped.
 
 Three things about this are easy to get wrong:
-- **A style variant that is not attached to the Map ID fails silently.** Importing the JSON creates a *style*; it only reaches the app once Map Management associates it with the Map ID for that colour scheme. Until then the SDK neither warns nor falls back — it serves Google's stock basemap for that scheme, POI pins and all. Dark mode shipped broken this way. The tell is Google's own colours plus restaurant/shop pins; verify after every import.
-- **`renderingType="VECTOR"` stays.** It is what production runs and the attached styles verifiably apply under it. Test any change to it in a *visible* browser tab: WebGL and raster tile initialisation both stall while a tab is hidden, which looks exactly like "the style is not applied" and once produced a false diagnosis that vector rendering broke the dark style.
+
+- **A style variant that is not attached to the Map ID fails silently.** Importing the JSON creates a _style_; it only reaches the app once Map Management associates it with the Map ID for that colour scheme. Until then the SDK neither warns nor falls back — it serves Google's stock basemap for that scheme, POI pins and all. Dark mode shipped broken this way. The tell is Google's own colours plus restaurant/shop pins; verify after every import.
+- **`renderingType="VECTOR"` stays.** It is what production runs and the attached styles verifiably apply under it. Test any change to it in a _visible_ browser tab: WebGL and raster tile initialisation both stall while a tab is hidden, which looks exactly like "the style is not applied" and once produced a false diagnosis that vector rendering broke the dark style.
 - **`colorScheme` (like `mapId` and `renderingType`) is fixed at map creation** — `setOptions` on a live instance ignores it. `@vis.gl/react-google-maps` already lists `colorScheme` among the props its map-creation effect depends on, so it rebuilds the instance itself; `map.tsx` also keys the `<Map>` on it (`key={colorScheme}`) so the whole subtree — markers, paths — is rebuilt with it rather than re-attaching to a map swapped underneath it.
 
 ## Architecture
@@ -109,20 +113,22 @@ Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.t
 
 The line feed (`/es/moventis/es/lines`) **stopped listing the Lleida zone on 2026-08-02** while every per-line endpoint kept serving Lleida data. Do not treat the feed as the authority on whether the network exists.
 
-`src/lib/discovery.ts` therefore has two sources: the feed (matched by `ID_ZONA === "2"` *and* by `ID_LINEA` against stored routes, so a zone renumber reconnects itself), falling back to the routes already in the database. In fallback mode the calendar is rebuilt by probing `GetTrayectos/{line}/{date}` per day — it returns a bare `[{ numLinea }]` stub on a non-operating date, which makes it a reliable operating-day oracle.
+`src/lib/discovery.ts` therefore has two sources: the feed (matched by `ID_ZONA === "2"` _and_ by `ID_LINEA` against stored routes, so a zone renumber reconnects itself), falling back to the routes already in the database. In fallback mode the calendar is rebuilt by probing `GetTrayectos/{line}/{date}` per day — it returns a bare `[{ numLinea }]` stub on a non-operating date, which makes it a reliable operating-day oracle.
 
 Lines go dormant for a season (line 10 serves nothing in August, resumes in September). `src/lib/resolution.ts` keeps three outcomes apart, and the distinction is load-bearing:
+
 - **resolved** — running, or dormant but alive further out. Keeps stops/geometry; a dormant line reports an empty calendar so the line strip stops claiming it runs today.
 - **withdrawn** — every probe answered, none served. Pruning may act on it.
 - **unreachable** — a request errored. Blocks pruning entirely.
 
-Pruning is the only destructive step and runs **only on a provably complete run** (`src/lib/prune.ts`). Prisma reads `notIn: []` as *match every row*, so a run that discovers nothing does not prune nothing — it prunes everything. That is what soft-deleted the whole network for three nights in August 2026. Never call `prune()` without `shouldPrune()` approving, and only ever with the set of stops *that* run saw — that set is created per run inside `syncAll` and threaded down, never module state, because a run triggered while another is in flight would otherwise truncate it. Overlapping runs cannot happen anyway: `syncAll` is wrapped in `onceAtATime`, so a trigger arriving mid-run is logged and dropped.
+Pruning is the only destructive step and runs **only on a provably complete run** (`src/lib/prune.ts`). Prisma reads `notIn: []` as _match every row_, so a run that discovers nothing does not prune nothing — it prunes everything. That is what soft-deleted the whole network for three nights in August 2026. Never call `prune()` without `shouldPrune()` approving, and only ever with the set of stops _that_ run saw — that set is created per run inside `syncAll` and threaded down, never module state, because a run triggered while another is in flight would otherwise truncate it. Overlapping runs cannot happen anyway: `syncAll` is wrapped in `onceAtATime`, so a trigger arriving mid-run is logged and dropped.
 
 The same "only when we saw the whole thing" rule governs the two other replacements. A line's stop set (`stops: { set }`) and its variant list (`routeVariant.deleteMany`) are replaced only after every one of its variants synced from probes that all answered; on a partial failure the stops this run did see are merely connected, never removed, because a stop dropped for a failed fetch is a stop that `prune()` later hard-deletes as an orphan.
 
 ### Real-time Schedule Parsing
 
 `packages/api/src/lib/stop-schedule.ts` handles all Moventis API interaction. The API returns two kinds of arrival data distinguished by `real`:
+
 - `"S"` (real-time): arrival is expressed as a relative offset (`"5 min 30 s"`)
 - `"N"` (scheduled): arrival is an absolute clock time (`"14:35"`)
 
@@ -133,6 +139,7 @@ Both are normalized into `Date` objects. The `trayectos` field is a map of journ
 ### Shared Package
 
 `packages/shared` exports:
+
 - `INITIAL_BOUNDS` / `RESTRICTED_BOUNDS` / `COORDINATES` — Lleida map bounds
 - `Lines` / `Line` types, `Journey` / `Schedules` types
 - `apiScheduleSchema` / `scheduleSchema` — Zod schemas for validating the Moventis API response
@@ -140,6 +147,7 @@ Both are normalized into `Date` objects. The `trayectos` field is a map of journ
 ### Frontend State
 
 `BusFinderContext` (`apps/web/src/context/buses.tsx`) is the central state manager. It is initialized server-side with routes (avoiding a client round-trip) and handles:
+
 - Selected route filtering (debounced 300ms)
 - Stop search query (debounced 300ms)
 - Selected stop, held as a `Stop.externalId` (opens a Drawer with `StopDetails`, which fetches the stop itself)
@@ -150,7 +158,7 @@ The map renders via `@vis.gl/react-google-maps`. Pins are rendered by `MapPinsRe
 
 Each arrival card says how far that bus has slipped from the first time we listed it (`▲ +2 min` / `▼ −1 min`). Moventis gives no vehicle id, so `packages/shared/src/lib/arrival-drift.ts` matches one refresh's arrivals against the previous ones by order and proximity alone; a track's baseline is its first prediction, and one first seen as a timetable time keeps that printed time, so going live reads as "live minus timetable".
 
-`apps/web/src/hooks/use-arrival-drift.ts` keeps the tracks per journey in a **module-level** store keyed by `Stop.externalId` — a ref would reset every baseline each time the drawer closed — and advances exactly once per `dataUpdatedAt`, which is what makes calling it from a `useMemo` safe under StrictMode. Feed it the *unfiltered* `details.schedules`: hiding already-past times from the alignment reads as a bus vanishing on every refresh. The toggle is `arrivalDrift` in `useSettings`, on by default.
+`apps/web/src/hooks/use-arrival-drift.ts` keeps the tracks per journey in a **module-level** store keyed by `Stop.externalId` — a ref would reset every baseline each time the drawer closed — and advances exactly once per `dataUpdatedAt`, which is what makes calling it from a `useMemo` safe under StrictMode. Feed it the _unfiltered_ `details.schedules`: hiding already-past times from the alignment reads as a bus vanishing on every refresh. The toggle is `arrivalDrift` in `useSettings`, on by default.
 
 ### Saved Stops (`preferides`)
 
@@ -159,6 +167,7 @@ Per-device favourites in localStorage under `moventis:preferides`, as `{ ids: St
 They appear as one toggleable badge in the line strip and behave like a line with no geometry — but **must never enter `selectedRoutes`**. That array drives per-line stop queries, `useLineBuses`, `StopNavigation`'s variant queries, the drawer's selected/correspondence split and the `?lines=` param; a synthetic code in it breaks all five. `BusFinderContext` plumbs them separately (`preferidesStops` / `preferidesCount` / `showPreferides` / `isPreferida`).
 
 Two consequences worth keeping:
+
 - `preferidesStops` excludes stops a selected line already draws, or the stop gets two `AdvancedMarker`s at identical coordinates. So the star is a per-stop prop in `MapPinsRenderer`, not a property of which list rendered the pin. That renderer also promotes a saved stop one zoom bucket up, because the `small` bucket is a 10px dot with no room for a shoulder mark.
 - A soft-deleted stop is normally click-inert, but a saved one stays clickable (`MapPin`'s `clickable`): the drawer holds the only control that can unsave it, and `StopDetailsError` carries that control too, for a stop whose details can no longer load at all.
 
@@ -168,7 +177,7 @@ Selection is shareable: `/?lines=1,4&stop=10211`. `lines` is a comma-separated l
 
 `InitialStopFocus` centres the map on the `?stop=` stop once and renders its pin when no selected line already does — without it a bare `?stop=` link opens the drawer over city-wide bounds with nothing on the map behind it.
 
-The flow is one-directional. `apps/web/src/app/page.tsx` reads `searchParams` server-side and seeds `BusFinderProvider` (no `useSearchParams`, so no Suspense boundary and no hydration flash); unknown line codes are filtered out against `routes.getAll`, while an unknown `stop` is left to `stops.get` and surfaces as the drawer's error state. `useUrlSelection` (`apps/web/src/hooks/use-url-selection.ts`) then only ever *writes*, via `window.history.replaceState` — `router.replace` would re-run the server render on every badge tap, and `replaceState` keeps toggles out of the history stack. Nothing reads the URL after mount, so back/forward does not restore a previous selection.
+The flow is one-directional. `apps/web/src/app/page.tsx` reads `searchParams` server-side and seeds `BusFinderProvider` (no `useSearchParams`, so no Suspense boundary and no hydration flash); unknown line codes are filtered out against `routes.getAll`, while an unknown `stop` is left to `stops.get` and surfaces as the drawer's error state. `useUrlSelection` (`apps/web/src/hooks/use-url-selection.ts`) then only ever _writes_, via `window.history.replaceState` — `router.replace` would re-run the server render on every badge tap, and `replaceState` keeps toggles out of the history stack. Nothing reads the URL after mount, so back/forward does not restore a previous selection.
 
 Search query is deliberately not in the URL.
 
@@ -190,8 +199,8 @@ OperatingDay (routeId, date)  ← composite PK
 
 `externalId` on both `Route` and `Stop` is what gets passed to the Moventis API. `code` on `Route` is cast to the `Lines` union type at the application layer.
 
-**A client extension in `packages/db/index.ts` injects `deletedAt: null` into every `route.findMany` and `stop.findMany`.** So on those two methods, *omitting* `deletedAt` does not mean "no filter" — it means "live rows only", silently. Writing a query that must see soft-deleted rows takes an explicit `where: { deletedAt: undefined }`, which spreads over the injected `null` and restores "no filter" (verified against the real client, not assumed). Only `findMany` is extended; `count`, `upsert`, `updateMany` and `deleteMany` see everything.
+**A client extension in `packages/db/index.ts` injects `deletedAt: null` into every `route.findMany` and `stop.findMany`.** So on those two methods, _omitting_ `deletedAt` does not mean "no filter" — it means "live rows only", silently. Writing a query that must see soft-deleted rows takes an explicit `where: { deletedAt: undefined }`, which spreads over the injected `null` and restores "no filter" (verified against the real client, not assumed). Only `findMany` is extended; `count`, `upsert`, `updateMany` and `deleteMany` see everything.
 
-This has bitten twice. `discoverLines` in the scraper is the recovery path that un-deletes the network, and without the override it returned zero routes on the one run that needed it. `stops.getByExternalIds` was the second: it is documented above as including soft-deleted stops, and silently did not, so a saved stop that got soft-deleted disappeared from the map instead of staying clickable. Both now pass `deletedAt: undefined` explicitly — a key whose value is `undefined` still has to be *present*, so `toEqual` alone cannot tell the fixed query from the broken one.
+This has bitten twice. `discoverLines` in the scraper is the recovery path that un-deletes the network, and without the override it returned zero routes on the one run that needed it. `stops.getByExternalIds` was the second: it is documented above as including soft-deleted stops, and silently did not, so a saved stop that got soft-deleted disappeared from the map instead of staying clickable. Both now pass `deletedAt: undefined` explicitly — a key whose value is `undefined` still has to be _present_, so `toEqual` alone cannot tell the fixed query from the broken one.
 
 The extension also does not reach included relations: `stop.findUnique({ include: { routes: true } })` returns soft-deleted routes, which is why `stops.get` filters them in the `include`.

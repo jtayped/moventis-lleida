@@ -55,7 +55,9 @@ export const StopScheduleLine = ({
             const closestTime = journeyGroup.scheduledTimes.find(
               (t) => t === closestScheduledTime,
             );
-            const otherTimes = journeyGroup.scheduledTimes.filter((t) => t !== closestTime);
+            const otherTimes = journeyGroup.scheduledTimes.filter(
+              (t) => t !== closestTime,
+            );
 
             return (
               <div key={journeyGroup.name}>
@@ -73,7 +75,10 @@ export const StopScheduleLine = ({
                 {otherTimes.length > 0 && (
                   <div
                     className={closestTime ? "mt-2 grid gap-2" : "grid gap-2"}
-                    style={{ gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))" }}
+                    style={{
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(100px, 1fr))",
+                    }}
                   >
                     {/* Two buses of the same journey can be due in the same
                         minute, and a timestamp key collides when they are. */}

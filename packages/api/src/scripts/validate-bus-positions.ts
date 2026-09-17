@@ -22,7 +22,11 @@
  *   pnpm validate-bus-positions 1 --stops=8   # cheaper, first N stops only
  */
 import { db } from "@moventis/db";
-import { cumulativeArcLengths, distanceMeters, type LngLat } from "@moventis/shared";
+import {
+  cumulativeArcLengths,
+  distanceMeters,
+  type LngLat,
+} from "@moventis/shared";
 import { getStopSchedule, normalizeText } from "../lib/stop-schedule";
 import { toGeometry, toProbeResult } from "../lib/probe";
 import {
@@ -71,7 +75,8 @@ function median(xs: number[]): number {
 /** Pull this variant's own real-time ETAs (ascending) out of a raw stop probe. */
 function etasFor(probe: ProbeResult, variant: LocatorVariant): number[] {
   for (const [name, etas] of probe) {
-    if (etas.length && matchVariant(name, [variant])) return [...etas].sort((a, b) => a - b);
+    if (etas.length && matchVariant(name, [variant]))
+      return [...etas].sort((a, b) => a - b);
   }
   return [];
 }
@@ -93,7 +98,13 @@ async function main() {
             orderBy: { sequence: "asc" },
             select: {
               stop: {
-                select: { id: true, externalId: true, name: true, latitude: true, longitude: true },
+                select: {
+                  id: true,
+                  externalId: true,
+                  name: true,
+                  latitude: true,
+                  longitude: true,
+                },
               },
             },
           },
@@ -125,22 +136,31 @@ async function main() {
     };
   });
 
-  const targets = direction ? built.filter((b) => b.locatorVariant.direction === direction) : built;
+  const targets = direction
+    ? built.filter((b) => b.locatorVariant.direction === direction)
+    : built;
   if (targets.length === 0) {
-    console.error(`No variant found for line "${lineCode}" direction "${direction ?? "any"}"`);
+    console.error(
+      `No variant found for line "${lineCode}" direction "${direction ?? "any"}"`,
+    );
     process.exit(1);
   }
 
   for (const { locatorVariant: variant, names, rawDescription } of targets) {
     console.log(`\n${"=".repeat(72)}`);
-    console.log(`Line ${route.code} — variant ${variant.direction} (${rawDescription})`);
+    console.log(
+      `Line ${route.code} — variant ${variant.direction} (${rawDescription})`,
+    );
     console.log(
       `${variant.stops.length} stops${stopLimit ? `, probing first ${stopLimit}` : ""} — threshold ${threshold}s`,
     );
     console.log("=".repeat(72));
 
-    const stopsToProbe = stopLimit ? variant.stops.slice(0, stopLimit) : variant.stops;
-    const path: LngLat[] = variant.geometry ?? variant.stops.map((s) => [s.lng, s.lat]);
+    const stopsToProbe = stopLimit
+      ? variant.stops.slice(0, stopLimit)
+      : variant.stops;
+    const path: LngLat[] =
+      variant.geometry ?? variant.stops.map((s) => [s.lng, s.lat]);
     void cumulativeArcLengths(path); // sanity: geometry parses; not otherwise used below
 
     // Ground truth: probe every stop in travel order, sequentially. Each call
@@ -161,7 +181,9 @@ async function main() {
       );
     }
 
-    console.log("\n  --- Adjacent-stop segment check (ground truth, matched by ETA rank) ---");
+    console.log(
+      "\n  --- Adjacent-stop segment check (ground truth, matched by ETA rank) ---",
+    );
     let suspectCount = 0;
     let checkedCount = 0;
     for (let k = 0; k < perStop.length - 1; k++) {
@@ -197,7 +219,9 @@ async function main() {
           `speed≈${speedKmh.toFixed(1)}km/h  ${flag}`,
       );
     }
-    console.log(`\n  ${suspectCount}/${checkedCount} segments exceeded ${threshold}s.`);
+    console.log(
+      `\n  ${suspectCount}/${checkedCount} segments exceeded ${threshold}s.`,
+    );
   }
 
   // Production comparison: what does the actual algorithm place, right now?
@@ -208,8 +232,11 @@ async function main() {
   const probeFn = (stopExternalId: string): Promise<ProbeResult> => {
     let pending = cache.get(stopExternalId);
     if (!pending) {
-      pending = getStopSchedule(stopExternalId, route.externalId).then((schedule) =>
-        schedule ? toProbeResult(schedule, route.externalId, Date.now()) : (new Map() as ProbeResult),
+      pending = getStopSchedule(stopExternalId, route.externalId).then(
+        (schedule) =>
+          schedule
+            ? toProbeResult(schedule, route.externalId, Date.now())
+            : (new Map() as ProbeResult),
       );
       cache.set(stopExternalId, pending);
     }
@@ -217,7 +244,9 @@ async function main() {
   };
   const nameById = new Map<string, string>();
   for (const { locatorVariant, names } of built) {
-    locatorVariant.stops.forEach((s, i) => nameById.set(s.id, names[i] ?? s.externalId));
+    locatorVariant.stops.forEach((s, i) =>
+      nameById.set(s.id, names[i] ?? s.externalId),
+    );
   }
 
   const positions = await locateLineBuses({

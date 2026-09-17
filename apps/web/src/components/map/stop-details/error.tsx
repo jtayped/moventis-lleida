@@ -25,7 +25,11 @@ export const StopDetailsError = ({
         <h3 className="text-destructive font-semibold">
           hi ha hagut un problema carregant els busos :(
         </h3>
-        <Button onClick={() => refetch()} variant="destructive" className="mt-4">
+        <Button
+          onClick={() => refetch()}
+          variant="destructive"
+          className="mt-4"
+        >
           torna a intentar-ho
         </Button>
       </div>

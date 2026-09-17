@@ -52,7 +52,8 @@ export class ThrottledQueue {
         if (!start) break;
         // Anchor on `now` when the queue has been idle, so an idle period does
         // not bank credit for a burst of immediate starts.
-        this.nextStartTime = Math.max(Date.now(), this.nextStartTime) + this.intervalMs;
+        this.nextStartTime =
+          Math.max(Date.now(), this.nextStartTime) + this.intervalMs;
         start();
       }
     } finally {

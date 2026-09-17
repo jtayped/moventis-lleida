@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
  * Displays the "Updated X ago" message and auto-updates it.
  */
 const LastUpdated = ({ timestamp }: { timestamp: number | null }) => {
-  const [displayTime, setDisplayTime] = useState(() => formatTimeAgo(timestamp));
+  const [displayTime, setDisplayTime] = useState(() =>
+    formatTimeAgo(timestamp),
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {

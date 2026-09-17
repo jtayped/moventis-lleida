@@ -60,7 +60,10 @@ describe("Moventis live API contract", () => {
   it(
     "still returns the response shape apiScheduleSchema expects",
     async () => {
-      expect(routeExt, "no non-deleted route with stops in the DB to probe").toBeTruthy();
+      expect(
+        routeExt,
+        "no non-deleted route with stops in the DB to probe",
+      ).toBeTruthy();
       expect(stopExt, "discovered route has no stops to probe").toBeTruthy();
 
       const url = `https://www.moventis.es/api/json/GetTiemposParada/es/${stopExt}/${routeExt}/0`;
@@ -69,10 +72,19 @@ describe("Moventis live API contract", () => {
       const result = apiScheduleSchema.safeParse(filterSentinel(data));
       if (!result.success) {
         // Surface the drift so the schema/fixtures can be updated.
-        console.error("Live Moventis payload (first 2kB):", JSON.stringify(data).slice(0, 2000));
-        console.error("Zod issues:", JSON.stringify(result.error.issues, null, 2));
+        console.error(
+          "Live Moventis payload (first 2kB):",
+          JSON.stringify(data).slice(0, 2000),
+        );
+        console.error(
+          "Zod issues:",
+          JSON.stringify(result.error.issues, null, 2),
+        );
       }
-      expect(result.success, "live API no longer matches apiScheduleSchema").toBe(true);
+      expect(
+        result.success,
+        "live API no longer matches apiScheduleSchema",
+      ).toBe(true);
     },
     TIMEOUT,
   );
