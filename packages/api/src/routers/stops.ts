@@ -73,23 +73,32 @@ export const stopsRouter = createTRPCRouter({
    * Keyed by `externalId` rather than the internal cuid: this id is what the
    * frontend puts in the `?stop=` URL param, so it has to stay stable across
    * database rebuilds (the scraper upserts stops by `externalId`).
+   *
+   * `failedRoutes` carries the `code` of every route whose live fetch came back
+   * unavailable, so the client can say which lines are missing instead of showing
+   * a short timetable as if it were complete; if *every* route failed this throws
+   * instead, because an outage is not an empty timetable.
    */
   get: publicProcedure
     .input(z.object({ externalId: z.string() }))
     .query(async ({ input, ctx }) => {
       const stop = await ctx.db.stop.findUnique({
         where: { externalId: input.externalId },
-        include: { routes: true },
+        // The `deletedAt: null` extension only covers `findMany`, so an included
+        // relation comes back unfiltered: without this, a withdrawn route is still
+        // probed against Moventis on every open of the stop.
+        include: { routes: { where: { deletedAt: null } } },
       });
 
       if (!stop) throw new TRPCError({ code: "NOT_FOUND" });
-      if (stop.routes.length === 0)
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      // Skip live schedule fetch for soft-deleted stops — the stop no longer
-      // exists in the Moventis API and the request would fail or return stale data.
-      if (stop.deletedAt) {
-        return { ...stop, schedules: [] };
+      // Skip the live schedule fetch for a soft-deleted stop — it no longer exists
+      // in the Moventis API and the request would fail or return stale data. A stop
+      // whose every route has been withdrawn is the same case with a different
+      // cause, so it takes the same exit rather than throwing: the stop still
+      // renders (it may be saved), just with nothing to show.
+      if (stop.deletedAt || stop.routes.length === 0) {
+        return { ...stop, schedules: [], failedRoutes: [] as string[] };
       }
 
       const scheduleResults = await Promise.all(
@@ -97,6 +106,16 @@ export const stopsRouter = createTRPCRouter({
           getStopSchedule(stop.externalId, route.externalId),
         ),
       );
+      const failedRoutes = stop.routes
+        .filter((_, i) => scheduleResults[i] === null)
+        .map((route) => route.code);
+      if (failedRoutes.length === stop.routes.length) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Moventis unreachable",
+        });
+      }
+
       const allSchedules = scheduleResults
         .filter((s): s is NonNullable<typeof s> => s !== null)
         .flat();
@@ -110,6 +129,6 @@ export const stopsRouter = createTRPCRouter({
         ...new Map(allSchedules.map((s) => [s.externalLineId, s])).values(),
       ].filter((s) => validCodes.has(s.lineCode));
 
-      return { ...stop, schedules };
+      return { ...stop, schedules, failedRoutes };
     }),
 });

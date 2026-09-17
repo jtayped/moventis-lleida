@@ -99,7 +99,7 @@ Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.t
 
 - `routes.getAll` — returns all routes from DB (weekly cached)
 - `stops.getMany` — filters stops by route codes and/or search query
-- `stops.get` — fetches a single stop + live schedules from Moventis API, keyed by `Stop.externalId` (not the internal cuid) because that id is public in the URL
+- `stops.get` — fetches a single stop + live schedules from Moventis API, keyed by `Stop.externalId` (not the internal cuid) because that id is public in the URL. It also returns `failedRoutes: string[]`, the `code` of every route whose live fetch was unavailable, so a partial outage reads as a short timetable rather than a complete one; when every route fails it throws `INTERNAL_SERVER_ERROR` instead, and `buses.byLine` does the same when every probe fails — an outage must not reach the UI as "no buses are running".
 - `stops.getByExternalIds` — bare stops for the saved-stops list. Database-only and includes soft-deleted stops, unlike every other stop query. `stops.get` would fire one live Moventis request per route on the stop, so resolving N saved ids through it would push ~3N calls through the 5 req/s throttle before the map could draw anything.
 
 ### Scraper Line Discovery (`apps/scraper`)
@@ -182,3 +182,5 @@ OperatingDay (routeId, date)  ← composite PK
 **A client extension in `packages/db/index.ts` injects `deletedAt: null` into every `route.findMany` and `stop.findMany`.** So on those two methods, *omitting* `deletedAt` does not mean "no filter" — it means "live rows only", silently. Writing a query that must see soft-deleted rows takes an explicit `where: { deletedAt: undefined }`, which spreads over the injected `null` and restores "no filter" (verified against the real client, not assumed). Only `findMany` is extended; `count`, `upsert`, `updateMany` and `deleteMany` see everything.
 
 This has bitten twice. `discoverLines` in the scraper is the recovery path that un-deletes the network, and without the override it returned zero routes on the one run that needed it. `stops.getByExternalIds` is **still** affected: it is documented above as including soft-deleted stops, and does not, so a saved stop that gets soft-deleted disappears from the map instead of staying clickable.
+
+The extension also does not reach included relations: `stop.findUnique({ include: { routes: true } })` returns soft-deleted routes, which is why `stops.get` filters them in the `include`.
