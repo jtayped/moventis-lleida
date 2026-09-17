@@ -46,8 +46,11 @@ export const StopScheduleLine = ({
       <div className="flex flex-col gap-3">
         {line.journeys.length > 0 ? (
           line.journeys.map((journeyGroup) => {
+            // By reference, not by timestamp: `closestScheduledTime` is picked
+            // from these very objects, and two lines arriving at the same minute
+            // used to *both* render as the big highlighted next bus.
             const closestTime = journeyGroup.scheduledTimes.find(
-              (t) => t.arrivalTime.getTime() === closestScheduledTime?.arrivalTime.getTime(),
+              (t) => t === closestScheduledTime,
             );
             const otherTimes = journeyGroup.scheduledTimes.filter((t) => t !== closestTime);
 
@@ -64,9 +67,11 @@ export const StopScheduleLine = ({
                     className={closestTime ? "mt-2 grid gap-2" : "grid gap-2"}
                     style={{ gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))" }}
                   >
-                    {otherTimes.map((time) => (
+                    {/* Two buses of the same journey can be due in the same
+                        minute, and a timestamp key collides when they are. */}
+                    {otherTimes.map((time, idx) => (
                       <ArrivalTimeCard
-                        key={time.arrivalTime.getTime()}
+                        key={idx}
                         journey={time}
                         isClosest={false}
                         now={now}
