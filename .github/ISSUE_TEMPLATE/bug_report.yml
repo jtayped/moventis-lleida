@@ -1,0 +1,67 @@
+name: bug report
+description: the app or the codebase behaves incorrectly
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: what happens
+      description: what did you expect, and what happened instead?
+      placeholder: i opened stop 10211 on line 4 and expected... instead...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: steps to reproduce
+      description: numbered steps from a fresh load. if it depends on a particular stop, line or time of day, say which — arrival data is live and changes by the minute.
+      placeholder: |
+        1. open https://moventis-lleida.joeltaylor.business/?lines=4
+        2. tap the pin at ...
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: which part
+      options:
+        - apps/web (the map and the stop drawer)
+        - packages/api (tRPC, arrival-time parsing, bus locator)
+        - apps/scraper (line/stop discovery, operating days)
+        - database or Prisma
+        - build, CI or deployment
+        - not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: where did you see it
+      options:
+        - the live site
+        - local development
+        - both
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: environment details
+      description: browser and device for a live-site issue (phone or desktop, installed as an app or in a tab). `node -v` and `pnpm -v` for a local one.
+      render: shell
+  - type: textarea
+    id: logs
+    attributes:
+      label: logs or errors
+      description: console output, server logs, or a stack trace — as text, not a screenshot.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: before submitting
+      options:
+        - label: i searched existing issues and this is not a duplicate.
+          required: true
+        - label: this is not a security vulnerability (those go through private reporting).
+          required: true

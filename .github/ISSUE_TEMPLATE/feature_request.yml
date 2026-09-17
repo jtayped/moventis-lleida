@@ -1,0 +1,41 @@
+name: feature request
+description: suggest a change to what the app does
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        this app does one thing — tell you when your bus arrives — and it does it on a phone, outdoors, in a hurry. PRODUCT.md records the principles a change has to fit. check it before proposing something that adds a screen.
+  - type: textarea
+    id: problem
+    attributes:
+      label: the problem
+      description: what is hard or impossible today? describe the situation, not the solution.
+      placeholder: when i am waiting at a stop and the bus is late, ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: what you would like instead
+      description: the change, and roughly where in the app it would live.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: alternatives you considered
+      description: including doing nothing.
+  - type: dropdown
+    id: area
+    attributes:
+      label: which part
+      options:
+        - apps/web (the map and the stop drawer)
+        - packages/api (tRPC, arrival-time parsing, bus locator)
+        - apps/scraper (line/stop discovery, operating days)
+        - build, CI or deployment
+        - documentation
+        - not sure
+    validations:
+      required: true
