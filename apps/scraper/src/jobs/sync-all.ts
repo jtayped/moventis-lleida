@@ -13,21 +13,30 @@ import {
 } from "../lib/discovery.js";
 import { parseKmlPath } from "../lib/kml.js";
 import { normalizeName } from "../lib/normalize.js";
+import { onceAtATime } from "../lib/once-at-a-time.js";
 import { shouldPrune } from "../lib/prune.js";
 
-// Stop DB id cache to avoid re-querying stops seen in multiple trayectos.
-// Its key set doubles as the record of what this run actually saw, which is what
-// pruning is measured against — so it must be cleared at the start of every run.
-const stopIdCache = new Map<string, string>();
+/**
+ * Stop `externalId` → DB id for every stop this run upserted.
+ *
+ * It saves re-querying a stop seen in several trayectos, but its key set is also
+ * the record of what the run actually saw, which is what pruning is measured
+ * against. That makes it strictly per-run state: it is created inside
+ * {@link syncAll} and threaded down by hand, never held at module scope, so an
+ * overlapping run cannot truncate another run's view of the network.
+ */
+type SeenStops = Map<string, string>;
 
 async function upsertStop(
+  seen: SeenStops,
   idParada: number,
   descParada: string,
   lat: number,
   lng: number,
 ): Promise<string> {
   const key = String(idParada);
-  if (stopIdCache.has(key)) return stopIdCache.get(key)!;
+  const cached = seen.get(key);
+  if (cached) return cached;
 
   const stop = await db.stop.upsert({
     where: { externalId: key },
@@ -46,7 +55,7 @@ async function upsertStop(
     select: { id: true },
   });
 
-  stopIdCache.set(key, stop.id);
+  seen.set(key, stop.id);
   return stop.id;
 }
 
@@ -54,6 +63,7 @@ async function syncVariant(
   routeId: string,
   lineId: string,
   trayecto: MoventisTrayecto,
+  seen: SeenStops,
 ): Promise<void> {
   const primaryId = primaryTrayectoId(trayecto);
   if (primaryId == null) return;
@@ -98,6 +108,7 @@ async function syncVariant(
     const p = det.Parada;
     if (!p?.ID_PARADA) continue;
     const stopId = await upsertStop(
+      seen,
       p.ID_PARADA,
       p.DESC_PARADA,
       p.LATITUD,
@@ -142,7 +153,7 @@ async function syncVariant(
   }
 }
 
-async function syncLine(line: ResolvedLine): Promise<void> {
+async function syncLine(line: ResolvedLine, seen: SeenStops): Promise<void> {
   console.log(
     `  [${line.code}] ${line.name} — ${line.trayectos.length} variant(s), ` +
       `${line.operatingDates.length} operating day(s)`,
@@ -183,7 +194,7 @@ async function syncLine(line: ResolvedLine): Promise<void> {
   }
 
   for (const trayecto of line.trayectos) {
-    await syncVariant(route.id, line.externalId, trayecto);
+    await syncVariant(route.id, line.externalId, trayecto, seen);
   }
 
   // Derive aggregated Route.path from the principal outbound variants
@@ -208,11 +219,13 @@ async function syncLine(line: ResolvedLine): Promise<void> {
 
 /**
  * Soft-delete what this run did not see, then hard-delete what has been gone
- * long enough. Only ever called on a run that {@link shouldPrune} approved.
+ * long enough. Only ever called on a run that {@link shouldPrune} approved, and
+ * only ever with that same run's seen-stop set.
  */
-async function prune(activeLineIds: string[]): Promise<void> {
-  const seenStopExternalIds = [...stopIdCache.keys()];
-
+async function prune(
+  activeLineIds: string[],
+  seenStopExternalIds: string[],
+): Promise<void> {
   await db.route.updateMany({
     where: { externalId: { notIn: activeLineIds }, deletedAt: null },
     data: { deletedAt: new Date() },
@@ -241,9 +254,9 @@ async function prune(activeLineIds: string[]): Promise<void> {
   await db.stop.deleteMany({ where: { routes: { none: {} } } });
 }
 
-export async function syncAll(): Promise<void> {
+async function runSync(): Promise<void> {
   console.log("[sync-all] Starting…");
-  stopIdCache.clear();
+  const seen: SeenStops = new Map();
 
   const discovery = await discoverLines();
   console.log(
@@ -268,7 +281,7 @@ export async function syncAll(): Promise<void> {
   let failedLines = 0;
   for (const line of discovery.lines) {
     try {
-      await syncLine(line);
+      await syncLine(line, seen);
     } catch (err) {
       failedLines++;
       console.error(`[sync-all] Error on line ${line.code}:`, err);
@@ -279,12 +292,15 @@ export async function syncAll(): Promise<void> {
   const decision = shouldPrune({
     discoveredLines: discovery.lines.length,
     incompleteLines: failedLines + discovery.unreachable.length,
-    seenStopCount: stopIdCache.size,
+    seenStopCount: seen.size,
     knownStopCount,
   });
 
   if (decision.safe) {
-    await prune(discovery.lines.map((l) => l.externalId));
+    await prune(
+      discovery.lines.map((l) => l.externalId),
+      [...seen.keys()],
+    );
   } else {
     console.warn(
       `[sync-all] Skipping prune — ${decision.reason}. Stale routes and stops ` +
@@ -293,7 +309,20 @@ export async function syncAll(): Promise<void> {
   }
 
   console.log(
-    `[sync-all] Done. ${stopIdCache.size} stop(s) seen across ` +
+    `[sync-all] Done. ${seen.size} stop(s) seen across ` +
       `${discovery.lines.length - failedLines} line(s).`,
   );
 }
+
+/**
+ * One full sync, and never two at once.
+ *
+ * A run is triggered both on boot and from the 03:00 cron, and a slow boot sync
+ * overlapping the cron used to be enough to make the prune gate read a
+ * half-built picture of the network.
+ */
+export const syncAll = onceAtATime(runSync, () => {
+  console.warn(
+    "[sync-all] A sync is already in progress — skipping this trigger.",
+  );
+});
