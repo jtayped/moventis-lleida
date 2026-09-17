@@ -46,6 +46,14 @@ const EXISTENCE_SCAN_STEP_DAYS = 7;
 /** Simultaneous Moventis requests during a probe. */
 const PROBE_CONCURRENCY = 4;
 
+/**
+ * Lines resolved at once. Each one is already probing {@link PROBE_CONCURRENCY}
+ * dates in parallel, so this is a multiplier: resolving all ~15 lines at once
+ * put ~60 requests in flight, which is the unbounded fan-out `pool.ts` exists to
+ * prevent.
+ */
+const LINE_CONCURRENCY = 3;
+
 /** A line resolved to everything `syncLine` needs, with no fetching left to do. */
 export interface ResolvedLine {
   /** Moventis `ID_LINEA`, stored as `Route.externalId`. */
@@ -263,8 +271,10 @@ export async function discoverLines(): Promise<Discovery> {
   const grouped = [...groupFeedEntries(feedEntries).values()];
 
   if (grouped.length > 0) {
-    const resolutions = await Promise.all(
-      grouped.map(({ entry, dates }) => resolveFromFeed(entry, dates)),
+    const resolutions = await mapWithConcurrency(
+      grouped,
+      LINE_CONCURRENCY,
+      ({ entry, dates }) => resolveFromFeed(entry, dates),
     );
     return collect(
       "feed",
@@ -278,7 +288,11 @@ export async function discoverLines(): Promise<Discovery> {
       `${eligible.length} route(s) already stored and probing their calendars.`,
   );
 
-  const resolutions = await Promise.all(eligible.map(resolveFromDatabase));
+  const resolutions = await mapWithConcurrency(
+    eligible,
+    LINE_CONCURRENCY,
+    (route) => resolveFromDatabase(route),
+  );
 
   return collect(
     "database",
