@@ -28,7 +28,7 @@ jobs:
     env:
       SKIP_ENV_VALIDATION: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - run: pnpm lint
       - run: pnpm typecheck
@@ -46,7 +46,7 @@ jobs:
       NEXT_PUBLIC_MAPS_API_KEY: ci-placeholder
       NEXT_PUBLIC_MAPS_MAP_ID: ci-placeholder
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - run: pnpm build --filter=@moventis/web
 
@@ -70,7 +70,7 @@ jobs:
             build-args: ""
     name: docker (${{ matrix.name }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
