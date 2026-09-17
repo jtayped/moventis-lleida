@@ -24,6 +24,13 @@ interface SettingsState {
    */
   analytics: boolean;
   /**
+   * Show how far each arrival has drifted from the first time we predicted it
+   * (see `use-arrival-drift.ts`). On by default: it is derived from the
+   * timetable already on screen, costs no extra request, and the whole point of
+   * standing at a stop is knowing whether the bus is slipping.
+   */
+  arrivalDrift: boolean;
+  /**
    * Opt-in to the live bus position prediction. Off by default — it's an
    * experimental feature (the prediction is still being tuned), not a stable
    * one, so nobody gets it without asking for it first.
@@ -34,6 +41,7 @@ interface SettingsState {
 
 const DEFAULT: SettingsState = {
   analytics: true,
+  arrivalDrift: true,
   liveBusPrediction: false,
   theme: "system",
 };
@@ -58,12 +66,13 @@ function parse(raw: string | null): SettingsState {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return DEFAULT;
-    const { analytics, liveBusPrediction, theme } =
+    const { analytics, arrivalDrift, liveBusPrediction, theme } =
       parsed as Partial<SettingsState>;
     return {
       // Only an explicit `false` opts out: a settings blob written before this
       // key existed has to keep the default rather than read as a refusal.
       analytics: analytics !== false,
+      arrivalDrift: arrivalDrift !== false,
       liveBusPrediction: liveBusPrediction === true,
       theme:
         theme === "light" || theme === "dark" || theme === "system"
@@ -115,8 +124,8 @@ function initialResolvedTheme(): ResolvedTheme {
 }
 
 /**
- * Device-local app settings: the analytics opt-out, the live-bus-prediction
- * opt-in and the theme.
+ * Device-local app settings: the analytics opt-out, the arrival-drift toggle,
+ * the live-bus-prediction opt-in and the theme.
  * Grouped in one hook, and one storage key, because they're both answered from
  * the same settings panel — unlike `use-preferides.ts` and
  * `use-cookie-consent.ts`, neither has enough shape on its own to earn a
@@ -131,9 +140,8 @@ export function useSettings() {
   // Exempt from the hydration-mismatch concern above: nothing about it is
   // compared against server-rendered DOM (see the doc comment on
   // `initialResolvedTheme`), so it's safe — and necessary — to read eagerly.
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(
-    initialResolvedTheme,
-  );
+  const [resolvedTheme, setResolvedTheme] =
+    useState<ResolvedTheme>(initialResolvedTheme);
 
   // Read inside `write`, below, without making every setter depend on (and be
   // recreated by) `settings` itself.
@@ -187,7 +195,8 @@ export function useSettings() {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      if (settings.analytics) window.localStorage.removeItem(UMAMI_DISABLED_KEY);
+      if (settings.analytics)
+        window.localStorage.removeItem(UMAMI_DISABLED_KEY);
       else window.localStorage.setItem(UMAMI_DISABLED_KEY, "1");
     } catch {
       // Private mode, or quota. `isAnalyticsEnabled` still holds the line for
@@ -222,6 +231,11 @@ export function useSettings() {
     [write],
   );
 
+  const setArrivalDrift = useCallback(
+    (arrivalDrift: boolean) => write({ arrivalDrift }),
+    [write],
+  );
+
   const setLiveBusPrediction = useCallback(
     (liveBusPrediction: boolean) => write({ liveBusPrediction }),
     [write],
@@ -239,6 +253,7 @@ export function useSettings() {
     /** The actual light/dark result of `settings.theme`, with "system" resolved. */
     resolvedTheme,
     setAnalytics,
+    setArrivalDrift,
     setLiveBusPrediction,
     setTheme,
   };

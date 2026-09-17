@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  Clock,
   FlaskConical,
   Monitor,
   Moon,
@@ -58,20 +59,25 @@ const Section = ({
  * (see `./index.tsx`) — the container changes with the viewport, the content
  * never does.
  *
- * Everything here is device-local: the two `moventis:settings` values, the answer
- * to the storage notice, and the saved stops. Nothing on this panel travels with
+ * Everything here is device-local: the `moventis:settings` values, the answer to
+ * the storage notice, and the saved stops. Nothing on this panel travels with
  * an account, because there are no accounts.
  */
 const SettingsPanel = () => {
-  const { settings, setAnalytics, setLiveBusPrediction, setTheme } =
-    useSettings();
+  const {
+    settings,
+    setAnalytics,
+    setArrivalDrift,
+    setLiveBusPrediction,
+    setTheme,
+  } = useSettings();
   const { status: consent, accept, decline } = useCookieConsent();
   const { preferidesCount, clearPreferides } = useBusFinder();
 
   // Every handler here reports before it writes. It has to for the analytics
   // switch — turning it off is the last thing this device will ever send, and
   // running the setter first would silence the event that says so — and the
-  // other two follow the same shape so the rule is one rule.
+  // others follow the same shape so the rule is one rule.
   //
   // The cost is that turning analytics back *on* isn't counted: at the moment
   // of that click the device still hasn't opted in, and `track` is right to
@@ -79,6 +85,14 @@ const SettingsPanel = () => {
   const handleTheme = (theme: ThemeSetting) => {
     track("setting changed", { setting: "theme", value: theme });
     setTheme(theme);
+  };
+
+  const handleArrivalDrift = (enabled: boolean) => {
+    track("setting changed", {
+      setting: "arrivalDrift",
+      value: enabled ? "on" : "off",
+    });
+    setArrivalDrift(enabled);
   };
 
   const handleLiveBusPrediction = (enabled: boolean) => {
@@ -125,6 +139,29 @@ const SettingsPanel = () => {
             checked={settings.liveBusPrediction}
             onCheckedChange={handleLiveBusPrediction}
             aria-describedby="live-bus-prediction-help"
+            className="mt-0.5"
+          />
+        </div>
+      </Section>
+
+      <Section title="horaris" icon={Clock}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 space-y-1">
+            <Label htmlFor="arrival-drift">Avanç i retard dels busos</Label>
+            <p
+              id="arrival-drift-help"
+              className="text-muted-foreground text-xs leading-relaxed"
+            >
+              Mostra quants minuts s&apos;ha avançat o endarrerit cada bus
+              respecte a la primera hora que t&apos;hem mostrat. Verd vol dir
+              abans, vermell després.
+            </p>
+          </div>
+          <Switch
+            id="arrival-drift"
+            checked={settings.arrivalDrift}
+            onCheckedChange={handleArrivalDrift}
+            aria-describedby="arrival-drift-help"
             className="mt-0.5"
           />
         </div>

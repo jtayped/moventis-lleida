@@ -143,6 +143,12 @@ Both are normalized into `Date` objects. The `trayectos` field is a map of journ
 
 The map renders via `@vis.gl/react-google-maps`. Pins are rendered by `MapPinsRenderer`; clicking a pin calls `selectStop`, which triggers the Drawer.
 
+### Arrival drift
+
+Each arrival card says how far that bus has slipped from the first time we listed it (`▲ +2 min` / `▼ −1 min`). Moventis gives no vehicle id, so `packages/shared/src/lib/arrival-drift.ts` matches one refresh's arrivals against the previous ones by order and proximity alone; a track's baseline is its first prediction, and one first seen as a timetable time keeps that printed time, so going live reads as "live minus timetable".
+
+`apps/web/src/hooks/use-arrival-drift.ts` keeps the tracks per journey in a **module-level** store keyed by `Stop.externalId` — a ref would reset every baseline each time the drawer closed — and advances exactly once per `dataUpdatedAt`, which is what makes calling it from a `useMemo` safe under StrictMode. Feed it the *unfiltered* `details.schedules`: hiding already-past times from the alignment reads as a bus vanishing on every refresh. The toggle is `arrivalDrift` in `useSettings`, on by default.
+
 ### Saved Stops (`preferides`)
 
 Per-device favourites in localStorage under `moventis:preferides`, as `{ ids: Stop.externalId[], visible: boolean }` (`apps/web/src/hooks/use-preferides.ts`). Held as ids, not stop records, so renames and soft deletes can't go stale in storage; resolved through `stops.getByExternalIds` on each load.

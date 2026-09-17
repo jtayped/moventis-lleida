@@ -20,6 +20,8 @@ import { isNewStop } from "@/lib/stops";
 import { formatTimeAgo } from "@/lib/time";
 import { Button } from "@/components/ui/button";
 import type { Journey, Schedules } from "@moventis/shared";
+import { useArrivalDrift, type DriftLookup } from "@/hooks/use-arrival-drift";
+import { useSettings } from "@/hooks/use-settings";
 
 type ScheduledTime = Journey["scheduledTimes"][number];
 
@@ -28,11 +30,13 @@ const ScheduleGroup = ({
   colorMap,
   closestScheduledTime,
   now,
+  getDrift,
 }: {
   lines: Schedules;
   colorMap: Map<string, string>;
   closestScheduledTime: ScheduledTime | null;
   now: number;
+  getDrift: DriftLookup;
 }) => (
   <div className="divide-border divide-y">
     {lines.map((line) => (
@@ -42,6 +46,7 @@ const ScheduleGroup = ({
         color={colorMap.get(line.lineCode) ?? "#888888"}
         closestScheduledTime={closestScheduledTime}
         now={now}
+        getDrift={getDrift}
       />
     ))}
   </div>
@@ -112,6 +117,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     isBusLocationEnabled,
     isPreferida,
   } = useBusFinder();
+  const { settings } = useSettings();
 
   const colorMap = useMemo(
     () => new Map(routes.map((r) => [r.code, r.color])),
@@ -137,6 +143,16 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
       refetchIntervalInBackground: false,
     },
   );
+
+  // Fed the unfiltered schedules on purpose: the drift alignment compares each
+  // refresh's whole list against the previous one, and handing it the filtered
+  // list would make every departed bus read as one that vanished.
+  const getDrift = useArrivalDrift({
+    stopExternalId: externalId,
+    schedules: details?.schedules,
+    dataUpdatedAt,
+    enabled: settings.arrivalDrift,
+  });
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -353,6 +369,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
                     colorMap={colorMap}
                     closestScheduledTime={closestScheduledTime}
                     now={now}
+                    getDrift={getDrift}
                   />
                 </div>
               )}
@@ -370,6 +387,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
                     colorMap={colorMap}
                     closestScheduledTime={closestScheduledTime}
                     now={now}
+                    getDrift={getDrift}
                   />
                 </div>
               )}
@@ -380,6 +398,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
               colorMap={colorMap}
               closestScheduledTime={closestScheduledTime}
               now={now}
+              getDrift={getDrift}
             />
           )}
         </div>

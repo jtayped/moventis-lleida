@@ -32,7 +32,7 @@ export interface AnalyticsEvents {
   "lines panel opened": undefined;
   "line detail opened": { code: string };
   "setting changed": {
-    setting: "theme" | "liveBusPrediction" | "analytics";
+    setting: "theme" | "arrivalDrift" | "liveBusPrediction" | "analytics";
     value: string;
   };
 }
