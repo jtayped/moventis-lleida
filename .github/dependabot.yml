@@ -18,3 +18,9 @@ updates:
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
+    # Majors are done by hand: the first batch (Next 16, Prisma 7, ESLint 10,
+    # Vitest 4, Expo 55) each broke lint, the build or the schema tooling and
+    # needs a migration, not a bump.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

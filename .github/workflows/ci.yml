@@ -32,6 +32,7 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: pnpm format:check
       - run: pnpm test
 
   # Does the web app compile. Placeholder env only: the `page.tsx` route is
