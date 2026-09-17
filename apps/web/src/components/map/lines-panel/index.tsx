@@ -14,6 +14,7 @@ import { useBusFinder } from "@/context/buses";
 import type { Lines } from "@moventis/shared";
 import LineCard from "./line-card";
 import LineStopList from "./line-stop-list";
+import { track } from "@/lib/analytics";
 
 const codeOrder = (code: string) => {
   const n = parseInt(code, 10);
@@ -72,7 +73,10 @@ const LinesPanel = ({ open, onClose }: LinesPanelProps) => {
                     key={route.id}
                     route={route}
                     isActive={activeSet.size === 0 || activeSet.has(route.code)}
-                    onClick={() => setSelectedLine(route.code)}
+                    onClick={() => {
+                      track("line detail opened", { code: route.code });
+                      setSelectedLine(route.code);
+                    }}
                   />
                 ))}
               </div>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { DrawerClose } from "@/components/ui/drawer";
 import { getContrastTextColor } from "@/lib/contrast";
 import PreferidaToggle from "@/components/map/stop-details/preferida-toggle";
+import { track } from "@/lib/analytics";
 
 interface StopDetailsHeaderProps {
   externalId: string;
@@ -44,7 +45,10 @@ export const StopDetailsHeader = ({
       <div className="flex items-center gap-1">
         <PreferidaToggle externalId={externalId} />
         <Button
-          onClick={() => refetch()}
+          onClick={() => {
+            track("stop refreshed");
+            refetch();
+          }}
           variant="ghost"
           size="icon"
           className="text-muted-foreground hover:text-foreground"

@@ -19,6 +19,7 @@ import { useGeolocation } from "@/hooks/use-geolocation";
 import { useSettings } from "@/hooks/use-settings";
 import UserLocationLayer from "@/components/map/user-location-layer";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 const BusMap = () => {
   const { stops, routes, busPositions, preferidesStops } = useBusFinder();
@@ -72,7 +73,10 @@ const BusMap = () => {
       <div className="pointer-events-none absolute bottom-0 z-10 flex w-full items-end justify-between p-4 md:p-6">
         <Button
           variant="outline"
-          onClick={() => setLinesOpen(true)}
+          onClick={() => {
+            track("lines panel opened");
+            setLinesOpen(true);
+          }}
           title="veure totes les línies"
           // `outline`'s dark-mode background is a translucent overlay
           // (`dark:bg-input/30`, and `dark:hover:bg-input/50` on hover), meant
