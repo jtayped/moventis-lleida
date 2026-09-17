@@ -113,7 +113,9 @@ Lines go dormant for a season (line 10 serves nothing in August, resumes in Sept
 - **withdrawn** — every probe answered, none served. Pruning may act on it.
 - **unreachable** — a request errored. Blocks pruning entirely.
 
-Pruning is the only destructive step and runs **only on a provably complete run** (`src/lib/prune.ts`). Prisma reads `notIn: []` as *match every row*, so a run that discovers nothing does not prune nothing — it prunes everything. That is what soft-deleted the whole network for three nights in August 2026. Never call `prune()` without `shouldPrune()` approving.
+Pruning is the only destructive step and runs **only on a provably complete run** (`src/lib/prune.ts`). Prisma reads `notIn: []` as *match every row*, so a run that discovers nothing does not prune nothing — it prunes everything. That is what soft-deleted the whole network for three nights in August 2026. Never call `prune()` without `shouldPrune()` approving, and only ever with the set of stops *that* run saw — that set is created per run inside `syncAll` and threaded down, never module state, because a run triggered while another is in flight would otherwise truncate it. Overlapping runs cannot happen anyway: `syncAll` is wrapped in `onceAtATime`, so a trigger arriving mid-run is logged and dropped.
+
+The same "only when we saw the whole thing" rule governs the two other replacements. A line's stop set (`stops: { set }`) and its variant list (`routeVariant.deleteMany`) are replaced only after every one of its variants synced from probes that all answered; on a partial failure the stops this run did see are merely connected, never removed, because a stop dropped for a failed fetch is a stop that `prune()` later hard-deletes as an orphan.
 
 ### Real-time Schedule Parsing
 
