@@ -34,7 +34,7 @@ const ScheduleGroup = ({
   closestScheduledTime: ScheduledTime | null;
   now: number;
 }) => (
-  <div className="divide-y divide-gray-300">
+  <div className="divide-border divide-y">
     {lines.map((line) => (
       <StopScheduleLine
         key={line.externalLineId}
@@ -359,7 +359,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
               {otherLines.length > 0 && (
                 <div className="py-2">
                   {selectedLines.length > 0 && (
-                    <hr className="my-2 border-gray-200" />
+                    <hr className="border-border my-2" />
                   )}
                   <div className="my-4 mb-2 flex items-center gap-2 px-1">
                     <ArrowRightLeft className="h-5 w-5" />
