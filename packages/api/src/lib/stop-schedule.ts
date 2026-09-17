@@ -118,15 +118,21 @@ function fetchSchedulesRaw(
 function mapLine(line: ApiScheduleLine, now: Date): Schedules[number] {
   const desc = normalizeText(line.desc_linea);
   const sepIdx = desc.indexOf(" - ");
-  if (sepIdx === -1) throw new Error(`Line description separator not found: ${line.desc_linea}`);
+  // A description without the " - " separator used to throw, and the generic
+  // catch in getStopSchedule turned that into null for the *whole* response —
+  // one odd line wiped out every other line's timetable at the stop. The code
+  // alone is still enough to match and label a line, so degrade instead.
+  if (sepIdx === -1) {
+    console.warn(`Line description separator not found: ${line.desc_linea}`);
+  }
 
   const journeys = buildJourneys(line.trayectos, now);
   journeys.sort((a, b) => a.name.localeCompare(b.name));
 
   return {
     externalLineId: String(line.idLinea),
-    lineCode: desc.slice(0, sepIdx),
-    lineName: desc.slice(sepIdx + 3),
+    lineCode: sepIdx === -1 ? desc : desc.slice(0, sepIdx),
+    lineName: sepIdx === -1 ? "" : desc.slice(sepIdx + 3),
     selected: line.selected,
     incidencias: line.incidencias,
     journeys,

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ZodError } from "zod";
 import { normalizeText, parseSchedulesResponse } from "./stop-schedule";
 import { toWallClock } from "./zoned-time";
@@ -135,6 +135,30 @@ describe("parseSchedulesResponse", () => {
 
   it("filters the sentinel response to an empty schedule list", () => {
     expect(parseSchedulesResponse(loadFixture("schedule-sentinel.json"), NOW)).toEqual([]);
+  });
+
+  it("degrades one line with no ` - ` separator instead of dropping the whole stop", () => {
+    // `mapLine` used to throw here, and the catch in `getStopSchedule` turned that
+    // into null for the entire response — one odd description silently emptied
+    // every other line's timetable at the stop.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const realtime = loadFixture("schedule-realtime.json") as Record<string, unknown>[];
+    const mixed = loadFixture("schedule-mixed.json") as Record<string, unknown>[];
+    const malformed = [{ ...realtime[0], desc_linea: "L9POLIGONS" }, ...mixed];
+
+    const schedules = parseSchedulesResponse(malformed, NOW);
+
+    const degraded = schedules[0]!;
+    expect(degraded.lineCode).toBe("l9poligons");
+    expect(degraded.lineName).toBe("");
+    expect(degraded.journeys[0]!.scheduledTimes).toHaveLength(2);
+    // The well-formed lines that followed it are still there, fully parsed.
+    expect(schedules).toHaveLength(3);
+    expect(schedules.find((s) => s.externalLineId === "130")?.lineName).toBe(
+      "ronda - hospitals",
+    );
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("throws ZodError on a malformed response (contract change)", () => {
