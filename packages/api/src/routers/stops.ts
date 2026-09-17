@@ -66,7 +66,11 @@ export const stopsRouter = createTRPCRouter({
     .query(async ({ ctx, input }): Promise<Stop[]> => {
       if (input.externalIds.length === 0) return [];
       return ctx.db.stop.findMany({
-        where: { externalId: { in: input.externalIds } },
+        // `deletedAt: undefined` is not a no-op here: the client extension in
+        // `packages/db/index.ts` spreads `{ deletedAt: null, ...where }` into every
+        // `stop.findMany`, so an omitted key silently means "live rows only". The
+        // explicit `undefined` overrides the injected null and restores "no filter".
+        where: { deletedAt: undefined, externalId: { in: input.externalIds } },
       });
     }),
   /**
