@@ -42,8 +42,6 @@ services:
       dockerfile: apps/scraper/Dockerfile
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      MOVENTIS_ROUTES_URL: ${MOVENTIS_ROUTES_URL:-}
-      MOVENTIS_STOPS_URL_TEMPLATE: ${MOVENTIS_STOPS_URL_TEMPLATE:-}
     depends_on:
       postgres:
         condition: service_healthy

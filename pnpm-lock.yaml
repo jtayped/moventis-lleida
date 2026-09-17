@@ -87,18 +87,12 @@ importers:
       '@moventis/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      axios:
-        specifier: ^1.12.2
-        version: 1.14.0
       node-cron:
         specifier: ^3.0.3
         version: 3.0.3
       tsx:
         specifier: ^4.19.2
         version: 4.22.4
-      zod:
-        specifier: ^3.24.2
-        version: 3.25.76
     devDependencies:
       '@moventis/eslint-config':
         specifier: workspace:*
