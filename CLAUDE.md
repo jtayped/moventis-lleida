@@ -80,11 +80,14 @@ Turbo 2 does not load dotenv files, so `apps/web/src/env.js` reads `../../.env` 
 
 Device-local, via `apps/web/src/hooks/use-settings.ts` (localStorage, not an env var) — clar/fosc/sistema, defaulting to "sistema". An inline script in `layout.tsx` applies `.dark` to `<html>` before first paint, from the same storage key, to avoid a flash; `use-settings.ts`'s `resolvedTheme` mirrors that same eager read so the Google Map picks the right style on its first mount rather than reloading a tick later.
 
-There is only **one** Map ID (`NEXT_PUBLIC_MAPS_MAP_ID`). As of Google's March 2025 Cloud-based styling update, a single Map ID can carry both a light-mode and a dark-mode style (Cloud Console > Map Management > that Map ID > Map styles — separate cards for each, each independently published); `apps/web/src/styles/map-style-dark.json` is the dark one, pasted in there by hand, and is not imported by any code. `map/index.tsx` picks between them at runtime by passing the JS SDK's `colorScheme` option (`"LIGHT"` / `"DARK"`, driven by `resolvedTheme`) rather than by swapping Map IDs.
+The two map styles live in **`map-styles/`** (`light.json`, `dark.json`) with a README covering the cloud-styling schema, the design intent and the sync workflow. Nothing imports them: they are the reviewable source of truth for what gets pasted into Cloud Console, which is what actually serves them. Edit there, then re-import — the console is downstream of that folder.
 
-Two things make this work that are easy to break by editing `map.tsx` casually:
-- **`renderingType="VECTOR"` is required.** The default raster rendering (a `<div>`-based `google.maps.Map`, which is what `<Map>` produces without this) ignores a Map ID's dark-style slot entirely and falls back to Google's plain default colors — this is not optional polish, it's the difference between the dark style applying at all or not.
-- **`colorScheme` (like `mapId` and `renderingType`) is fixed at map creation** — the SDK does not let you change it on a live instance. `map.tsx` forces a remount on change via `key={colorScheme}`, mirroring the same pattern used elsewhere for the anti-flash theme script.
+There is only **one** Map ID (`NEXT_PUBLIC_MAPS_MAP_ID`), carrying one style per colour scheme. `map/index.tsx` passes `colorScheme` (`"LIGHT"` / `"DARK"`, driven by `resolvedTheme`) and Google picks the matching variant; Map IDs are never swapped.
+
+Three things about this are easy to get wrong:
+- **A style variant that is not attached to the Map ID fails silently.** Importing the JSON creates a *style*; it only reaches the app once Map Management associates it with the Map ID for that colour scheme. Until then the SDK neither warns nor falls back — it serves Google's stock basemap for that scheme, POI pins and all. Dark mode shipped broken this way. The tell is Google's own colours plus restaurant/shop pins; verify after every import.
+- **`renderingType="VECTOR"` stays.** It is what production runs and the attached styles verifiably apply under it. Test any change to it in a *visible* browser tab: WebGL and raster tile initialisation both stall while a tab is hidden, which looks exactly like "the style is not applied" and once produced a false diagnosis that vector rendering broke the dark style.
+- **`colorScheme` (like `mapId` and `renderingType`) is fixed at map creation** — `setOptions` on a live instance ignores it. `@vis.gl/react-google-maps` already lists `colorScheme` among the props its map-creation effect depends on, so it rebuilds the instance itself; `map.tsx` also keys the `<Map>` on it (`key={colorScheme}`) so the whole subtree — markers, paths — is rebuilt with it rather than re-attaching to a map swapped underneath it.
 
 ## Architecture
 
