@@ -129,7 +129,7 @@ const MapPin = React.memo(
                 !pinColor &&
                   (isDeleted
                     ? "bg-muted text-muted-foreground"
-                    : "bg-primary text-white"),
+                    : "bg-primary text-primary-foreground"),
                 isSelected && "ring-primary/40 scale-105 ring-4",
                 isDeleted && "opacity-50",
                 !clickable && "cursor-not-allowed",
@@ -178,7 +178,7 @@ const MapPin = React.memo(
                 !pinColor &&
                   (isDeleted
                     ? "bg-muted text-muted-foreground"
-                    : "bg-primary text-white"),
+                    : "bg-primary text-primary-foreground"),
                 isSelected && "ring-primary/40 ring-4",
                 // Dims the marker rather than the whole group, so the mark on its
                 // shoulder keeps its contrast.
