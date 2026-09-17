@@ -101,29 +101,43 @@ const BusRoutes = () => {
     return { selected, unselected, unavailable };
   }, [routes, activeSet, isRouteSelected]);
 
+  // A real `button` via `asChild`, like `PreferidesBadge`. As a bare `Badge`
+  // these were `span`s with an `onClick`: unreachable by keyboard, absent from
+  // the accessibility tree, and with nothing to announce their selected state.
   const renderBadge = (r: (typeof routes)[number], isActive: boolean) => {
     const isSelected = isRouteSelected(r.code);
+    const label = `${isSelected ? "amaga" : "mostra"} les parades de la línia ${r.code}${
+      isActive ? "" : " (fora d'horari avui)"
+    }`;
     return (
-      <Badge
-        key={r.id}
-        variant={isSelected ? "default" : "outline"}
-        onClick={() => toggleRoute(r.code)}
-        className="cursor-pointer gap-1.5 px-2.5 py-1.5 transition-opacity"
-        style={!isActive ? { opacity: 0.4 } : undefined}
-        title={!isActive ? "fora d'horari avui" : undefined}
-      >
-        {isSelected ? <Check /> : <Plus />}
-        <span
-          style={{
-            backgroundColor: r.color,
-            color: getContrastTextColor(r.color),
-            filter: !isActive ? "grayscale(1)" : undefined,
-          }}
-          className="flex size-5 items-center justify-center rounded-sm text-[11px] font-semibold"
+      <li key={r.id}>
+        <Badge
+          asChild
+          variant={isSelected ? "default" : "outline"}
+          className="cursor-pointer gap-1.5 px-2.5 py-1.5 transition-opacity"
+          style={!isActive ? { opacity: 0.4 } : undefined}
         >
-          {r.code}
-        </span>
-      </Badge>
+          <button
+            type="button"
+            onClick={() => toggleRoute(r.code)}
+            aria-pressed={isSelected}
+            aria-label={label}
+            title={!isActive ? "fora d'horari avui" : undefined}
+          >
+            {isSelected ? <Check /> : <Plus />}
+            <span
+              style={{
+                backgroundColor: r.color,
+                color: getContrastTextColor(r.color),
+                filter: !isActive ? "grayscale(1)" : undefined,
+              }}
+              className="flex size-5 items-center justify-center rounded-sm text-[11px] font-semibold"
+            >
+              {r.code}
+            </span>
+          </button>
+        </Badge>
+      </li>
     );
   };
 
@@ -131,12 +145,14 @@ const BusRoutes = () => {
     <>
       <div className="relative">
         <ScrollArea className="pb-3">
-          <ol className="flex gap-1">
+          <ol className="flex gap-1" aria-label="línies">
             {/* Leftmost and outside the code sort — it has no code to sort by, and
                 it is the one entry here that belongs to the person, not the network. */}
             {preferidesCount > 0 && (
               <>
-                <PreferidesBadge />
+                <li>
+                  <PreferidesBadge />
+                </li>
                 <Divider />
               </>
             )}

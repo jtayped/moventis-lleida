@@ -28,17 +28,20 @@ export const StopDetailsHeader = ({
   return (
     <div className="flex items-start justify-between">
       <div>
-        <ol className="flex flex-wrap gap-2">
+        {/* `li`s, not badges loose inside a list — a screen reader reading an
+            `ol` with no list items announces a list of nothing. */}
+        <ul className="flex flex-wrap gap-2" aria-label="línies d'aquesta parada">
           {lines.map((l) => (
-            <Badge
-              key={l.code}
-              className="px-4 text-xs"
-              style={{ backgroundColor: l.color, color: getContrastTextColor(l.color) }}
-            >
-              {l.code}
-            </Badge>
+            <li key={l.code}>
+              <Badge
+                className="px-4 text-xs"
+                style={{ backgroundColor: l.color, color: getContrastTextColor(l.color) }}
+              >
+                {l.code}
+              </Badge>
+            </li>
           ))}
-        </ol>
+        </ul>
         <h2 className="mt-4 text-2xl font-bold">{name}</h2>
         <LastUpdated timestamp={dataUpdatedAt} />
       </div>
