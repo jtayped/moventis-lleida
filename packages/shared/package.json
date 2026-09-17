@@ -19,7 +19,7 @@
   "devDependencies": {
     "@moventis/eslint-config": "workspace:*",
     "@moventis/tsconfig": "workspace:*",
-    "typescript": "^5.8.2",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.9"
   }
 }
