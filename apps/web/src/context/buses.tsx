@@ -359,6 +359,14 @@ export const BusFinderProvider = ({
     clearPreferides,
   } satisfies BusFinderValue;
 
+  // Closing the drawer clears `selectedStopId` in the same tick the drawer
+  // starts its exit animation, so rendering the contents from it slid an empty
+  // sheet off the screen. Holding the last stop keeps the timetable on screen
+  // until the animation is done; `open` still follows the real selection.
+  const lastStopIdRef = useRef<string | null>(initialStopId);
+  if (selectedStopId) lastStopIdRef.current = selectedStopId;
+  const drawerStopId = lastStopIdRef.current;
+
   return (
     <BusFinderContext.Provider value={value}>
       {children}
@@ -371,7 +379,7 @@ export const BusFinderProvider = ({
         }}
       >
         <DrawerContent>
-          {selectedStopId && <StopDetails externalId={selectedStopId} />}
+          {drawerStopId && <StopDetails externalId={drawerStopId} />}
         </DrawerContent>
       </Drawer>
     </BusFinderContext.Provider>
