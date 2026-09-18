@@ -5,9 +5,37 @@ import { Drawer as DrawerPrimitive } from "vaul";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * vaul's `modal={false}` only half arrives when `open` is controlled.
+ *
+ * vaul never forwards `modal` to the Radix dialog underneath it, so Radix
+ * always mounts its *modal* content, which pins `pointer-events: none` on
+ * `<body>` and keeps it there for as long as the sheet is open. vaul knows
+ * this and clears the lock itself — but only from its own `onOpenChange`, and
+ * a drawer opened from the caller's state never goes through it. So a sheet
+ * that is meant to leave the page behind it usable leaves it dead to every
+ * tap instead.
+ *
+ * Nothing else on this page writes `body.style.pointerEvents`, and Radix's own
+ * teardown restores it, so clearing it here is enough — and the extra frame is
+ * for the case where Radix's effect lands after this one.
+ */
+function useUnblockBodyPointerEvents(active: boolean) {
+  React.useEffect(() => {
+    if (!active) return;
+    const clear = () => {
+      document.body.style.pointerEvents = "";
+    };
+    clear();
+    const frame = requestAnimationFrame(clear);
+    return () => cancelAnimationFrame(frame);
+  }, [active]);
+}
+
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
+  useUnblockBodyPointerEvents(props.modal === false && props.open === true);
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
 }
 

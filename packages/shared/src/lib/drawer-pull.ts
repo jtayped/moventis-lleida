@@ -142,8 +142,10 @@ export function trackDrawerPull(
 /**
  * The snap index a commit moves to, clamped to the ends.
  *
- * Clamped rather than dismissing at the bottom: this drawer's lowest snap is a
- * peek it is meant to rest at, and only the header's X closes it.
+ * Clamping down is the caller's decision to override: the stop drawer treats a
+ * collapse at index 0 as a dismissal rather than a no-op (`stepDrawerSnap` in
+ * `context/buses.tsx`), because a peek you cannot push away is a peek you are
+ * stuck with.
  */
 export function nextSnapIndex(
   currentIndex: number,
