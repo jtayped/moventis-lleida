@@ -1,6 +1,9 @@
-import { Loader2, MapPinOff, Radar } from "lucide-react";
+import { Layers, Loader2, MapPinOff, Radar } from "lucide-react";
 
-export type LiveBusStatusValue = "idle" | "loading" | "done" | "error";
+import { MAX_PREDICTED_LINES } from "@/lib/live-buses";
+
+export type LiveBusStatusValue =
+  "idle" | "loading" | "done" | "error" | "skipped";
 
 /**
  * Status of the *bus pins on the map* — not of this stop's arrival times.
@@ -41,6 +44,24 @@ export default function LiveBusStatus({
       <div className={muted} aria-live="polite">
         <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin" />
         <span>situant els autobusos al mapa…</span>
+      </div>
+    );
+  }
+
+  // Not a failure, and it must not borrow the failure copy: the prediction was
+  // never attempted for this stop's lines. Says which lines *are* predicted, so
+  // the way out (deselect a line) is in the message rather than in a changelog.
+  if (status === "skipped") {
+    return (
+      <div className={muted}>
+        <Layers size={16} className="mt-0.5 shrink-0" />
+        <span>
+          no situem els autobusos d&apos;aquesta parada al mapa.
+          <span className="block text-xs opacity-80">
+            només ho fem per a les {MAX_PREDICTED_LINES} últimes línies que has
+            marcat — desmarca&apos;n alguna per incloure aquesta.
+          </span>
+        </span>
       </div>
     );
   }

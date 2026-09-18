@@ -12,7 +12,7 @@ vi.mock("../lib/stop-schedule", async (importOriginal) => {
 
 import { createCaller } from "../root";
 import { getStopSchedule } from "../lib/stop-schedule";
-import { clearLineBusesCache } from "./buses";
+import { clearLineBusesCache, LINE_CACHE_TTL_MS } from "./buses";
 
 const mockedSchedule = vi.mocked(getStopSchedule);
 
@@ -205,6 +205,82 @@ describe("buses.byLine", () => {
     await byLine(db);
     expect(mockedSchedule.mock.calls.length).toBeGreaterThan(calls);
   });
+
+  /**
+   * Only `Date` is faked, never the timers. `publicProcedure` runs the t3
+   * artificial-latency middleware, which awaits a real `setTimeout`; faking
+   * that too deadlocks every call through the router. The cache reads
+   * `Date.now()` and nothing else, so moving the clock alone is enough.
+   */
+  function withFakeClock(fn: (advance: (ms: number) => void) => Promise<void>) {
+    return async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        await fn((ms) => vi.setSystemTime(Date.now() + ms));
+      } finally {
+        vi.useRealTimers();
+      }
+    };
+  }
+
+  it(
+    "shares an in-flight locate rather than starting a duplicate",
+    withFakeClock(async (advance) => {
+      // The TTL used to run from the *start* of a locate, so a slow one (the
+      // outbound queue backed up) let a second complete locate begin 10 s in
+      // and pile another ~95 requests onto the same queue. An entry is now
+      // usable for as long as it is in flight, however long that takes.
+      let release!: () => void;
+      const gate = new Promise<void>((r) => {
+        release = r;
+      });
+      let entered!: () => void;
+      const inFlight = new Promise<void>((r) => {
+        entered = r;
+      });
+      mockedSchedule.mockImplementation((stopExternalId: string) => {
+        // Built before the gate so the arrival times share the clock `locate`
+        // stamped its reference instant from, not the advanced one.
+        const schedule = realtimeWorld(stopExternalId);
+        entered();
+        return gate.then(() => schedule);
+      });
+
+      const db = makeDb();
+      const first = byLine(db);
+      await inFlight;
+
+      // Well past the TTL, with the first locate still unresolved.
+      advance(60_000);
+      const second = byLine(db);
+
+      release();
+      const [a, b] = await Promise.all([first, second]);
+
+      // Asserted, so the shared value cannot be two vacuously equal empties.
+      expect(a).toHaveLength(1);
+      expect(a[0]!.segment).toEqual({ fromStopId: "eid2", toStopId: "eid3" });
+      expect(b).toEqual(a);
+      expect(db.route.findFirst).toHaveBeenCalledTimes(1);
+    }),
+  );
+
+  it(
+    "recomputes once the TTL has elapsed since the locate settled",
+    withFakeClock(async (advance) => {
+      const db = makeDb();
+      await byLine(db);
+      const calls = mockedSchedule.mock.calls.length;
+
+      advance(LINE_CACHE_TTL_MS - 1);
+      await byLine(db);
+      expect(mockedSchedule.mock.calls.length).toBe(calls);
+
+      advance(2);
+      await byLine(db);
+      expect(mockedSchedule.mock.calls.length).toBeGreaterThan(calls);
+    }),
+  );
 
   it("does not keep a failure in the cache", async () => {
     mockedSchedule.mockResolvedValue(null);

@@ -317,11 +317,18 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     };
   }, [busPositions, relevantLines]);
 
+  // Order matters. A real failure outranks the cap: with one of this stop's
+  // lines predicted and failing while the others were skipped, the failure is
+  // the actionable thing to say. "skipped" is only reached when nothing was
+  // actually attempted for this stop, which is exactly what it means.
   const liveStatus = useMemo<LiveBusStatusValue>(() => {
     if (relevantLines.length === 0) return "idle";
     if (relevantLines.some((c) => lineBusStatus[c] === "loading"))
       return "loading";
     if (relevantLines.some((c) => lineBusStatus[c] === "done")) return "done";
+    if (relevantLines.some((c) => lineBusStatus[c] === "error")) return "error";
+    if (relevantLines.some((c) => lineBusStatus[c] === "skipped"))
+      return "skipped";
     return "error";
   }, [relevantLines, lineBusStatus]);
 

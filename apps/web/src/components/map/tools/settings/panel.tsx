@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { MAX_PREDICTED_LINES } from "@/lib/live-buses";
 import { Switch } from "@/components/ui/switch";
 import { useBusFinder } from "@/context/buses";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
@@ -131,7 +132,8 @@ const SettingsPanel = () => {
             >
               Dedueix entre quines dues parades és cada bus a partir de les
               hores d&apos;arribada que publica Moventis, que no en dona ni la
-              posició ni el GPS. Encara s&apos;està ajustant i pot fallar.
+              posició ni el GPS. Encara s&apos;està ajustant i pot fallar. Només
+              per a les {MAX_PREDICTED_LINES} últimes línies que marquis.
             </p>
           </div>
           <Switch
