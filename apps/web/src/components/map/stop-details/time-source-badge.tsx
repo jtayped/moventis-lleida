@@ -4,9 +4,11 @@ import { cn } from "@/lib/utils";
 /**
  * States, in words, where one arrival time came from.
  *
- * The Moventis API marks each departure `real:"S"` (the bus is reporting, so the
- * time is a live prediction) or `real:"N"` (nothing is reporting, so the time is
- * the published timetable). That difference decides whether you can trust the
+ * The Moventis API marks each departure `real:"S"` (Moventis is tracking that
+ * vehicle, so the time is a live estimate) or `real:"N"` (nothing is tracking
+ * it, so the time is the published timetable). Note what this is *not*: the
+ * feed carries no position and no vehicle id, only a time, so neither state
+ * may be described as a bus sending its location. That difference decides whether you can trust the
  * countdown, and it used to be carried only by a bare `ClockAlert` glyph with an
  * `aria-label` — legible to whoever wrote it and to nobody else.
  *
@@ -43,7 +45,7 @@ export default function TimeSourceBadge({
           "text-emerald-700 dark:text-emerald-400",
           className,
         )}
-        title="hora en temps real: el bus està enviant la seva posició"
+        title="hora en temps real: moventis segueix aquest bus i n'estima l'arribada. no en rebem la posició, només l'hora."
       >
         <span aria-hidden className="relative flex size-1.5 shrink-0">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
@@ -57,7 +59,7 @@ export default function TimeSourceBadge({
   return (
     <span
       className={cn(base, "text-muted-foreground", className)}
-      title="hora de l'horari oficial: aquest bus no envia la seva posició ara mateix"
+      title="hora de l'horari oficial: ara mateix no hi ha cap estimació en temps real per a aquest bus."
     >
       <Clock size={10} className="shrink-0" aria-hidden />
       <Label>horari</Label>
