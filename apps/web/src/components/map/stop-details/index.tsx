@@ -1,7 +1,7 @@
 import { api } from "@/trpc/react";
 import { DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import StopDetailsSkeleton from "./loading";
 import StopDetailsError from "./error";
 import StopDetailsHeader from "./header";
@@ -19,8 +19,9 @@ import {
 import { isNewStop } from "@/lib/stops";
 import { formatTimeAgo } from "@/lib/time";
 import { Button } from "@/components/ui/button";
-import type { Schedules } from "@moventis/shared";
+import type { PullCommit, Schedules } from "@moventis/shared";
 import { useArrivalDrift, type DriftLookup } from "@/hooks/use-arrival-drift";
+import { useDrawerPull } from "@/hooks/use-drawer-pull";
 import { useSettings } from "@/hooks/use-settings";
 
 const ScheduleGroup = ({
@@ -151,8 +152,21 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     busPositions,
     isBusLocationEnabled,
     isPreferida,
+    stepDrawerSnap,
   } = useBusFinder();
   const { settings } = useSettings();
+
+  // Pulling down past the top of the timetable drops the sheet a snap; pulling
+  // up past the bottom grows it. The scroller is a Radix viewport, so the
+  // gesture needs a handle on it rather than on the event target.
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const pull = useDrawerPull({
+    viewportRef,
+    onCommit: useCallback(
+      (commit: PullCommit) => stepDrawerSnap(commit === "expand" ? 1 : -1),
+      [stepDrawerSnap],
+    ),
+  });
 
   const colorMap = useMemo(
     () => new Map(routes.map((r) => [r.code, r.color])),
@@ -393,7 +407,16 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
         </div>
       )}
 
-      <ScrollArea className="mt-3 min-h-0 flex-1 pr-3">
+      <ScrollArea
+        className="mt-3 min-h-0 flex-1 pr-3"
+        viewportRef={viewportRef}
+        // vaul must not also try to drag the sheet from in here. Its own
+        // "scrolled to the top, so drag instead" detection cannot see this
+        // gesture through (see `drawer-pull.ts`), and leaving it armed means
+        // two things fighting over one finger.
+        data-vaul-no-drag=""
+        {...pull}
+      >
         <div>
           {/* Inside the scroller, not pinned above it: this is a key you read
               once, and on a phone every fixed row above the timetable is a row

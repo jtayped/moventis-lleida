@@ -63,6 +63,12 @@ interface BusFinderValue {
    * click that follows through. See the comment in `BusFinderProvider`.
    */
   requestCloseStop: () => void;
+  /**
+   * Moves the stop drawer one snap point up (`1`) or down (`-1`), clamped at
+   * both ends. Drives the pull-past-the-edge gesture in `StopDetails`; the
+   * peek is a floor, never a dismissal.
+   */
+  stepDrawerSnap: (delta: number) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   /**
@@ -367,6 +373,20 @@ export const BusFinderProvider = ({
     isBusLocationEnabled,
   );
 
+  const [snap, setSnap] = useState<number | string | null>(DEFAULT_SNAP);
+
+  const stepDrawerSnap = useCallback((delta: number) => {
+    setSnap((current) => {
+      const index = SNAP_POINTS.indexOf(current as SnapPoint);
+      if (index === -1) return current;
+      const target = Math.min(
+        Math.max(index + delta, 0),
+        SNAP_POINTS.length - 1,
+      );
+      return SNAP_POINTS[target] ?? current;
+    });
+  }, []);
+
   const value = {
     routes: routes as Line[],
     stops,
@@ -379,6 +399,7 @@ export const BusFinderProvider = ({
     activeRouteCodes,
     selectStop,
     requestCloseStop,
+    stepDrawerSnap,
     searchQuery,
     setSearchQuery,
     debouncedSearchQuery: debouncedQuery,
@@ -403,8 +424,6 @@ export const BusFinderProvider = ({
   const lastStopIdRef = useRef<string | null>(initialStopId);
   if (selectedStopId) lastStopIdRef.current = selectedStopId;
   const drawerStopId = lastStopIdRef.current;
-
-  const [snap, setSnap] = useState<number | string | null>(DEFAULT_SNAP);
 
   // A stop opened while the sheet was parked at the peek would otherwise show
   // its timetable off-screen. Every new selection starts at the middle snap.
