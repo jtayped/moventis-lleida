@@ -4,7 +4,14 @@ import { formatRelativeTime } from "@/lib/time";
 /**
  * A component that displays a live countdown for an arriving bus.
  */
-const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
+const CountdownTimer = ({
+  targetDate,
+  compact = false,
+}: {
+  targetDate: Date;
+  /** Short forms for tight spaces — see `formatRelativeTime`. */
+  compact?: boolean;
+}) => {
   const [secondsRemaining, setSecondsRemaining] = useState(
     Math.round((targetDate.getTime() - Date.now()) / 1000),
   );
@@ -33,7 +40,7 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
     const s = secondsRemaining % 60;
     return <>{`${m}:${s.toString().padStart(2, "0")}`}</>;
   }
-  return <>{formatRelativeTime(secondsRemaining)}</>;
+  return <>{formatRelativeTime(secondsRemaining, { compact })}</>;
 };
 
 export default CountdownTimer;

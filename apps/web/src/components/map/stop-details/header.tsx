@@ -2,7 +2,6 @@ import { RefreshCw, X } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import CountdownTimer from "@/components/ui/countdown";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import LastUpdated from "@/components/map/stop-details/last-updated";
 import type { Line } from "@moventis/shared";
 import { Badge } from "@/components/ui/badge";
@@ -55,52 +54,49 @@ export const StopDetailsHeader = ({
       {/* `min-w-0` or the line strip sizes to its content and pushes the
           buttons off instead of scrolling inside its own width. */}
       <div className="min-w-0 flex-1">
-        {/* One row, scrolled sideways rather than wrapped: this sits above a
-            timetable that wants every pixel, and a stop with eight lines would
-            otherwise spend three rows saying what one can.
-
-            `li`s, not badges loose inside a list — a screen reader reading an
+        {/* `li`s, not badges loose inside a list — a screen reader reading an
             `ol` with no list items announces a list of nothing. */}
-        <ScrollArea className="-mx-1 w-full">
-          <ul
-            className="flex w-max items-center gap-1.5 px-1 pb-1"
-            aria-label="línies d'aquesta parada i pròxim bus"
-          >
-            {ordered.map((l) => {
-              const next = nextByLine.get(l.code);
-              return (
-                <li
-                  key={l.code}
-                  className="bg-muted/60 flex shrink-0 items-center gap-1 rounded-md py-0.5 pr-1.5 pl-0.5"
+        <ul
+          className="flex flex-wrap gap-1"
+          aria-label="línies d'aquesta parada i pròxim bus"
+        >
+          {ordered.map((l) => {
+            const next = nextByLine.get(l.code);
+            return (
+              <li
+                key={l.code}
+                className="bg-muted/60 flex shrink-0 items-center gap-1 rounded-md py-0.5 pr-1 pl-0.5"
+              >
+                {/* Both halves are a fixed width, so every pill is the same
+                    width whatever it holds. Without it the row twitches every
+                    second as a countdown loses a digit, and again on each
+                    refresh as the order changes — motion that catches the eye
+                    and means nothing. The time box fits its longest compact
+                    form, "1h30". */}
+                <Badge
+                  className="w-6 px-0 py-0 text-[11px]"
+                  style={{
+                    backgroundColor: l.color,
+                    color: getContrastTextColor(l.color),
+                  }}
+                  aria-label={`línia ${l.code}`}
                 >
-                  <Badge
-                    className="px-2 py-0 text-[11px]"
-                    style={{
-                      backgroundColor: l.color,
-                      color: getContrastTextColor(l.color),
-                    }}
-                    aria-label={`línia ${l.code}`}
-                  >
-                    {l.code}
-                  </Badge>
-                  {/* `CountdownTimer` so the one that matters — the bus inside
-                      ten minutes — counts down in seconds, and anything further
-                      out stays a flat "24 min". */}
-                  <span className="text-[11px] font-semibold tabular-nums">
-                    {next ? (
-                      <CountdownTimer targetDate={next} />
-                    ) : (
-                      <span className="text-muted-foreground font-normal">
-                        —
-                      </span>
-                    )}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+                  {l.code}
+                </Badge>
+                {/* `CountdownTimer` so the one that matters — the bus inside
+                    ten minutes — counts down in seconds, and anything further
+                    out stays a flat "24m". */}
+                <span className="w-9 text-center text-[11px] font-semibold tabular-nums">
+                  {next ? (
+                    <CountdownTimer targetDate={next} compact />
+                  ) : (
+                    <span className="text-muted-foreground font-normal">—</span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
         <h2 className="mt-2 text-xl font-bold">{name}</h2>
         <LastUpdated timestamp={dataUpdatedAt} />
       </div>
