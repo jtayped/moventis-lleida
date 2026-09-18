@@ -20,7 +20,7 @@ const LastUpdated = ({ timestamp }: { timestamp: number | null }) => {
   if (!timestamp) return null;
 
   return (
-    <span className="text-muted-foreground text-xs">
+    <span className="text-muted-foreground text-[11px]">
       actualitzat {displayTime}
     </span>
   );

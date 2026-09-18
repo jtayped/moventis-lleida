@@ -8,8 +8,14 @@ import { cn } from "@/lib/utils";
 function ScrollArea({
   className,
   children,
+  viewportRef,
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+  /** The scrolling element itself. Radix owns it, so anything that needs to
+   *  read `scrollTop` — a gesture watching for the ends of the list — has to
+   *  be handed it from here. */
+  viewportRef?: React.Ref<HTMLDivElement>;
+}) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -18,7 +24,11 @@ function ScrollArea({
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
+        ref={viewportRef}
+        // `overscroll-contain`: a scroller inside a sheet should not hand its
+        // leftover scroll to whatever is behind it, and on iOS the page bounce
+        // it would otherwise trigger swallows the gesture mid-pull.
+        className="focus-visible:ring-ring/50 size-full overscroll-contain rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

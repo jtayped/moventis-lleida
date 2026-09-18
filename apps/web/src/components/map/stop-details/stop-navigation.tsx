@@ -100,7 +100,7 @@ function NavSide({
         stop.name
       }`}
       className={cn(
-        "group hover:bg-accent focus-visible:ring-ring/50 flex h-11 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-2 transition-colors outline-none focus-visible:ring-[3px]",
+        "group hover:bg-accent focus-visible:ring-ring/50 flex h-9 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-2 transition-colors outline-none focus-visible:ring-[3px]",
         isPrev ? "justify-start" : "justify-end",
       )}
     >
@@ -146,7 +146,7 @@ function CorridorRow({
         onSelect={onSelect}
       />
       {/* Keeps the two names clear of the chips floating over the middle. */}
-      <span className="h-11 shrink-0" style={{ width: gutter }} aria-hidden />
+      <span className="h-9 shrink-0" style={{ width: gutter }} aria-hidden />
       <NavSide
         stop={corridor.next}
         direction="next"
@@ -245,7 +245,7 @@ export function StopNavigation({ externalId }: { externalId: string }) {
 
   // The negative inset puts the arrows' optical edge back in line with the stop name.
   return (
-    <div className="-mx-2 mt-3 space-y-0.5">
+    <div className="-mx-2 mt-2 space-y-0.5">
       {corridors.map((corridor) => (
         <CorridorRow
           key={corridor.key}

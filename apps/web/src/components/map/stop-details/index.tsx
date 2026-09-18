@@ -1,7 +1,7 @@
 import { api } from "@/trpc/react";
 import { DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import StopDetailsSkeleton from "./loading";
 import StopDetailsError from "./error";
 import StopDetailsHeader from "./header";
@@ -19,22 +19,19 @@ import {
 import { isNewStop } from "@/lib/stops";
 import { formatTimeAgo } from "@/lib/time";
 import { Button } from "@/components/ui/button";
-import type { Journey, Schedules } from "@moventis/shared";
+import type { PullCommit, Schedules } from "@moventis/shared";
 import { useArrivalDrift, type DriftLookup } from "@/hooks/use-arrival-drift";
+import { useDrawerPull } from "@/hooks/use-drawer-pull";
 import { useSettings } from "@/hooks/use-settings";
-
-type ScheduledTime = Journey["scheduledTimes"][number];
 
 const ScheduleGroup = ({
   lines,
   colorMap,
-  closestScheduledTime,
   now,
   getDrift,
 }: {
   lines: Schedules;
   colorMap: Map<string, string>;
-  closestScheduledTime: ScheduledTime | null;
   now: number;
   getDrift: DriftLookup;
 }) => (
@@ -44,7 +41,6 @@ const ScheduleGroup = ({
         key={line.externalLineId}
         line={line}
         color={colorMap.get(line.lineCode) ?? "#888888"}
-        closestScheduledTime={closestScheduledTime}
         now={now}
         getDrift={getDrift}
       />
@@ -156,8 +152,21 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     busPositions,
     isBusLocationEnabled,
     isPreferida,
+    stepDrawerSnap,
   } = useBusFinder();
   const { settings } = useSettings();
+
+  // Pulling down past the top of the timetable drops the sheet a snap; pulling
+  // up past the bottom grows it. The scroller is a Radix viewport, so the
+  // gesture needs a handle on it rather than on the event target.
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const pull = useDrawerPull({
+    viewportRef,
+    onCommit: useCallback(
+      (commit: PullCommit) => stepDrawerSnap(commit === "expand" ? 1 : -1),
+      [stepDrawerSnap],
+    ),
+  });
 
   const colorMap = useMemo(
     () => new Map(routes.map((r) => [r.code, r.color])),
@@ -200,26 +209,6 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     return () => clearInterval(id);
   }, []);
 
-  const closestScheduledTime = useMemo(() => {
-    if (!details?.schedules) return null;
-
-    let closest: ScheduledTime | null = null;
-    let minDiff = Infinity;
-
-    for (const line of details.schedules) {
-      for (const journey of line.journeys) {
-        for (const scheduledTime of journey.scheduledTimes) {
-          const diff = (scheduledTime.arrivalTime.getTime() - now) / 1000;
-          if (diff > 0 && diff < minDiff) {
-            minDiff = diff;
-            closest = scheduledTime;
-          }
-        }
-      }
-    }
-    return closest;
-  }, [details, now]);
-
   const filteredSchedules = useMemo(() => {
     if (!details?.schedules) return [];
     return details.schedules.flatMap((line) => {
@@ -239,6 +228,32 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
       return [{ ...line, journeys }];
     });
   }, [details, now]);
+
+  /**
+   * The soonest bus per *line*, for the strip at the top of the drawer.
+   *
+   * Per line, deliberately, not per journey: a line's directions are a detail
+   * you want once you have picked a line, and two entries for "1" in a row you
+   * read at a glance is a question nobody asked. The list below still splits
+   * them.
+   *
+   * Built from `filteredSchedules`, so a time that has already passed can
+   * never become the headline.
+   */
+  const nextByLine = useMemo(() => {
+    const next = new Map<string, Date>();
+    for (const line of filteredSchedules) {
+      for (const journey of line.journeys) {
+        for (const time of journey.scheduledTimes) {
+          const best = next.get(line.lineCode);
+          if (!best || time.arrivalTime.getTime() < best.getTime()) {
+            next.set(line.lineCode, time.arrivalTime);
+          }
+        }
+      }
+    }
+    return next;
+  }, [filteredSchedules]);
 
   // Distinguishes "this stop has no schedules" from "the schedules we have are
   // all in the past" — the second is stale data, and says to refresh.
@@ -332,12 +347,13 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
   }
 
   return (
-    <div className="mt-4 flex h-[62vh] flex-col p-4 md:mx-auto md:w-lg">
+    <div className="mt-4 flex min-h-0 flex-1 flex-col p-4 md:mx-auto md:w-lg">
       <SrLabels name={details.name} />
       <StopDetailsHeader
         externalId={externalId}
         name={details.name}
         lines={details.routes}
+        nextByLine={nextByLine}
         dataUpdatedAt={dataUpdatedAt}
         isFetching={isFetching}
         refetch={refetch}
@@ -391,10 +407,21 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
         </div>
       )}
 
-      {hasTimetableOnlyTime && <ScheduleLegend />}
-
-      <ScrollArea className="min-h-0 flex-1 pr-3">
+      <ScrollArea
+        className="mt-3 min-h-0 flex-1 pr-3"
+        viewportRef={viewportRef}
+        // vaul must not also try to drag the sheet from in here. Its own
+        // "scrolled to the top, so drag instead" detection cannot see this
+        // gesture through (see `drawer-pull.ts`), and leaving it armed means
+        // two things fighting over one finger.
+        data-vaul-no-drag=""
+        {...pull}
+      >
         <div>
+          {/* Inside the scroller, not pinned above it: this is a key you read
+              once, and on a phone every fixed row above the timetable is a row
+              the timetable does not get. */}
+          {hasTimetableOnlyTime && <ScheduleLegend />}
           {filteredSchedules.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center">
               {hadTimes ? (
@@ -425,7 +452,6 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
                   <ScheduleGroup
                     lines={selectedLines}
                     colorMap={colorMap}
-                    closestScheduledTime={closestScheduledTime}
                     now={now}
                     getDrift={getDrift}
                   />
@@ -443,7 +469,6 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
                   <ScheduleGroup
                     lines={otherLines}
                     colorMap={colorMap}
-                    closestScheduledTime={closestScheduledTime}
                     now={now}
                     getDrift={getDrift}
                   />
@@ -454,7 +479,6 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
             <ScheduleGroup
               lines={filteredSchedules}
               colorMap={colorMap}
-              closestScheduledTime={closestScheduledTime}
               now={now}
               getDrift={getDrift}
             />

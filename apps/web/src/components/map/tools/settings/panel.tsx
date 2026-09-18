@@ -122,16 +122,16 @@ const SettingsPanel = () => {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1">
             <Label htmlFor="live-bus-prediction" className="flex-wrap">
-              Posició del bus en temps real
+              Posició estimada del bus
               <Badge variant="secondary">experimental</Badge>
             </Label>
             <p
               id="live-bus-prediction-help"
               className="text-muted-foreground text-xs leading-relaxed"
             >
-              Estimació de la posició dels autobusos mentre circulen, calculada
-              a partir de l&apos;horari. Encara s&apos;està ajustant i pot
-              fallar.
+              Dedueix entre quines dues parades és cada bus a partir de les
+              hores d&apos;arribada que publica Moventis, que no en dona ni la
+              posició ni el GPS. Encara s&apos;està ajustant i pot fallar.
             </p>
           </div>
           <Switch

@@ -21,6 +21,16 @@ import React, {
   useState,
 } from "react";
 
+/**
+ * Peek, middle, full. The peek is tall enough for the drag handle, the line
+ * badges and the stop name — enough to know which stop is held while the map
+ * is what you are looking at.
+ */
+const SNAP_POINTS = ["148px", 0.65, 0.94] as const;
+type SnapPoint = (typeof SNAP_POINTS)[number];
+const SNAP_NAMES = ["peek", "mid", "full"] as const;
+const DEFAULT_SNAP: SnapPoint = SNAP_POINTS[1];
+
 interface BusFinderValue {
   routes: Line[];
   stops: Stop[];
@@ -46,6 +56,19 @@ interface BusFinderValue {
    * every other caller is a single known place.
    */
   selectStop: (externalId: string, source?: StopOpenSource) => void;
+  /**
+   * Arms the stop drawer's close. Fire it on *pointer down* of a control that
+   * also triggers `DrawerClose` — the drawer spends its life `dismissible=
+   * {false}` so a drag cannot discard the stop, and this is what lets the
+   * click that follows through. See the comment in `BusFinderProvider`.
+   */
+  requestCloseStop: () => void;
+  /**
+   * Moves the stop drawer one snap point up (`1`) or down (`-1`), clamped at
+   * both ends. Drives the pull-past-the-edge gesture in `StopDetails`; the
+   * peek is a floor, never a dismissal.
+   */
+  stepDrawerSnap: (delta: number) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   /**
@@ -286,6 +309,23 @@ export const BusFinderProvider = ({
     [],
   );
 
+  /**
+   * vaul's two halves of "closeable" are the same flag, and we need them apart.
+   *
+   * `dismissible={false}` is the only thing that stops a drag past the bottom
+   * snap from throwing the stop away — it makes vaul ignore a downward drag at
+   * the first snap outright, which also sidesteps a vaul bug where the same
+   * gesture with `dismissible` on indexes snap point −1 and strands the sheet
+   * wherever the finger left it. But the same flag makes vaul refuse every
+   * close that arrives through `onOpenChange`, `DrawerClose`'s included.
+   *
+   * So it is false while the sheet is in use and true for the close itself:
+   * the X sets this on *pointer down*, React commits that render, and the
+   * click that follows a moment later finds a drawer that will accept it.
+   */
+  const [closing, setClosing] = useState(false);
+  const requestCloseStop = useCallback(() => setClosing(true), []);
+
   // The `?stop=` open, which `selectStop` never sees: the drawer is already open
   // on the first render, seeded from `initialStopId`. Fired from a mount effect
   // rather than at module scope so it counts once per visit, not once per render
@@ -333,6 +373,20 @@ export const BusFinderProvider = ({
     isBusLocationEnabled,
   );
 
+  const [snap, setSnap] = useState<number | string | null>(DEFAULT_SNAP);
+
+  const stepDrawerSnap = useCallback((delta: number) => {
+    setSnap((current) => {
+      const index = SNAP_POINTS.indexOf(current as SnapPoint);
+      if (index === -1) return current;
+      const target = Math.min(
+        Math.max(index + delta, 0),
+        SNAP_POINTS.length - 1,
+      );
+      return SNAP_POINTS[target] ?? current;
+    });
+  }, []);
+
   const value = {
     routes: routes as Line[],
     stops,
@@ -344,6 +398,8 @@ export const BusFinderProvider = ({
     isRouteSelected,
     activeRouteCodes,
     selectStop,
+    requestCloseStop,
+    stepDrawerSnap,
     searchQuery,
     setSearchQuery,
     debouncedSearchQuery: debouncedQuery,
@@ -369,18 +425,68 @@ export const BusFinderProvider = ({
   if (selectedStopId) lastStopIdRef.current = selectedStopId;
   const drawerStopId = lastStopIdRef.current;
 
+  // A stop opened while the sheet was parked at the peek would otherwise show
+  // its timetable off-screen. Every new selection starts at the middle snap.
+  useEffect(() => {
+    if (selectedStopId) {
+      setSnap(DEFAULT_SNAP);
+      setClosing(false);
+    }
+  }, [selectedStopId]);
+
+  // Escape only raises the flag; this is what turns it into a close. The X
+  // does not need it — its click lands first — but running it twice is a
+  // no-op, and this way nothing can set `closing` without the drawer shutting.
+  useEffect(() => {
+    if (closing) setSelectedStopId(null);
+  }, [closing]);
+
   return (
     <BusFinderContext.Provider value={value}>
       {children}
       <Drawer
         open={!!selectedStopId}
         onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            setSelectedStopId(null);
-          }
+          if (!isOpen) setSelectedStopId(null);
         }}
+        dismissible={closing}
+        snapPoints={[...SNAP_POINTS]}
+        activeSnapPoint={snap}
+        setActiveSnapPoint={(value) => {
+          setSnap(value);
+          const name = SNAP_NAMES[SNAP_POINTS.indexOf(value as SnapPoint)];
+          if (name) track("drawer snapped", { snap: name });
+        }}
+        // Only the top snap dims the map; below it the sheet is a panel over a
+        // map you are still meant to read.
+        fadeFromIndex={SNAP_POINTS.length - 1}
+        // The peek snap is only worth having if the map behind it still works,
+        // which rules out the scrim, the focus trap and dismiss-on-outside.
+        modal={false}
       >
-        <DrawerContent>
+        <DrawerContent
+          overlay={false}
+          // Full height, and the top snap is what leaves the strip of map
+          // above it. vaul translates the sheet down from the top of the
+          // window, so a shorter element makes a pixel snap come up short by
+          // exactly the gap — a `94vh` sheet rendered the 148px peek as 96px.
+          //
+          // Same variant prefix as the base `max-h-[80vh]` on purpose: an
+          // unprefixed utility is a different group to tailwind-merge and would
+          // not override it.
+          className="h-full data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-full"
+          // A tap on the map is a tap on the map — panning it, or picking
+          // another pin, must not throw the open stop away.
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          // Radix raises this before it closes, which is one event too late to
+          // flip `dismissible` — so take the close over: refuse Radix's, and
+          // let the flag drive it on the next render.
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            requestCloseStop();
+          }}
+        >
           {drawerStopId && <StopDetails externalId={drawerStopId} />}
         </DrawerContent>
       </Drawer>

@@ -33,7 +33,7 @@ export default function LiveBusStatus({
   if (status === "idle") return null;
 
   const base =
-    "mt-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm";
+    "mt-2 flex items-start gap-2 rounded-lg border px-3 py-1.5 text-sm";
   const muted = `${base} text-muted-foreground border-border bg-muted/40`;
 
   if (status === "loading") {
@@ -65,9 +65,9 @@ export default function LiveBusStatus({
       <div className={muted}>
         <Radar size={16} className="mt-0.5 shrink-0" />
         <span>
-          cap autobús d&apos;aquesta línia envia la seva posició ara mateix.
+          cap bus d&apos;aquesta línia té una hora en temps real ara mateix.
           <span className="block text-xs opacity-80">
-            per això no en veuràs cap al mapa.
+            per això no en podem situar cap al mapa.
           </span>
         </span>
       </div>
@@ -86,14 +86,21 @@ export default function LiveBusStatus({
       <span>
         <span className="font-medium">
           {count === 1
-            ? "1 autobús en directe al mapa"
-            : `${count} autobusos en directe al mapa`}
+            ? "1 autobús situat al mapa"
+            : `${count} autobusos situats al mapa`}
+        </span>
+        {/* Said every time, not only when a position is a loose one: *all* of
+            them are deduced. "en directe al mapa" read as a vehicle reporting
+            its coordinates, which is not something Moventis publishes. */}
+        <span className="block text-xs opacity-80">
+          deduïm el tram de les hores d&apos;arribada; moventis no en publica la
+          posició.
         </span>
         {approximateCount > 0 && (
           <span className="block text-xs opacity-80">
             {approximateCount === 1
-              ? "1 amb la posició aproximada entre parades"
-              : `${approximateCount} amb la posició aproximada entre parades`}
+              ? "1 amb el tram aproximat"
+              : `${approximateCount} amb el tram aproximat`}
           </span>
         )}
       </span>

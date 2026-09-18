@@ -1,19 +1,30 @@
 /**
  * Formats seconds into a relative time string (e.g., "Now", "12 min", "1h 30m").
+ *
+ * `compact` drops to "12m" / "1h30" for the line strip in the drawer header,
+ * where a dozen of these sit side by side in fixed-width pills and every
+ * character is width the next line does not get. The trailing "m" goes once
+ * an "h" is there to say what the digits are — with it, "1h30m" measured
+ * 35.6px inside a 36px box, which is not a margin that survives a fallback
+ * font. Everywhere else the roomier form reads better, so it stays the
+ * default.
  */
-export const formatRelativeTime = (seconds: number): string => {
-  if (seconds < 30) return "arribant";
+export const formatRelativeTime = (
+  seconds: number,
+  { compact = false }: { compact?: boolean } = {},
+): string => {
+  if (seconds < 30) return compact ? "ara" : "arribant";
   const totalMinutes = Math.round(seconds / 60);
 
   if (totalMinutes < 60) {
-    return `${totalMinutes} min`;
+    return compact ? `${totalMinutes}m` : `${totalMinutes} min`;
   } else {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     if (minutes === 0) {
       return `${hours}h`;
     }
-    return `${hours}h ${minutes}m`;
+    return compact ? `${hours}h${minutes}` : `${hours}h ${minutes}m`;
   }
 };
 
