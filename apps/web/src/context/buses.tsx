@@ -3,6 +3,7 @@ import StopDetails from "@/components/map/stop-details";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { api } from "@/trpc/react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useDrawerDismissDrag } from "@/hooks/use-drawer-dismiss-drag";
 import { useLineBuses, type BusLineStatus } from "@/hooks/use-line-buses";
 import { usePreferides } from "@/hooks/use-preferides";
 import { useSettings } from "@/hooks/use-settings";
@@ -57,16 +58,19 @@ interface BusFinderValue {
    */
   selectStop: (externalId: string, source?: StopOpenSource) => void;
   /**
-   * Arms the stop drawer's close. Fire it on *pointer down* of a control that
-   * also triggers `DrawerClose` — the drawer spends its life `dismissible=
-   * {false}` so a drag cannot discard the stop, and this is what lets the
-   * click that follows through. See the comment in `BusFinderProvider`.
+   * Arms the stop drawer's close, and closes it. The drawer spends its life
+   * `dismissible={false}` so no stray drag can discard the stop, which means
+   * every deliberate close has to come through here: the header's X (on
+   * *pointer down*, so the flag is committed before `DrawerClose`'s click
+   * arrives or vaul refuses it), Escape, and the swipe down from the peek.
+   * See the comment in `BusFinderProvider`.
    */
   requestCloseStop: () => void;
   /**
-   * Moves the stop drawer one snap point up (`1`) or down (`-1`), clamped at
-   * both ends. Drives the pull-past-the-edge gesture in `StopDetails`; the
-   * peek is a floor, never a dismissal.
+   * Moves the stop drawer one snap point up (`1`) or down (`-1`). Clamped at
+   * the top; below the peek there is no snap left, so a step down from there
+   * closes the drawer instead. Drives the pull-past-the-edge gesture in
+   * `StopDetails`.
    */
   stepDrawerSnap: (delta: number) => void;
   searchQuery: string;
@@ -375,17 +379,32 @@ export const BusFinderProvider = ({
 
   const [snap, setSnap] = useState<number | string | null>(DEFAULT_SNAP);
 
-  const stepDrawerSnap = useCallback((delta: number) => {
-    setSnap((current) => {
-      const index = SNAP_POINTS.indexOf(current as SnapPoint);
-      if (index === -1) return current;
-      const target = Math.min(
-        Math.max(index + delta, 0),
-        SNAP_POINTS.length - 1,
-      );
-      return SNAP_POINTS[target] ?? current;
-    });
-  }, []);
+  const isAtPeek = snap === SNAP_POINTS[0];
+
+  const stepDrawerSnap = useCallback(
+    (delta: number) => {
+      const index = SNAP_POINTS.indexOf(snap as SnapPoint);
+      if (index === -1) return;
+      const target = index + delta;
+      // Pushing down at the floor is a dismissal, not a no-op — the same thing
+      // dragging the sheet itself down from the peek does.
+      if (target < 0) {
+        requestCloseStop();
+        return;
+      }
+      setSnap(SNAP_POINTS[Math.min(target, SNAP_POINTS.length - 1)] ?? snap);
+    },
+    [snap, requestCloseStop],
+  );
+
+  // The other half of the same gesture: a drag down on the sheet itself. vaul
+  // refuses to move the sheet below its first snap while `dismissible` is
+  // false, so the drag never reaches its release logic and this reads it
+  // directly.
+  const dismissDrag = useDrawerDismissDrag({
+    enabled: isAtPeek,
+    onDismiss: requestCloseStop,
+  });
 
   const value = {
     routes: routes as Line[],
@@ -465,6 +484,7 @@ export const BusFinderProvider = ({
         modal={false}
       >
         <DrawerContent
+          {...dismissDrag}
           overlay={false}
           // Full height, and the top snap is what leaves the strip of map
           // above it. vaul translates the sheet down from the top of the
