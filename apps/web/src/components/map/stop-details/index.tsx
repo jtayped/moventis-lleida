@@ -215,6 +215,32 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     });
   }, [details, now]);
 
+  /**
+   * The soonest bus per *line*, for the strip at the top of the drawer.
+   *
+   * Per line, deliberately, not per journey: a line's directions are a detail
+   * you want once you have picked a line, and two entries for "1" in a row you
+   * read at a glance is a question nobody asked. The list below still splits
+   * them.
+   *
+   * Built from `filteredSchedules`, so a time that has already passed can
+   * never become the headline.
+   */
+  const nextByLine = useMemo(() => {
+    const next = new Map<string, Date>();
+    for (const line of filteredSchedules) {
+      for (const journey of line.journeys) {
+        for (const time of journey.scheduledTimes) {
+          const best = next.get(line.lineCode);
+          if (!best || time.arrivalTime.getTime() < best.getTime()) {
+            next.set(line.lineCode, time.arrivalTime);
+          }
+        }
+      }
+    }
+    return next;
+  }, [filteredSchedules]);
+
   // Distinguishes "this stop has no schedules" from "the schedules we have are
   // all in the past" — the second is stale data, and says to refresh.
   const hadTimes = useMemo(
@@ -313,6 +339,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
         externalId={externalId}
         name={details.name}
         lines={details.routes}
+        nextByLine={nextByLine}
         dataUpdatedAt={dataUpdatedAt}
         isFetching={isFetching}
         refetch={refetch}
