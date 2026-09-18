@@ -10,16 +10,16 @@ import TimeSourceBadge from "./time-source-badge";
  */
 export default function ScheduleLegend() {
   return (
-    <dl className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px]">
+    <dl className="text-muted-foreground mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[10px]">
       <div className="flex items-center gap-1.5">
         <dt>
-          <TimeSourceBadge isRealTime className="text-[11px]" />
+          <TimeSourceBadge isRealTime className="text-[10px]" />
         </dt>
         <dd>el bus envia la seva posició</dd>
       </div>
       <div className="flex items-center gap-1.5">
         <dt>
-          <TimeSourceBadge isRealTime={false} className="text-[11px]" />
+          <TimeSourceBadge isRealTime={false} className="text-[10px]" />
         </dt>
         <dd>hora prevista a l&apos;horari oficial</dd>
       </div>

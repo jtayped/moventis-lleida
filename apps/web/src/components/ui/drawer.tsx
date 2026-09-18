@@ -48,11 +48,16 @@ function DrawerOverlay({
 function DrawerContent({
   className,
   children,
+  overlay = true,
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Content>) {
+}: React.ComponentProps<typeof DrawerPrimitive.Content> & {
+  /** Set false for a non-modal drawer that has to leave what is behind it
+   *  visible and interactive — the stock overlay is a full-screen scrim. */
+  overlay?: boolean;
+}) {
   return (
     <DrawerPortal data-slot="drawer-portal">
-      <DrawerOverlay />
+      {overlay && <DrawerOverlay />}
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(

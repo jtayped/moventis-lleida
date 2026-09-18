@@ -19,22 +19,18 @@ import {
 import { isNewStop } from "@/lib/stops";
 import { formatTimeAgo } from "@/lib/time";
 import { Button } from "@/components/ui/button";
-import type { Journey, Schedules } from "@moventis/shared";
+import type { Schedules } from "@moventis/shared";
 import { useArrivalDrift, type DriftLookup } from "@/hooks/use-arrival-drift";
 import { useSettings } from "@/hooks/use-settings";
-
-type ScheduledTime = Journey["scheduledTimes"][number];
 
 const ScheduleGroup = ({
   lines,
   colorMap,
-  closestScheduledTime,
   now,
   getDrift,
 }: {
   lines: Schedules;
   colorMap: Map<string, string>;
-  closestScheduledTime: ScheduledTime | null;
   now: number;
   getDrift: DriftLookup;
 }) => (
@@ -44,7 +40,6 @@ const ScheduleGroup = ({
         key={line.externalLineId}
         line={line}
         color={colorMap.get(line.lineCode) ?? "#888888"}
-        closestScheduledTime={closestScheduledTime}
         now={now}
         getDrift={getDrift}
       />
@@ -200,26 +195,6 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
     return () => clearInterval(id);
   }, []);
 
-  const closestScheduledTime = useMemo(() => {
-    if (!details?.schedules) return null;
-
-    let closest: ScheduledTime | null = null;
-    let minDiff = Infinity;
-
-    for (const line of details.schedules) {
-      for (const journey of line.journeys) {
-        for (const scheduledTime of journey.scheduledTimes) {
-          const diff = (scheduledTime.arrivalTime.getTime() - now) / 1000;
-          if (diff > 0 && diff < minDiff) {
-            minDiff = diff;
-            closest = scheduledTime;
-          }
-        }
-      }
-    }
-    return closest;
-  }, [details, now]);
-
   const filteredSchedules = useMemo(() => {
     if (!details?.schedules) return [];
     return details.schedules.flatMap((line) => {
@@ -332,7 +307,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
   }
 
   return (
-    <div className="mt-4 flex h-[62vh] flex-col p-4 md:mx-auto md:w-lg">
+    <div className="mt-4 flex min-h-0 flex-1 flex-col p-4 md:mx-auto md:w-lg">
       <SrLabels name={details.name} />
       <StopDetailsHeader
         externalId={externalId}
@@ -391,10 +366,12 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
         </div>
       )}
 
-      {hasTimetableOnlyTime && <ScheduleLegend />}
-
-      <ScrollArea className="min-h-0 flex-1 pr-3">
+      <ScrollArea className="mt-3 min-h-0 flex-1 pr-3">
         <div>
+          {/* Inside the scroller, not pinned above it: this is a key you read
+              once, and on a phone every fixed row above the timetable is a row
+              the timetable does not get. */}
+          {hasTimetableOnlyTime && <ScheduleLegend />}
           {filteredSchedules.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center">
               {hadTimes ? (
@@ -425,7 +402,6 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
                   <ScheduleGroup
                     lines={selectedLines}
                     colorMap={colorMap}
-                    closestScheduledTime={closestScheduledTime}
                     now={now}
                     getDrift={getDrift}
                   />
@@ -443,7 +419,6 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
                   <ScheduleGroup
                     lines={otherLines}
                     colorMap={colorMap}
-                    closestScheduledTime={closestScheduledTime}
                     now={now}
                     getDrift={getDrift}
                   />
@@ -454,7 +429,6 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
             <ScheduleGroup
               lines={filteredSchedules}
               colorMap={colorMap}
-              closestScheduledTime={closestScheduledTime}
               now={now}
               getDrift={getDrift}
             />

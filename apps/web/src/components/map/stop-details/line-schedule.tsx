@@ -1,16 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import ArrivalTimeCard from "./arrival-time-item";
-import type { Journey, Schedules } from "@moventis/shared";
+import type { Schedules } from "@moventis/shared";
 import type { DriftLookup } from "@/hooks/use-arrival-drift";
 import { getContrastTextColor } from "@/lib/contrast";
 import { TriangleAlert } from "lucide-react";
 
-type ScheduledTime = Journey["scheduledTimes"][number];
-
 interface StopScheduleLineProps {
   line: Schedules[number];
   color: string;
-  closestScheduledTime: ScheduledTime | null;
   now: number;
   getDrift: DriftLookup;
 }
@@ -18,7 +15,6 @@ interface StopScheduleLineProps {
 export const StopScheduleLine = ({
   line,
   color,
-  closestScheduledTime,
   now,
   getDrift,
 }: StopScheduleLineProps) => {
@@ -49,14 +45,26 @@ export const StopScheduleLine = ({
       <div className="flex flex-col gap-3">
         {line.journeys.length > 0 ? (
           line.journeys.map((journeyGroup) => {
-            // By reference, not by timestamp: `closestScheduledTime` is picked
-            // from these very objects, and two lines arriving at the same minute
-            // used to *both* render as the big highlighted next bus.
-            const closestTime = journeyGroup.scheduledTimes.find(
-              (t) => t === closestScheduledTime,
+            // The headline card is per direction, not per stop. One big card
+            // for the whole drawer made the choice of line look arbitrary —
+            // what you came to read is the next bus on *your* line.
+            //
+            // Held by reference, not by timestamp: `getDrift` is a Map keyed by
+            // object identity, and two buses of one journey can share a minute.
+            // Past times are already gone — these lines come from
+            // `filteredSchedules` in `index.tsx`.
+            const leadTime = journeyGroup.scheduledTimes.reduce<
+              (typeof journeyGroup.scheduledTimes)[number] | undefined
+            >(
+              (soonest, t) =>
+                !soonest ||
+                t.arrivalTime.getTime() < soonest.arrivalTime.getTime()
+                  ? t
+                  : soonest,
+              undefined,
             );
             const otherTimes = journeyGroup.scheduledTimes.filter(
-              (t) => t !== closestTime,
+              (t) => t !== leadTime,
             );
 
             return (
@@ -64,17 +72,17 @@ export const StopScheduleLine = ({
                 <h4 className="text-muted-foreground mb-2 text-sm font-medium capitalize">
                   {journeyGroup.name}
                 </h4>
-                {closestTime && (
+                {leadTime && (
                   <ArrivalTimeCard
-                    journey={closestTime}
-                    isClosest
+                    journey={leadTime}
+                    isNext
                     now={now}
-                    drift={getDrift(closestTime)}
+                    drift={getDrift(leadTime)}
                   />
                 )}
                 {otherTimes.length > 0 && (
                   <div
-                    className={closestTime ? "mt-2 grid gap-2" : "grid gap-2"}
+                    className={leadTime ? "mt-2 grid gap-2" : "grid gap-2"}
                     style={{
                       gridTemplateColumns:
                         "repeat(auto-fill, minmax(100px, 1fr))",
@@ -86,7 +94,7 @@ export const StopScheduleLine = ({
                       <ArrivalTimeCard
                         key={idx}
                         journey={time}
-                        isClosest={false}
+                        isNext={false}
                         now={now}
                         drift={getDrift(time)}
                       />

@@ -30,6 +30,9 @@ export interface AnalyticsEvents {
   "search used": undefined;
   "location requested": { result: "active" | "error" | "unsupported" };
   "lines panel opened": undefined;
+  /** Which height the stop drawer was dragged to — tells us whether the peek
+   *  snap is used at all. */
+  "drawer snapped": { snap: "peek" | "mid" | "full" };
   "line detail opened": { code: string };
   "setting changed": {
     setting: "theme" | "arrivalDrift" | "liveBusPrediction" | "analytics";

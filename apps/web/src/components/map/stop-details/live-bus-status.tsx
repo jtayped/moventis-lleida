@@ -33,7 +33,7 @@ export default function LiveBusStatus({
   if (status === "idle") return null;
 
   const base =
-    "mt-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm";
+    "mt-2 flex items-start gap-2 rounded-lg border px-3 py-1.5 text-sm";
   const muted = `${base} text-muted-foreground border-border bg-muted/40`;
 
   if (status === "loading") {

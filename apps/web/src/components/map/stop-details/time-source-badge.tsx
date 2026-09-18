@@ -18,11 +18,22 @@ import { cn } from "@/lib/utils";
 export default function TimeSourceBadge({
   isRealTime,
   className,
+  iconOnly = false,
 }: {
   isRealTime: boolean;
   className?: string;
+  /**
+   * Glyph alone, word hidden. On an arrival card the legend above the list has
+   * already said what the pulse and the clock mean, so repeating it on every
+   * card costs a line of height per card and tells you nothing new. The word
+   * stays in the accessible name — this is a visual shorthand, not a quieter
+   * label.
+   */
+  iconOnly?: boolean;
 }) {
   const base = "flex items-center gap-1 leading-none font-medium";
+  const Label = ({ children }: { children: string }) =>
+    iconOnly ? <span className="sr-only">{children}</span> : <>{children}</>;
 
   if (isRealTime) {
     return (
@@ -38,7 +49,7 @@ export default function TimeSourceBadge({
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
           <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
         </span>
-        en directe
+        <Label>en directe</Label>
       </span>
     );
   }
@@ -49,7 +60,7 @@ export default function TimeSourceBadge({
       title="hora de l'horari oficial: aquest bus no envia la seva posició ara mateix"
     >
       <Clock size={10} className="shrink-0" aria-hidden />
-      horari
+      <Label>horari</Label>
     </span>
   );
 }
