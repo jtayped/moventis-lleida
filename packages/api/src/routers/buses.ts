@@ -10,6 +10,7 @@ import {
   type ProbeResult,
 } from "../lib/bus-locator";
 import { toGeometry, toProbeResult } from "../lib/probe";
+import { SettleCache } from "../lib/settle-cache";
 
 /**
  * How long one line's located positions are shared between callers, measured
@@ -22,33 +23,8 @@ import { toGeometry, toProbeResult } from "../lib/probe";
  */
 export const LINE_CACHE_TTL_MS = 10_000;
 
-interface LineCacheEntry {
-  /** When the locate settled; null while it is still in flight. */
-  settledAt: number | null;
-  value: Promise<BusPosition[]>;
-}
-
-const lineCache = new Map<string, LineCacheEntry>();
-
-/**
- * An entry serves a caller while it is **in flight**, however long that takes,
- * and for {@link LINE_CACHE_TTL_MS} after it settles.
- *
- * Timing the TTL from the start of the locate instead — which is what this used
- * to do — deduplicates nothing under load. A line whose locate takes 90 s
- * because the 5 req/s outbound queue is backed up would let a fresh, *complete*
- * locate start every 10 s, so ~9 duplicates of the same work pile into the same
- * queue and lengthen it further. That is the wrong way round: the queue being
- * slow is precisely the moment to stop adding to it.
- *
- * Gating on flight instead makes the refresh period self-regulating — it floats
- * to `locate duration + TTL`, so a healthy line still refreshes every ~13 s and
- * a struggling one backs off on its own without a tuned constant.
- */
-function isUsable(entry: LineCacheEntry): boolean {
-  if (entry.settledAt === null) return true;
-  return Date.now() - entry.settledAt < LINE_CACHE_TTL_MS;
-}
+/** 14 lines in the network; the bound is slack, not a working constraint. */
+const lineCache = new SettleCache<BusPosition[]>(LINE_CACHE_TTL_MS, 64);
 
 /** Test hook: the module-level cache would otherwise leak between cases. */
 export function clearLineBusesCache(): void {
@@ -70,29 +46,9 @@ export const busesRouter = createTRPCRouter({
    */
   byLine: publicProcedure
     .input(z.object({ routeCode: z.string() }))
-    .query(async ({ ctx, input }): Promise<BusPosition[]> => {
-      const cached = lineCache.get(input.routeCode);
-      if (cached && isUsable(cached)) return cached.value;
-
-      const entry: LineCacheEntry = {
-        settledAt: null,
-        value: locate(ctx.db, input.routeCode),
-      };
-      lineCache.set(input.routeCode, entry);
-      entry.value.then(
-        () => {
-          entry.settledAt = Date.now();
-        },
-        () => {
-          // A failure is not worth sharing: the next caller should try again.
-          // Identity-checked, so a retry that already replaced this entry is
-          // not evicted by the old one's rejection landing afterwards.
-          if (lineCache.get(input.routeCode) === entry)
-            lineCache.delete(input.routeCode);
-        },
-      );
-      return entry.value;
-    }),
+    .query(({ ctx, input }): Promise<BusPosition[]> =>
+      lineCache.get(input.routeCode, () => locate(ctx.db, input.routeCode)),
+    ),
 });
 
 type Db = ReturnType<typeof createTRPCContext>["db"];
