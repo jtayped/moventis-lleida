@@ -31,6 +31,13 @@ interface SettingsState {
    */
   arrivalDrift: boolean;
   /**
+   * Show the next bus on each stop's pin once the map is zoomed right in. On by
+   * default: it is the one number the map is otherwise hiding behind a tap. It
+   * does cost a request per visible stop, which is why it is capped and slow to
+   * refresh (`lib/stop-etas.ts`) and why it can be turned off at all.
+   */
+  stopEtas: boolean;
+  /**
    * Opt-in to the live bus position prediction. Off by default — it's an
    * experimental feature (the prediction is still being tuned), not a stable
    * one, so nobody gets it without asking for it first.
@@ -42,6 +49,7 @@ interface SettingsState {
 const DEFAULT: SettingsState = {
   analytics: true,
   arrivalDrift: true,
+  stopEtas: true,
   liveBusPrediction: false,
   theme: "system",
 };
@@ -66,13 +74,14 @@ function parse(raw: string | null): SettingsState {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return DEFAULT;
-    const { analytics, arrivalDrift, liveBusPrediction, theme } =
+    const { analytics, arrivalDrift, stopEtas, liveBusPrediction, theme } =
       parsed as Partial<SettingsState>;
     return {
       // Only an explicit `false` opts out: a settings blob written before this
       // key existed has to keep the default rather than read as a refusal.
       analytics: analytics !== false,
       arrivalDrift: arrivalDrift !== false,
+      stopEtas: stopEtas !== false,
       liveBusPrediction: liveBusPrediction === true,
       theme:
         theme === "light" || theme === "dark" || theme === "system"
@@ -236,6 +245,11 @@ export function useSettings() {
     [write],
   );
 
+  const setStopEtas = useCallback(
+    (stopEtas: boolean) => write({ stopEtas }),
+    [write],
+  );
+
   const setLiveBusPrediction = useCallback(
     (liveBusPrediction: boolean) => write({ liveBusPrediction }),
     [write],
@@ -254,6 +268,7 @@ export function useSettings() {
     resolvedTheme,
     setAnalytics,
     setArrivalDrift,
+    setStopEtas,
     setLiveBusPrediction,
     setTheme,
   };

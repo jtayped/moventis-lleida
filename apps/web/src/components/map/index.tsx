@@ -20,6 +20,7 @@ import { useSettings } from "@/hooks/use-settings";
 import UserLocationLayer from "@/components/map/user-location-layer";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
+import { StopEtasProvider } from "@/context/stop-etas";
 
 const BusMap = () => {
   const {
@@ -86,25 +87,30 @@ const BusMap = () => {
         restrictions={{ latLngBounds: RESTRICTED_BOUNDS, strictBounds: false }}
         className="h-screen w-full"
       >
-        <InitialStopFocus />
-        <RoutePaths />
-        {stops.length > 0 && <MapPinsRenderer stops={stops} />}
-        {/* Saved stops that no selected line already draws — the context has
-            removed the overlap, so nothing here doubles up on `stops`. */}
-        {preferidesStops.length > 0 && (
-          <MapPinsRenderer stops={preferidesStops} />
-        )}
-        {busPositions.length > 0 && (
-          <BusMarkersRenderer
-            positions={busPositions}
-            colorByLine={colorByLine}
+        {/* Inside the map (it reads the camera) and around the pins (they read
+            the result), so one camera listener and one capped set serve all
+            three pin renderers. */}
+        <StopEtasProvider>
+          <InitialStopFocus />
+          <RoutePaths />
+          {stops.length > 0 && <MapPinsRenderer stops={stops} />}
+          {/* Saved stops that no selected line already draws — the context has
+              removed the overlap, so nothing here doubles up on `stops`. */}
+          {preferidesStops.length > 0 && (
+            <MapPinsRenderer stops={preferidesStops} />
+          )}
+          {busPositions.length > 0 && (
+            <BusMarkersRenderer
+              positions={busPositions}
+              colorByLine={colorByLine}
+            />
+          )}
+          <UserLocationLayer
+            position={position}
+            shouldPan={shouldPan}
+            onPanned={onPanned}
           />
-        )}
-        <UserLocationLayer
-          position={position}
-          shouldPan={shouldPan}
-          onPanned={onPanned}
-        />
+        </StopEtasProvider>
       </MapComponent>
       <div className="pointer-events-none absolute bottom-0 z-10 flex w-full items-end justify-between p-4 md:p-6">
         <Button

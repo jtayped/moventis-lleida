@@ -35,7 +35,8 @@ export interface AnalyticsEvents {
   "drawer snapped": { snap: "peek" | "mid" | "full" };
   "line detail opened": { code: string };
   "setting changed": {
-    setting: "theme" | "arrivalDrift" | "liveBusPrediction" | "analytics";
+    setting:
+      "theme" | "arrivalDrift" | "stopEtas" | "liveBusPrediction" | "analytics";
     value: string;
   };
 }

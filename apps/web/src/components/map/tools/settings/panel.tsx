@@ -69,6 +69,7 @@ const SettingsPanel = () => {
     settings,
     setAnalytics,
     setArrivalDrift,
+    setStopEtas,
     setLiveBusPrediction,
     setTheme,
   } = useSettings();
@@ -94,6 +95,14 @@ const SettingsPanel = () => {
       value: enabled ? "on" : "off",
     });
     setArrivalDrift(enabled);
+  };
+
+  const handleStopEtas = (enabled: boolean) => {
+    track("setting changed", {
+      setting: "stopEtas",
+      value: enabled ? "on" : "off",
+    });
+    setStopEtas(enabled);
   };
 
   const handleLiveBusPrediction = (enabled: boolean) => {
@@ -147,6 +156,27 @@ const SettingsPanel = () => {
       </Section>
 
       <Section title="horaris" icon={Clock}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 space-y-1">
+            <Label htmlFor="stop-etas">Pròxim bus al mapa</Label>
+            <p
+              id="stop-etas-help"
+              className="text-muted-foreground text-xs leading-relaxed"
+            >
+              En apropar el mapa, mostra al costat de cada parada quant falta
+              per al pròxim bus. Consulta els horaris de les parades que veus,
+              així que gasta dades.
+            </p>
+          </div>
+          <Switch
+            id="stop-etas"
+            checked={settings.stopEtas}
+            onCheckedChange={handleStopEtas}
+            aria-describedby="stop-etas-help"
+            className="mt-0.5"
+          />
+        </div>
+
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1">
             <Label htmlFor="arrival-drift">Avanç i retard dels busos</Label>
