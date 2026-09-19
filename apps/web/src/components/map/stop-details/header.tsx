@@ -10,6 +10,7 @@ import PreferidaToggle from "@/components/map/stop-details/preferida-toggle";
 import { track } from "@/lib/analytics";
 import { useBusFinder } from "@/context/buses";
 import { DrawerClose } from "@/components/ui/drawer";
+import type { StopDetailsVariant } from "@/components/map/stop-details/shell";
 
 interface StopDetailsHeaderProps {
   externalId: string;
@@ -20,7 +21,54 @@ interface StopDetailsHeaderProps {
   dataUpdatedAt: number | null;
   isFetching: boolean;
   refetch: () => void;
+  variant: StopDetailsVariant;
 }
+
+/**
+ * Two closes, because there are two containers.
+ *
+ * In the sheet, `requestCloseStop` has to land on *pointer down*: the drawer is
+ * `dismissible={false}` so a drag cannot throw the stop away, and vaul refuses
+ * every close that arrives through `onOpenChange` — `DrawerClose`'s included —
+ * until that flag has flipped. Committing it a render before the click is what
+ * makes the X work at all. `onKeyDown` is the same arming for Enter and Space.
+ *
+ * The panel has no vaul in it and nothing to arm, so it closes on click like any
+ * other button. Wrapping it in `DrawerClose` there would not merely be redundant:
+ * that is a Radix dialog part, and outside a `Drawer` root it throws.
+ */
+const CloseButton = ({ variant }: { variant: StopDetailsVariant }) => {
+  const { requestCloseStop } = useBusFinder();
+
+  if (variant === "panel") {
+    return (
+      <Button
+        onClick={requestCloseStop}
+        variant="ghost"
+        size="icon"
+        aria-label="Tanca"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    );
+  }
+
+  return (
+    <DrawerClose asChild>
+      <Button
+        onPointerDown={requestCloseStop}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") requestCloseStop();
+        }}
+        variant="ghost"
+        size="icon"
+        aria-label="Tanca"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </DrawerClose>
+  );
+};
 
 export const StopDetailsHeader = ({
   externalId,
@@ -30,9 +78,8 @@ export const StopDetailsHeader = ({
   dataUpdatedAt,
   isFetching,
   refetch,
+  variant,
 }: StopDetailsHeaderProps) => {
-  const { requestCloseStop } = useBusFinder();
-
   // Soonest first, so the bus you are about to miss is the one you do not have
   // to scroll for. Lines with nothing due sink to the end rather than dropping
   // out — "line 7 serves this stop and has no bus" is worth knowing, and a row
@@ -115,23 +162,7 @@ export const StopDetailsHeader = ({
         >
           <RefreshCw size={20} className={isFetching ? "animate-spin" : ""} />
         </Button>
-        {/* On pointer down, not on click: the drawer is `dismissible={false}`
-            so a drag cannot discard the stop, and `requestCloseStop` has to be
-            committed before `DrawerClose`'s click arrives or vaul refuses it.
-            `onKeyDown` is the same arming for Enter/Space on the button. */}
-        <DrawerClose asChild>
-          <Button
-            onPointerDown={requestCloseStop}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") requestCloseStop();
-            }}
-            variant="ghost"
-            size="icon"
-            aria-label="Tanca"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </DrawerClose>
+        <CloseButton variant={variant} />
       </div>
     </div>
   );

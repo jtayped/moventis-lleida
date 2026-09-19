@@ -4,6 +4,7 @@ import { useMap } from "@vis.gl/react-google-maps";
 import { api } from "@/trpc/react";
 import { useBusFinder } from "@/context/buses";
 import MapPinsRenderer from "@/components/map/pins/pins-renderer";
+import { PANEL_PAN_OFFSET_PX, useIsDesktop } from "@/hooks/use-is-desktop";
 
 /** Close enough to read the street a stop is on. */
 const FOCUS_ZOOM = 16;
@@ -30,6 +31,7 @@ const pannedStopIds = new Set<string>();
  */
 const InitialStopFocus = () => {
   const map = useMap();
+  const isDesktop = useIsDesktop();
   const { selectedStopId, stops, preferidesStops } = useBusFinder();
 
   // The selection at mount is the one that came from the URL.
@@ -46,10 +48,18 @@ const InitialStopFocus = () => {
     if (!map || !stop || pannedStopIds.has(stop.externalId)) return;
     pannedStopIds.add(stop.externalId);
 
-    map.panTo({ lat: stop.latitude, lng: stop.longitude });
+    // Zoom before panning, and pan before offsetting: `panBy` is measured in
+    // screen pixels, so it only means the right distance on the ground once the
+    // zoom it will be read at is the current one.
     const zoom = map.getZoom();
     if (zoom === undefined || zoom < FOCUS_ZOOM) map.setZoom(FOCUS_ZOOM);
-  }, [map, stop]);
+    map.panTo({ lat: stop.latitude, lng: stop.longitude });
+
+    // Dead centre is behind the desktop column. Shoving the centre west puts the
+    // stop in the middle of the map that is actually visible, which is the only
+    // part of a `?stop=` link that has to land.
+    if (isDesktop) map.panBy(-PANEL_PAN_OFFSET_PX, 0);
+  }, [map, stop, isDesktop]);
 
   // Both layers, since either can already be drawing this stop: a `?stop=` link to
   // a saved stop would otherwise stack two markers on identical coordinates, which

@@ -1,12 +1,16 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  StopDetailsShell,
+  type StopDetailsVariant,
+} from "@/components/map/stop-details/shell";
 
-const StopDetailsSkeleton = () => (
-  <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 p-4 md:mx-auto md:w-lg">
+const StopDetailsSkeleton = ({ variant }: { variant: StopDetailsVariant }) => (
+  <StopDetailsShell variant={variant} className="gap-4">
     <Skeleton className="h-6 w-48" />
     <Skeleton className="h-4 w-32" />
     <Skeleton className="h-24 w-full" />
     <Skeleton className="h-24 w-full" />
-  </div>
+  </StopDetailsShell>
 );
 
 export default StopDetailsSkeleton;
