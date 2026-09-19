@@ -3,25 +3,8 @@ import { useMap } from "@vis.gl/react-google-maps";
 import MapPin from "./pin";
 import type { Stop } from "@moventis/db";
 import { useBusFinder } from "@/context/buses";
-
-type ZoomBucket = "small" | "medium" | "large";
-
-const getZoomBucket = (zoom: number): ZoomBucket => {
-  if (zoom < 14) return "small";
-  if (zoom < 16.5) return "medium";
-  return "large";
-};
-
-/**
- * One step up the ladder, for pins that have to stay findable at any zoom.
- *
- * The `small` bucket is a 10px dot with nowhere to hang a shoulder mark, and the
- * default bounds are the whole city — so that is precisely the zoom at which a
- * saved stop would otherwise dissolve into the same faint speck as every stop the
- * user never asked for.
- */
-const promote = (bucket: ZoomBucket): ZoomBucket =>
-  bucket === "small" ? "medium" : bucket;
+import { getZoomBucket, promote } from "@/lib/zoom-buckets";
+import { useStopEtas } from "@/context/stop-etas";
 
 const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
   const map = useMap();
@@ -34,6 +17,11 @@ const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
     isPreferida,
     showPreferides,
   } = useBusFinder();
+
+  // Read here and passed down as a prop rather than consumed inside `MapPin`:
+  // context bypasses `React.memo`, so every pin would re-render each time any
+  // one stop's arrival landed — and they land one at a time, by design.
+  const etas = useStopEtas();
 
   const handleClick = useCallback(
     (stop: Stop) => selectStop(stop.externalId),
@@ -84,6 +72,7 @@ const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
             onClick={handleClick}
             pinColor={primaryPinColor}
             isPreferida={preferida}
+            eta={etas.get(stop.externalId)}
           />
         );
       })}

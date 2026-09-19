@@ -118,3 +118,53 @@ describe("API response contract", () => {
     }
   });
 });
+
+/**
+ * `stops.nextArrivals` spends **one** request per stop, where `stops.get` fans
+ * out over the stop's routes. That is only sound because the upstream response
+ * does not depend on which route it was asked about — and nothing in the URL
+ * says so. If Moventis ever starts filtering the response to the requested
+ * line, this is the test that says so, before a map full of pins quietly starts
+ * under-reporting.
+ */
+describe("GetTiemposParada is per-stop, not per-route", () => {
+  const byRoute130 = loadFixture("line-2-loop-snapshot.json") as LineCapture;
+  const byRoute133 = loadFixture("line-5-linear-snapshot.json") as LineCapture;
+
+  interface LineCapture {
+    routeExternalId: string;
+    stops: Record<string, { name: string; body: unknown }>;
+  }
+
+  /** The `idLinea`s a recorded response lists, sorted for comparison. */
+  function lineIds(body: unknown): string[] {
+    const lines = filterSentinel(body);
+    return Array.isArray(lines)
+      ? lines
+          .map((l) => String((l as { idLinea: unknown }).idLinea))
+          .sort((a, b) => a.localeCompare(b))
+      : [];
+  }
+
+  const shared = Object.keys(byRoute130.stops).filter(
+    (id) => byRoute133.stops[id],
+  );
+
+  it("has stops captured under both route ids to compare", () => {
+    expect(shared.length).toBeGreaterThan(0);
+  });
+
+  it.each(shared)(
+    "lists the same lines at stop %s whichever route id asked",
+    (externalId) => {
+      const viaA = lineIds(byRoute130.stops[externalId]!.body);
+      const viaB = lineIds(byRoute133.stops[externalId]!.body);
+
+      // Both captures include the stop's *other* lines, not just the one the
+      // URL named — so one request is enough to know every bus due here.
+      expect(viaA).toEqual(viaB);
+      expect(viaA).toContain(byRoute130.routeExternalId);
+      expect(viaA).toContain(byRoute133.routeExternalId);
+    },
+  );
+});

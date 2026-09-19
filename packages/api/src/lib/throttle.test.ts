@@ -134,3 +134,67 @@ describe("ThrottledQueue", () => {
     expect(typeof moventisQueue.schedule).toBe("function");
   });
 });
+
+describe("ThrottledQueue priority lanes", () => {
+  it("starts waited-on work before speculative work already queued", async () => {
+    vi.useFakeTimers();
+    const q = new ThrottledQueue(5);
+    const started: string[] = [];
+    const task = (name: string) => () => {
+      started.push(name);
+      return Promise.resolve(name);
+    };
+
+    // Three speculative fetches are already queued when a drawer tap lands.
+    void q.schedule(task("pin-a"), "low");
+    void q.schedule(task("pin-b"), "low");
+    void q.schedule(task("pin-c"), "low");
+    void q.schedule(task("drawer"));
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    // The first slot is already spent on pin-a — it was dispatched before the
+    // tap existed, and nothing can un-send it. Every slot after belongs to the
+    // drawer first. Without lanes the drawer waited for all three.
+    expect(started[0]).toBe("pin-a");
+    expect(started[1]).toBe("drawer");
+    vi.useRealTimers();
+  });
+
+  it("defaults to the waited-on lane", async () => {
+    vi.useFakeTimers();
+    const q = new ThrottledQueue(5);
+    const started: string[] = [];
+    const task = (name: string) => () => {
+      started.push(name);
+      return Promise.resolve(name);
+    };
+
+    void q.schedule(task("first"));
+    void q.schedule(task("low"), "low");
+    void q.schedule(task("second"));
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    // Every existing call site omits the argument and must keep FIFO among
+    // themselves — a default of "low" would silently deprioritise the drawer.
+    expect(started).toEqual(["first", "second", "low"]);
+    vi.useRealTimers();
+  });
+
+  it("runs speculative work once nothing is waiting", async () => {
+    vi.useFakeTimers();
+    const q = new ThrottledQueue(5);
+    const done: string[] = [];
+
+    await Promise.all([
+      q.schedule(() => Promise.resolve(done.push("high"))),
+      q.schedule(() => Promise.resolve(done.push("low")), "low"),
+      vi.advanceTimersByTimeAsync(1000),
+    ]);
+
+    // Starvation is only acceptable while there is genuinely something ahead.
+    expect(done).toEqual(["high", "low"]);
+    vi.useRealTimers();
+  });
+});

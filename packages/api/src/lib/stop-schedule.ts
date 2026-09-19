@@ -7,7 +7,7 @@ import {
 import axios, { AxiosError } from "axios";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { moventisQueue } from "./throttle";
+import { moventisQueue, type QueuePriority } from "./throttle";
 import { fromWallClock, toWallClock } from "./zoned-time";
 
 type ApiJourneyDetail = z.infer<typeof scheduleSchema>;
@@ -111,12 +111,15 @@ const MOVENTIS_TIMEOUT_MS = 8_000;
 function fetchSchedulesRaw(
   externalStopId: string,
   externalRouteId: string,
+  priority: QueuePriority,
 ): Promise<unknown> {
   const url = `https://www.moventis.es/api/json/GetTiemposParada/es/${externalStopId}/${externalRouteId}/0`;
-  return moventisQueue.schedule(() =>
-    axios
-      .get(url, { timeout: MOVENTIS_TIMEOUT_MS })
-      .then(({ data }) => data as unknown),
+  return moventisQueue.schedule(
+    () =>
+      axios
+        .get(url, { timeout: MOVENTIS_TIMEOUT_MS })
+        .then(({ data }) => data as unknown),
+    priority,
   );
 }
 
@@ -167,12 +170,22 @@ export function parseSchedulesResponse(data: unknown, now: Date): Schedules {
   return lines.map((line) => mapLine(line, now));
 }
 
+/**
+ * @param priority `"low"` for speculative work nobody is waiting on — it then
+ * only starts when the queue has nothing someone tapped for. Defaults to
+ * `"high"`, which is every call made on someone's behalf.
+ */
 export async function getStopSchedule(
   externalStopId: string,
   externalRouteId: string,
+  priority: QueuePriority = "high",
 ): Promise<Schedules | null> {
   try {
-    const data = await fetchSchedulesRaw(externalStopId, externalRouteId);
+    const data = await fetchSchedulesRaw(
+      externalStopId,
+      externalRouteId,
+      priority,
+    );
     return parseSchedulesResponse(data, new Date());
   } catch (error) {
     if (error instanceof z.ZodError) {

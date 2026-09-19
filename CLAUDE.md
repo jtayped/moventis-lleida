@@ -177,6 +177,45 @@ Two limits keep that budget from becoming everyone's problem, and both exist bec
 
 Tests are in three layers, and a change must keep all three green: `alignLists` unit cases; `src/lib/testing/fleet-simulator.ts` renders a synthetic fleet (projections, cap, dwell, jitter, failures, shared stops, loops) into lists and asserts every bus lands in its true bracket with no phantoms, plus the screenshot regression (three buses on a 48-min loop, not a convoy); and the recorded snapshots replayed offline. `pnpm validate-bus-positions <line> [I|V] [--full]` (from `packages/api`) runs the same checks against the live API and prints a per-bus verdict; `--full` probes every stop as ground truth and flags phantoms (fail) and misses (report).
 
+### Next bus on map pins (`stopEtas`)
+
+At the `large` zoom bucket only (≥ 16.5, `apps/web/src/lib/zoom-buckets.ts` — shared with the
+pin renderer so the two cannot drift), each pin carries the next bus at that stop on its
+top-right shoulder. `StopEtasProvider` (`apps/web/src/context/stop-etas.tsx`) holds the map's
+only `idle`/bounds listener and picks the set; it sits inside `<Map>` and around the pin
+renderers because `MapPinsRenderer` is mounted three times and would otherwise keep three
+listeners and three different capped sets.
+
+Three things are load-bearing and not visible in the code:
+
+- **`stops.nextArrivals` costs one upstream request per stop, not one per route.**
+  `GetTiemposParada` answers with every line serving the stop whatever route id the URL
+  names, so unlike `stops.get` — which fans out over the stop's routes and merges — this asks
+  once. `schedule-contract.test.ts` pins that against the two recorded snapshots; if it ever
+  stops holding, this feature's budget triples silently. The route it asks about is one that
+  operates today where possible, because a dormant line's id answers the `{"idLinea":"N"}`
+  sentinel and a stop served by a running line would report nothing.
+- **The cap is not what protects the drawer — the priority lane is.** `ThrottledQueue` has
+  two lanes, and `nextArrivals` is the only caller that passes `"low"`; everything else
+  defaults to `"high"` and keeps its old behaviour. Capping alone was tried first and is not
+  sufficient: with 15 legitimate prefetches queued FIFO ahead of a tap, 7 of 11 drawer opens
+  took over three seconds and the worst took 8.9 s. With the lane, drawer latency under full
+  prefetch load (median 3.1 s) matches an idle queue (2.4 s); the rest is Moventis's own
+  latency. `MAX_ETA_STOPS` (15) and the 60 s interval still bound the _total_ traffic, and
+  stops past the cap show no pill rather than an empty one. Note the 8 s axios timeout starts
+  at dispatch, not at enqueue, so queue depth never manufactures a timeout.
+- **Progressive paint is `httpBatchStreamLink`, not a streaming procedure.** One query per
+  stop goes out in a single HTTP request and each result streams back as it settles, so the
+  pills appear one at a time. The resolved map is passed to `MapPin` as a prop rather than
+  read from context inside it — context bypasses `React.memo`, and every pin would re-render
+  on each of those arrivals.
+
+The pill names a selected line where the stop serves one and falls back to the earliest of
+any line otherwise, so a saved stop off every selected line still answers "what comes here?".
+`SettleCache` (`packages/api/src/lib/settle-cache.ts`) backs both this and `buses.byLine`:
+an entry serves callers while in flight, plus a TTL measured from **settlement** — timing it
+from the start deduplicates nothing when the queue is the reason the work is slow.
+
 ### Saved Stops (`preferides`)
 
 Per-device favourites in localStorage under `moventis:preferides`, as `{ ids: Stop.externalId[], visible: boolean }` (`apps/web/src/hooks/use-preferides.ts`). Held as ids, not stop records, so renames and soft deletes can't go stale in storage; resolved through `stops.getByExternalIds` on each load.

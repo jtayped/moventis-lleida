@@ -3,6 +3,43 @@ import { createTRPCRouter, publicProcedure } from "../trpc";
 import type { Stop } from "@moventis/db";
 import { getStopSchedule } from "../lib/stop-schedule";
 import { TRPCError } from "@trpc/server";
+import { SettleCache } from "../lib/settle-cache";
+import { utcStartOfLocalDay } from "../lib/zoned-time";
+import type { createTRPCContext } from "../trpc";
+
+/** The soonest bus of one line at one stop. */
+export interface NextArrival {
+  lineCode: string;
+  arrivalTime: Date;
+  isRealTime: boolean;
+}
+
+/** Every line at one stop with a bus still due, soonest first. */
+export interface NextArrivals {
+  externalId: string;
+  lines: NextArrival[];
+}
+
+/**
+ * How long one stop's next arrivals are shared between callers, measured from
+ * settlement. Half the client's 60 s refetch interval, so a client's own
+ * refresh always crosses a boundary and sees a fresh read, while several
+ * viewers looking at the same street share one upstream request.
+ */
+export const NEXT_ARRIVALS_TTL_MS = 30_000;
+
+/** ~500 stops in the network, and the viewport moves across them. */
+const nextArrivalsCache = new SettleCache<NextArrivals>(
+  NEXT_ARRIVALS_TTL_MS,
+  600,
+);
+
+/** Test hook: the module-level cache would otherwise leak between cases. */
+export function clearNextArrivalsCache(): void {
+  nextArrivalsCache.clear();
+}
+
+type Db = ReturnType<typeof createTRPCContext>["db"];
 
 export const stopsRouter = createTRPCRouter({
   getByRoute: publicProcedure
@@ -135,4 +172,112 @@ export const stopsRouter = createTRPCRouter({
 
       return { ...stop, schedules, failedRoutes };
     }),
+  /**
+   * The soonest bus of each line at one stop — what the map pin shows once the
+   * user has zoomed in far enough to read it.
+   *
+   * **One upstream request per stop, not one per route.** `GetTiemposParada`
+   * answers with every line serving the stop whatever route id it is asked
+   * about (pinned by `schedule-contract.test.ts` against the recorded
+   * snapshots), so unlike `get` — which fans out over the stop's routes and
+   * merges — this asks once and reads the whole thing out of that one answer.
+   * The pin layer spends one of these per visible stop, so that difference is
+   * the feature's entire budget against the 5 req/s gate.
+   *
+   * Deliberately not parameterised by the lines the caller cares about: keying
+   * the cache on the stop alone lets every viewer share an entry whatever they
+   * have selected, and leaves the client to pick which of these lines to show.
+   */
+  nextArrivals: publicProcedure
+    .input(z.object({ externalId: z.string() }))
+    .query(({ ctx, input }): Promise<NextArrivals> =>
+      nextArrivalsCache.get(input.externalId, () =>
+        loadNextArrivals(ctx.db, input.externalId),
+      ),
+    ),
 });
+
+async function loadNextArrivals(
+  db: Db,
+  externalId: string,
+): Promise<NextArrivals> {
+  const now = new Date();
+  const today = utcStartOfLocalDay(now);
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+  const stop = await db.stop.findUnique({
+    where: { externalId },
+    include: {
+      // `findUnique` is outside the `deletedAt: null` extension and an included
+      // relation is unfiltered either way, so a withdrawn route would otherwise
+      // be a candidate to probe against Moventis. Same filter as `get`.
+      routes: {
+        where: { deletedAt: null },
+        select: {
+          code: true,
+          externalId: true,
+          operatingDays: { where: { date: { gte: today, lt: tomorrow } } },
+        },
+        orderBy: { externalId: "asc" },
+      },
+    },
+  });
+
+  if (!stop) throw new TRPCError({ code: "NOT_FOUND" });
+
+  // A soft-deleted stop no longer exists upstream, and one whose every route
+  // has been withdrawn is the same case with a different cause. Neither is an
+  // error: the pin still renders (it may be saved), it just has nothing to say.
+  if (stop.deletedAt || stop.routes.length === 0)
+    return { externalId, lines: [] };
+
+  // Any of the stop's route ids returns the same list, so the choice only
+  // matters for the one way it can fail: a line that is dormant today answers
+  // the `{"idLinea":"N"}` sentinel, which parses to nothing at all. Prefer a
+  // route with an operating day in Lleida's calendar today — `orderBy` above
+  // makes the fallback deterministic rather than whatever the join returned.
+  const route =
+    stop.routes.find((r) => r.operatingDays.length > 0) ?? stop.routes[0]!;
+
+  // `"low"`: nobody asked for this stop, the map is guessing they might glance
+  // at it. It must never be the reason a drawer someone actually tapped waits —
+  // which, before the lane existed, it measurably was.
+  const schedules = await getStopSchedule(externalId, route.externalId, "low");
+  // Unreachable, not empty. A pin saying "no bus is coming" because Moventis
+  // timed out is worse than a pin saying nothing — the client renders neither,
+  // and the rejection evicts the cache entry so the next caller retries.
+  if (!schedules)
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Moventis unreachable",
+    });
+
+  // The upstream response carries lines from every city Moventis operates in
+  // (Palma de Mallorca 107, 123 turn up in Lleida stops), so the stop's own
+  // routes are the allowlist — the same guard `get` applies to its merge.
+  const validCodes = new Set(stop.routes.map((r) => r.code));
+
+  const soonest = new Map<string, NextArrival>();
+  for (const schedule of schedules) {
+    if (!validCodes.has(schedule.lineCode)) continue;
+    for (const journey of schedule.journeys) {
+      for (const time of journey.scheduledTimes) {
+        if (time.arrivalTime.getTime() <= now.getTime()) continue;
+        const best = soonest.get(schedule.lineCode);
+        if (best && best.arrivalTime.getTime() <= time.arrivalTime.getTime())
+          continue;
+        soonest.set(schedule.lineCode, {
+          lineCode: schedule.lineCode,
+          arrivalTime: time.arrivalTime,
+          isRealTime: time.isRealTime,
+        });
+      }
+    }
+  }
+
+  const lines = [...soonest.values()].sort(
+    (a, b) => a.arrivalTime.getTime() - b.arrivalTime.getTime(),
+  );
+
+  return { externalId, lines };
+}
