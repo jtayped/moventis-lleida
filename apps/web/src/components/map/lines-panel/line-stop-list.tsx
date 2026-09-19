@@ -1,17 +1,19 @@
 "use client";
 import React, { useState } from "react";
 import { api } from "@/trpc/react";
-import { DrawerClose, DrawerHeader } from "@/components/ui/drawer";
+import { PanelHeader } from "@/components/map/panel";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { getContrastTextColor } from "@/lib/contrast";
 import { useBusFinder } from "@/context/buses";
 interface LineStopListProps {
   code: string;
   onBack: () => void;
+  onClose: () => void;
 }
 
-const LineStopList = ({ code, onBack }: LineStopListProps) => {
+const LineStopList = ({ code, onBack, onClose }: LineStopListProps) => {
   const { routes } = useBusFinder();
   const route = routes.find((r) => r.code === code);
   const {
@@ -28,11 +30,12 @@ const LineStopList = ({ code, onBack }: LineStopListProps) => {
 
   return (
     <>
-      <DrawerHeader className="flex flex-row items-center gap-2 py-3">
+      <PanelHeader onClose={onClose}>
         <Button
           variant="ghost"
           size="icon"
           onClick={onBack}
+          aria-label="torna a totes les línies"
           className="-ml-1 shrink-0"
         >
           <ChevronLeft />
@@ -48,12 +51,7 @@ const LineStopList = ({ code, onBack }: LineStopListProps) => {
         <span className="min-w-0 flex-1 truncate text-sm font-semibold">
           {route?.name}
         </span>
-        <DrawerClose asChild>
-          <Button variant="ghost" size="icon" className="-mr-1 shrink-0">
-            <X />
-          </Button>
-        </DrawerClose>
-      </DrawerHeader>
+      </PanelHeader>
 
       {variants && variants.length > 1 && (
         <div className="flex flex-wrap gap-1 px-4 pb-3">
@@ -73,7 +71,7 @@ const LineStopList = ({ code, onBack }: LineStopListProps) => {
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+      <ScrollArea className="min-h-0 flex-1 px-4 pb-4">
         {isLoading ? (
           <p className="text-muted-foreground py-8 text-center text-sm">
             carregant...
@@ -126,7 +124,7 @@ const LineStopList = ({ code, onBack }: LineStopListProps) => {
             no hi ha parades
           </p>
         )}
-      </div>
+      </ScrollArea>
     </>
   );
 };

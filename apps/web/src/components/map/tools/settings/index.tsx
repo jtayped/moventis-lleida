@@ -4,12 +4,12 @@ import { Settings } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Drawer,
   DrawerContent,
@@ -18,6 +18,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import SettingsPanel from "./panel";
 
 const TITLE = "configuració";
@@ -26,12 +27,18 @@ const DESCRIPTION =
 
 /**
  * The settings entry point: an icon button beside the search field, opening the
- * same panel in a dialog on desktop and a bottom drawer on a phone.
+ * same panel in a right-hand sheet on desktop and a bottom drawer on a phone.
  *
- * Two containers rather than one because a centred modal on a phone lands under
- * the thumb reach of nothing in particular, while a bottom sheet on a wide screen
- * is a strip of content under a screen of dimmed map. `md` is Tailwind's own
- * breakpoint, matching where the header card itself stops being full-bleed.
+ * Two containers rather than one because a sheet on a phone is a strip of content
+ * a thumb cannot reach the top of, while on a wide screen an edge-anchored panel
+ * keeps the map it covers a strip of, instead of a centred modal parked over the
+ * middle of it. Both are the same gesture — something slides in from an edge —
+ * which a dialog was not.
+ *
+ * `md` is Tailwind's own breakpoint, matching where the header card stops being
+ * full-bleed. It is deliberately *not* the `lg` the left column switches at: the
+ * question here is only whether an edge panel fits, and it does long before a
+ * 448px column leaves a map worth reading beside it.
  *
  * The panel is a sibling of the button, not a `DialogTrigger` wrapping it — the
  * button has to keep its own size and styling to line up with the search input,
@@ -64,15 +71,20 @@ const SettingsButton = () => {
       </Button>
 
       {isDesktop ? (
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{TITLE}</DialogTitle>
-              <DialogDescription>{DESCRIPTION}</DialogDescription>
-            </DialogHeader>
-            <SettingsPanel />
-          </DialogContent>
-        </Dialog>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="right">
+            <SheetHeader>
+              <SheetTitle>{TITLE}</SheetTitle>
+              <SheetDescription>{DESCRIPTION}</SheetDescription>
+            </SheetHeader>
+            {/* The sheet is full height, so the settings scroll inside it and
+                the title stays put — the whole point of an edge panel over the
+                dialog this replaced. */}
+            <ScrollArea className="min-h-0 flex-1 px-6 pb-6">
+              <SettingsPanel />
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
       ) : (
         <Drawer open={open} onOpenChange={setOpen}>
           <DrawerContent>
