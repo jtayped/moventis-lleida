@@ -23,6 +23,10 @@ import type { PullCommit, Schedules } from "@moventis/shared";
 import { useArrivalDrift, type DriftLookup } from "@/hooks/use-arrival-drift";
 import { useDrawerPull } from "@/hooks/use-drawer-pull";
 import { useSettings } from "@/hooks/use-settings";
+import {
+  StopDetailsShell,
+  type StopDetailsVariant,
+} from "@/components/map/stop-details/shell";
 
 const ScheduleGroup = ({
   lines,
@@ -49,19 +53,43 @@ const ScheduleGroup = ({
 );
 
 /**
- * The drawer's screen-reader labels. They live here rather than at the `Drawer`
- * because the stop name is only known once this query resolves — and Radix warns
- * about a drawer with no title, so they have to render in every branch, including
+ * The screen-reader labels. They live here rather than at the container because
+ * the stop name is only known once this query resolves — and Radix warns about a
+ * drawer with no title, so they have to render in every branch, including
  * loading, where there is no name yet.
+ *
+ * In the panel they are plain elements: `DrawerTitle` and `DrawerDescription` are
+ * Radix dialog parts and throw outside a `Drawer` root. Nothing is lost — the
+ * panel is not a dialog, and the `section` it sits in is labelled by them.
  */
-const SrLabels = ({ name }: { name?: string }) => (
-  <>
-    <DrawerTitle className="sr-only">{name ?? "parada"}</DrawerTitle>
-    <DrawerDescription className="sr-only">
-      {name ? `hores d'arribada per la parada ${name}` : "hores d'arribada"}
-    </DrawerDescription>
-  </>
-);
+const SrLabels = ({
+  name,
+  variant,
+}: {
+  name?: string;
+  variant: StopDetailsVariant;
+}) => {
+  const title = name ?? "parada";
+  const description = name
+    ? `hores d'arribada per la parada ${name}`
+    : "hores d'arribada";
+
+  if (variant === "panel") {
+    return (
+      <>
+        <h2 className="sr-only">{title}</h2>
+        <p className="sr-only">{description}</p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <DrawerTitle className="sr-only">{title}</DrawerTitle>
+      <DrawerDescription className="sr-only">{description}</DrawerDescription>
+    </>
+  );
+};
 
 /**
  * A refetch that failed while a usable timetable is still on screen. Sits with
@@ -144,7 +172,13 @@ const PartialNotice = ({
   </div>
 );
 
-const StopDetails = ({ externalId }: { externalId: string }) => {
+const StopDetails = ({
+  externalId,
+  variant = "sheet",
+}: {
+  externalId: string;
+  variant?: StopDetailsVariant;
+}) => {
   const {
     selectedRoutes,
     routes,
@@ -159,12 +193,20 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
   // Pulling down past the top of the timetable drops the sheet a snap; pulling
   // up past the bottom grows it. The scroller is a Radix viewport, so the
   // gesture needs a handle on it rather than on the event target.
+  //
+  // The panel has no snaps to step between, so the commit is dropped there and
+  // the handlers are never bound (below). The hook still runs unconditionally —
+  // it is a hook, and this component renders in both containers.
   const viewportRef = useRef<HTMLDivElement>(null);
+  const isSheet = variant === "sheet";
   const pull = useDrawerPull({
     viewportRef,
     onCommit: useCallback(
-      (commit: PullCommit) => stepDrawerSnap(commit === "expand" ? 1 : -1),
-      [stepDrawerSnap],
+      (commit: PullCommit) => {
+        if (!isSheet) return;
+        stepDrawerSnap(commit === "expand" ? 1 : -1);
+      },
+      [isSheet, stepDrawerSnap],
     ),
   });
 
@@ -335,8 +377,8 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
   if (isLoading) {
     return (
       <>
-        <SrLabels />
-        <StopDetailsSkeleton />
+        <SrLabels variant={variant} />
+        <StopDetailsSkeleton variant={variant} />
       </>
     );
   }
@@ -347,15 +389,19 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
   if (!details) {
     return (
       <>
-        <SrLabels />
-        <StopDetailsError externalId={externalId} refetch={refetch} />
+        <SrLabels variant={variant} />
+        <StopDetailsError
+          externalId={externalId}
+          refetch={refetch}
+          variant={variant}
+        />
       </>
     );
   }
 
   return (
-    <div className="mt-4 flex min-h-0 flex-1 flex-col p-4 md:mx-auto md:w-lg">
-      <SrLabels name={details.name} />
+    <StopDetailsShell variant={variant}>
+      <SrLabels name={details.name} variant={variant} />
       <StopDetailsHeader
         externalId={externalId}
         name={details.name}
@@ -364,6 +410,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
         dataUpdatedAt={dataUpdatedAt}
         isFetching={isFetching}
         refetch={refetch}
+        variant={variant}
       />
 
       {isError && (
@@ -422,7 +469,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
         // gesture through (see `drawer-pull.ts`), and leaving it armed means
         // two things fighting over one finger.
         data-vaul-no-drag=""
-        {...pull}
+        {...(isSheet ? pull : {})}
       >
         <div>
           {/* Inside the scroller, not pinned above it: this is a key you read
@@ -493,7 +540,7 @@ const StopDetails = ({ externalId }: { externalId: string }) => {
         </div>
         <ScrollBar orientation="vertical" />
       </ScrollArea>
-    </div>
+    </StopDetailsShell>
   );
 };
 

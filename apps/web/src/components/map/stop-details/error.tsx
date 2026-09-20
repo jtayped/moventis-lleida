@@ -1,17 +1,23 @@
 import { Button } from "@/components/ui/button";
 import PreferidaToggle from "@/components/map/stop-details/preferida-toggle";
+import {
+  StopDetailsShell,
+  type StopDetailsVariant,
+} from "@/components/map/stop-details/shell";
 
 interface StopDetailsErrorProps {
   externalId: string;
   refetch: () => void;
+  variant: StopDetailsVariant;
 }
 
 export const StopDetailsError = ({
   externalId,
   refetch,
+  variant,
 }: StopDetailsErrorProps) => {
   return (
-    <div className="flex min-h-0 flex-1 flex-col p-4">
+    <StopDetailsShell variant={variant}>
       {/*
         The star survives the error state on purpose. A saved stop still has a pin
         on the map whether or not its arrival times load — and if the reason they
@@ -33,7 +39,7 @@ export const StopDetailsError = ({
           torna a intentar-ho
         </Button>
       </div>
-    </div>
+    </StopDetailsShell>
   );
 };
 

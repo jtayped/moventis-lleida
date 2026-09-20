@@ -9,7 +9,10 @@ import { cn } from "@/lib/utils";
 /**
  * Anchored above the map's own bottom row (`h-12` buttons inside `p-4`, `md:p-6`)
  * rather than over it, so the notice never covers "línies" or "ubicació".
- * Left-aligned on desktop for the same reason: the right corner is taken.
+ *
+ * Which corner it takes follows which one is free. From `md` that is the left,
+ * because "ubicació" holds the right. From `lg` it swaps back: the whole left
+ * edge is the floating column, down to the "línies" button under it.
  *
  * `z-20` clears the map's overlays at `z-10` and stays under the drawer at `z-50`
  * — an open stop should not have a banner floating on top of it.
@@ -45,7 +48,7 @@ const CookieBanner = () => {
       aria-label="preferències de privadesa"
       className={cn(
         ANCHOR,
-        "bg-card text-card-foreground inset-x-4 flex gap-3 rounded-xl border p-4 shadow-lg md:right-auto md:left-6 md:w-sm",
+        "bg-card text-card-foreground inset-x-4 flex gap-3 rounded-xl border p-4 shadow-lg md:right-auto md:left-6 md:w-sm lg:right-6 lg:left-auto",
       )}
     >
       {/* The same amber chip the line strip uses for the saved stops, because

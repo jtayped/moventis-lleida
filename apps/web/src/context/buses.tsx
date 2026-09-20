@@ -7,6 +7,7 @@ import { useDrawerDismissDrag } from "@/hooks/use-drawer-dismiss-drag";
 import { useLineBuses, type BusLineStatus } from "@/hooks/use-line-buses";
 import { usePreferides } from "@/hooks/use-preferides";
 import { useSettings } from "@/hooks/use-settings";
+import { useIsDesktop } from "@/hooks/use-is-desktop";
 import { useUrlSelection } from "@/hooks/use-url-selection";
 import { track, type StopOpenSource } from "@/lib/analytics";
 import { keepPreviousData } from "@tanstack/react-query";
@@ -377,6 +378,8 @@ export const BusFinderProvider = ({
     isBusLocationEnabled,
   );
 
+  const isDesktop = useIsDesktop();
+
   const [snap, setSnap] = useState<number | string | null>(DEFAULT_SNAP);
 
   const isAtPeek = snap === SNAP_POINTS[0];
@@ -463,53 +466,62 @@ export const BusFinderProvider = ({
   return (
     <BusFinderContext.Provider value={value}>
       {children}
-      <Drawer
-        open={!!selectedStopId}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setSelectedStopId(null);
-        }}
-        dismissible={closing}
-        snapPoints={[...SNAP_POINTS]}
-        activeSnapPoint={snap}
-        setActiveSnapPoint={(value) => {
-          setSnap(value);
-          const name = SNAP_NAMES[SNAP_POINTS.indexOf(value as SnapPoint)];
-          if (name) track("drawer snapped", { snap: name });
-        }}
-        // Only the top snap dims the map; below it the sheet is a panel over a
-        // map you are still meant to read.
-        fadeFromIndex={SNAP_POINTS.length - 1}
-        // The peek snap is only worth having if the map behind it still works,
-        // which rules out the scrim, the focus trap and dismiss-on-outside.
-        modal={false}
-      >
-        <DrawerContent
-          {...dismissDrag}
-          overlay={false}
-          // Full height, and the top snap is what leaves the strip of map
-          // above it. vaul translates the sheet down from the top of the
-          // window, so a shorter element makes a pixel snap come up short by
-          // exactly the gap — a `94vh` sheet rendered the 148px peek as 96px.
-          //
-          // Same variant prefix as the base `max-h-[80vh]` on purpose: an
-          // unprefixed utility is a different group to tailwind-merge and would
-          // not override it.
-          className="h-full data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-full"
-          // A tap on the map is a tap on the map — panning it, or picking
-          // another pin, must not throw the open stop away.
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
-          // Radix raises this before it closes, which is one event too late to
-          // flip `dismissible` — so take the close over: refuse Radix's, and
-          // let the flag drive it on the next render.
-          onEscapeKeyDown={(e) => {
-            e.preventDefault();
-            requestCloseStop();
+      {/*
+        Mounted only where it is the right shape. From `lg` the timetable is a
+        floating panel in the map's left column (`components/map/index.tsx`),
+        and every piece of machinery below — the snap points, the two-state
+        `dismissible` flag, the hold-through-exit ref — answers a question a
+        sheet asks and a panel does not.
+      */}
+      {!isDesktop && (
+        <Drawer
+          open={!!selectedStopId}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) setSelectedStopId(null);
           }}
+          dismissible={closing}
+          snapPoints={[...SNAP_POINTS]}
+          activeSnapPoint={snap}
+          setActiveSnapPoint={(value) => {
+            setSnap(value);
+            const name = SNAP_NAMES[SNAP_POINTS.indexOf(value as SnapPoint)];
+            if (name) track("drawer snapped", { snap: name });
+          }}
+          // Only the top snap dims the map; below it the sheet is a panel over a
+          // map you are still meant to read.
+          fadeFromIndex={SNAP_POINTS.length - 1}
+          // The peek snap is only worth having if the map behind it still works,
+          // which rules out the scrim, the focus trap and dismiss-on-outside.
+          modal={false}
         >
-          {drawerStopId && <StopDetails externalId={drawerStopId} />}
-        </DrawerContent>
-      </Drawer>
+          <DrawerContent
+            {...dismissDrag}
+            overlay={false}
+            // Full height, and the top snap is what leaves the strip of map
+            // above it. vaul translates the sheet down from the top of the
+            // window, so a shorter element makes a pixel snap come up short by
+            // exactly the gap — a `94vh` sheet rendered the 148px peek as 96px.
+            //
+            // Same variant prefix as the base `max-h-[80vh]` on purpose: an
+            // unprefixed utility is a different group to tailwind-merge and would
+            // not override it.
+            className="h-full data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-full"
+            // A tap on the map is a tap on the map — panning it, or picking
+            // another pin, must not throw the open stop away.
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onInteractOutside={(e) => e.preventDefault()}
+            // Radix raises this before it closes, which is one event too late to
+            // flip `dismissible` — so take the close over: refuse Radix's, and
+            // let the flag drive it on the next render.
+            onEscapeKeyDown={(e) => {
+              e.preventDefault();
+              requestCloseStop();
+            }}
+          >
+            {drawerStopId && <StopDetails externalId={drawerStopId} />}
+          </DrawerContent>
+        </Drawer>
+      )}
     </BusFinderContext.Provider>
   );
 };
