@@ -16,7 +16,7 @@ runs:
     - uses: actions/setup-node@v4
       with:
         node-version-file: .nvmrc
-        cache: pnpm
+        cache: ${{ runner.environment == 'self-hosted' && '' || 'pnpm' }}
 
     # `packages/db`'s postinstall runs `prisma generate`, so the client exists
     # for typecheck and build without a separate step.

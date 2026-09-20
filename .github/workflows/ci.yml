@@ -20,7 +20,7 @@ jobs:
   # here touches the network or a database — the Moventis API canary is the
   # opt-in `pnpm test:live`, never CI.
   check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}
     # `next lint` loads next.config.js, which imports src/env.js, which
     # validates the environment on import. No .env exists on a runner, so the
     # validation has to be skipped for lint to run at all — same switch the
@@ -41,7 +41,7 @@ jobs:
   # the real ones come from repository variables in the `release` workflow,
   # which is the only place a shipped image is built.
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}
     env:
       SKIP_ENV_VALIDATION: 1
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
@@ -61,7 +61,7 @@ jobs:
   # workflow rebuilds on the same `type=gha` cache scopes once this run passes
   # on main, so the layers are already warm and it pushes what they produce.
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
