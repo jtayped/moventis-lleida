@@ -41,13 +41,48 @@ export function clearNextArrivalsCache(): void {
 
 type Db = ReturnType<typeof createTRPCContext>["db"];
 
+/**
+ * A stop plus the `code` of every live line serving it — enough to draw its
+ * line chips in a list, and no more.
+ *
+ * Codes only, deliberately: the colour of a line is already on the client, in
+ * the weekly-cached `routes.getAll`. Sending it per stop per route would be the
+ * same handful of hex strings repeated a few hundred times per response.
+ */
+export type StopWithLines = Stop & { lineCodes: string[] };
+
+/**
+ * The relation behind `StopWithLines`.
+ *
+ * `where: { deletedAt: null }` is not redundant with the client extension in
+ * `packages/db/index.ts`: that extension injects the filter into `stop.findMany`
+ * and `route.findMany` only, and never reaches an *included* relation. Without
+ * it a withdrawn line keeps appearing as a chip on stops it no longer serves.
+ * Same reason `get` filters the routes in its own `include`.
+ */
+const withLines = {
+  routes: { where: { deletedAt: null }, select: { code: true } },
+} as const;
+
+/** Flattens the include above, so no caller has to know it was a relation. */
+const toStopWithLines = ({
+  routes,
+  ...stop
+}: Stop & { routes: { code: string }[] }): StopWithLines => ({
+  ...stop,
+  lineCodes: routes.map((r) => r.code),
+});
+
 export const stopsRouter = createTRPCRouter({
   getByRoute: publicProcedure
     .input(z.object({ routeCode: z.string() }))
-    .query(async ({ ctx, input }): Promise<Stop[]> => {
-      return ctx.db.stop.findMany({
+    .query(async ({ ctx, input }): Promise<StopWithLines[]> => {
+      const stops = await ctx.db.stop.findMany({
         where: { routes: { some: { code: input.routeCode } }, deletedAt: null },
+        include: withLines,
       });
+
+      return stops.map(toStopWithLines);
     }),
   getMany: publicProcedure
     .input(
@@ -56,7 +91,7 @@ export const stopsRouter = createTRPCRouter({
         query: z.string().optional(),
       }),
     )
-    .query(async ({ ctx, input }): Promise<Stop[]> => {
+    .query(async ({ ctx, input }): Promise<StopWithLines[]> => {
       const { routeCodes, query } = input;
       // If no routes are selected AND there is no search query, return nothing.
       if (routeCodes.length === 0 && !query) {
@@ -82,9 +117,10 @@ export const stopsRouter = createTRPCRouter({
             },
           }),
         },
+        include: withLines,
       });
 
-      return stops;
+      return stops.map(toStopWithLines);
     }),
   /**
    * Bare stops for the saved-stops list (`preferides`), which the client holds as

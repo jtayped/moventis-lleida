@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 interface BusMarkersRendererProps {
   positions: BusPosition[];
   /** Hex colour per line code; each bus is coloured by its own `lineCode`. */
-  colorByLine: Record<string, string | undefined>;
+  colorByLine: Map<string, string>;
 }
 
 const FALLBACK_COLOR = "#059669"; // emerald-600
@@ -43,7 +43,7 @@ const BusMarkersRenderer = React.memo(
     return (
       <>
         {positions.map((pos, i) => {
-          const accent = colorByLine[pos.lineCode] ?? FALLBACK_COLOR;
+          const accent = colorByLine.get(pos.lineCode) ?? FALLBACK_COLOR;
 
           return (
             <AdvancedMarker

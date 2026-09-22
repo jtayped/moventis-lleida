@@ -116,6 +116,32 @@
   --sidebar-ring: oklch(0.65 0.18 263);
 }
 
+/*
+ * The bottom navigation bar's full footprint, home indicator included.
+ *
+ * Declared once here rather than spelled out at each call site because four
+ * separate things have to clear it — the location button, the cookie banner,
+ * the search results surface and the stop drawer's peek snap — and a bar whose
+ * height is written down in five places is a bar that will be the wrong height
+ * in one of them.
+ *
+ * `4rem` is the bar's own `h-16`. The `env()` term is what a phone with a home
+ * indicator adds underneath; the fallback keeps it at exactly `4rem`
+ * everywhere else, including in browsers that do not know `env()` at all.
+ *
+ * Zero from `lg`, where there is no bar: every offset below can then be written
+ * once, with no `lg:` variant, and still be right in both layouts.
+ */
+:root {
+  --nav-height: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --nav-height: 0px;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

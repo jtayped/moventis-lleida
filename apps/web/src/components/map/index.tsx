@@ -2,10 +2,11 @@
 import BusRoutes from "@/components/map/tools/routes";
 import SearchInput from "@/components/map/tools/search";
 import SettingsButton from "@/components/map/tools/settings";
+import SettingsSurface from "@/components/map/tools/settings/surface";
 import MapComponent from "@/components/ui/map";
 import { INITIAL_BOUNDS, RESTRICTED_BOUNDS } from "@moventis/shared";
 import { useBusFinder } from "@/context/buses";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import MapPinsRenderer from "@/components/map/pins/pins-renderer";
 import RoutePaths from "@/components/map/route-paths";
 import BusMarkersRenderer from "@/components/map/bus-markers-renderer";
@@ -13,40 +14,20 @@ import InitialStopFocus from "@/components/map/initial-stop-focus";
 import { Button } from "../ui/button";
 import { env } from "@/env";
 import LinesPanel from "@/components/map/lines-panel";
+import SearchPanel from "@/components/map/search-panel";
 import StopDetails from "@/components/map/stop-details";
 import { Panel } from "@/components/map/panel";
-import { LayoutList, LocateFixed, Loader2, TriangleAlert } from "lucide-react";
+import StopsError from "@/components/map/stops-error";
+import MapNav from "@/components/map/nav";
+import { LayoutList, LocateFixed, Loader2 } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useSettings } from "@/hooks/use-settings";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
+import { useNavPanel } from "@/hooks/use-nav-panel";
+import { useColorByLine } from "@/hooks/use-color-by-line";
 import UserLocationLayer from "@/components/map/user-location-layer";
 import { cn } from "@/lib/utils";
-import { track } from "@/lib/analytics";
 import { StopEtasProvider } from "@/context/stop-etas";
-
-/**
- * Without this a failed stop query is a map with no pins on it, which reads as
- * "this line has no stops" rather than "we couldn't ask".
- */
-const StopsError = ({ onRetry }: { onRetry: () => void }) => (
-  <div
-    role="status"
-    className="border-destructive/30 bg-destructive/10 text-destructive flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
-  >
-    <TriangleAlert size={14} className="shrink-0" />
-    <span className="min-w-0 flex-1">
-      no s&apos;han pogut carregar les parades
-    </span>
-    <Button
-      onClick={onRetry}
-      variant="ghost"
-      size="sm"
-      className="h-7 shrink-0 px-2 text-xs underline underline-offset-2"
-    >
-      torna-ho a provar
-    </Button>
-  </div>
-);
 
 /**
  * `outline`'s dark-mode background is a translucent overlay (`dark:bg-input/30`,
@@ -83,7 +64,11 @@ const TOOLS_PANEL = [
   "lg:max-w-none lg:shrink-0 lg:rounded-xl lg:border lg:bg-card lg:p-4 lg:shadow-lg",
 ].join(" ");
 
-/** The one control that opens the line browser, in either layout. */
+/**
+ * The desktop door to the line browser. Below `lg` the bottom nav's `Línies` tab
+ * is the only one — this used to be rendered a second time as a floating pill
+ * down there, which is exactly the scattered chrome the nav replaces.
+ */
 const LinesButton = ({
   open,
   onToggle,
@@ -108,23 +93,20 @@ const LinesButton = ({
 const BusMap = () => {
   const {
     stops,
-    routes,
     busPositions,
     preferidesStops,
     stopsError,
     retryStops,
     selectedStopId,
+    debouncedSearchQuery,
   } = useBusFinder();
   const { resolvedTheme } = useSettings();
   const isDesktop = useIsDesktop();
-  const [linesOpen, setLinesOpen] = useState(false);
+  const nav = useNavPanel();
+  const colorByLine = useColorByLine();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { status, position, shouldPan, requestLocation, onPanned } =
     useGeolocation();
-
-  const colorByLine = useMemo(
-    () => Object.fromEntries(routes.map((r) => [r.code, r.color])),
-    [routes],
-  );
 
   const locateTitle =
     status === "error"
@@ -133,30 +115,78 @@ const BusMap = () => {
         ? "El navegador no suporta la geolocalització"
         : "La meva ubicació";
 
-  // Picking a stop is a request to see that stop, and on desktop the line
-  // browser is sitting in the only place it can be shown. Nothing else closes
-  // the browser, so without this a tap on a pin reads as the map ignoring it.
+  // Picking a stop is a request to see that stop, and from `lg` the line
+  // browser and the search results sit in the only place it can be shown.
+  // Nothing else closes them, so without this a tap on a pin reads as the map
+  // ignoring it. Settings is exempt — `dismissPanels` leaves it alone, because
+  // it is a sheet over the whole layout and never competing for that slot.
+  const { dismissPanels } = nav;
   useEffect(() => {
-    if (selectedStopId) setLinesOpen(false);
-  }, [selectedStopId]);
+    if (selectedStopId) dismissPanels();
+  }, [selectedStopId, dismissPanels]);
 
-  const toggleLines = () => {
-    if (!linesOpen) track("lines panel opened");
-    setLinesOpen((wasOpen) => !wasOpen);
+  // The field and the `Cerca` tab are one control, so a query typed straight
+  // into the field opens the same destination the tab does.
+  //
+  // On the *debounced* edge rather than on focus. A bare focus handler would,
+  // on desktop, evict an open timetable from the column's slot the moment
+  // someone clicked into the field to clear a leftover query — and it would
+  // open an empty panel before the first result had been asked for.
+  const { open: openPanel } = nav;
+  const hasQuery = debouncedSearchQuery.trim().length > 0;
+  useEffect(() => {
+    if (hasQuery) openPanel("search", "typing");
+  }, [hasQuery, openPanel]);
+
+  const openSearch = () => {
+    nav.open("search", "nav");
+    // After the commit that mounts the panel, so nothing it renders can take
+    // focus back off the field this tab is an alias for.
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  };
+
+  // A second tap on the live tab closes it — and must not re-focus the field,
+  // or the software keyboard springs back up over the map you just asked to see.
+  const onNavSelect = (panel: Parameters<typeof nav.open>[0]) => {
+    if (nav.isOpen(panel)) {
+      nav.close();
+      return;
+    }
+    if (panel === "search") {
+      openSearch();
+      return;
+    }
+    nav.open(panel, "nav");
   };
 
   const tools = (
     <>
       <div className="flex items-start gap-2">
         <div className="flex-1">
-          <SearchInput />
+          <SearchInput inputRef={searchInputRef} />
         </div>
-        <SettingsButton />
+        {/* From `lg` only: below it the nav's `Configuració` tab is the door, and
+            two doors to one sheet is how you end up with two of the sheet. */}
+        <SettingsButton
+          onOpen={() => nav.open("settings", "tools")}
+          className="hidden lg:inline-flex"
+        />
       </div>
       <BusRoutes />
       {stopsError && <StopsError onRetry={retryStops} />}
     </>
   );
+
+  /** The desktop column's one content slot, and the order it resolves in. */
+  const desktopSlot = nav.isOpen("search") ? (
+    <SearchPanel variant="panel" onClose={nav.close} />
+  ) : nav.isOpen("lines") ? (
+    <LinesPanel variant="panel" open onClose={nav.close} />
+  ) : selectedStopId ? (
+    <Panel aria-label="hores d'arribada" className="h-full">
+      <StopDetails externalId={selectedStopId} variant="panel" />
+    </Panel>
+  ) : null;
 
   return (
     <div className="relative">
@@ -166,13 +196,28 @@ const BusMap = () => {
         From `lg` there is room to show the map *and* the data at once, which is
         the point of a map-first transit tool, so the chrome gathers into one
         floating column down the left and the map beside it stays live.
-      */}
-      <div className="pointer-events-none absolute top-0 left-0 z-10 w-full lg:inset-y-0 lg:flex lg:w-[28rem] lg:flex-col lg:gap-3 lg:p-4">
-        <div className={TOOLS_PANEL}>{tools}</div>
 
-        {/* One content panel at a time. Opening the line browser covers the
-            open stop rather than discarding it — the stop is still selected,
-            still pinned on the map, and comes back when the browser closes.
+        The column stops short of the bottom navigation below `lg` — it is the
+        search results, its one growing child, that would otherwise run under
+        the bar. `--nav-height` is `0px` from `lg`, so this one offset is right
+        in both layouts with no breakpoint of its own.
+      */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 bottom-[var(--nav-height)] z-10 flex flex-col lg:w-[28rem] lg:gap-3 lg:p-4">
+        <div
+          className={cn(
+            TOOLS_PANEL,
+            // Below `md` this card has no surface of its own — it is painted
+            // onto the map. With results underneath it that leaves the search
+            // field floating over an opaque list, so it takes one on demand.
+            nav.isOpen("search") && "bg-card",
+          )}
+        >
+          {tools}
+        </div>
+
+        {/* One content panel at a time. Opening a destination covers the open
+            stop rather than discarding it — the stop is still selected, still
+            pinned on the map, and comes back when the destination closes.
 
             Gated on `isDesktop` and not only on `lg:flex`, because the two
             containers are alternatives: mounting both would run the line
@@ -180,25 +225,24 @@ const BusMap = () => {
             paint except a `?stop=` link, and `useIsDesktop` settles in a layout
             effect before the browser gets to draw that. */}
         <div className="pointer-events-auto hidden min-h-0 flex-1 flex-col lg:flex">
-          {isDesktop &&
-            (linesOpen ? (
-              <LinesPanel
-                variant="panel"
-                open
-                onClose={() => setLinesOpen(false)}
-              />
-            ) : (
-              selectedStopId && (
-                <Panel aria-label="hores d'arribada" className="h-full">
-                  <StopDetails externalId={selectedStopId} variant="panel" />
-                </Panel>
-              )
-            ))}
+          {isDesktop && desktopSlot}
         </div>
 
+        {/* The phone's search results: a plain surface between the tools card
+            and the bar, not a drawer. The field it belongs to is *outside* it,
+            at the top of the map, and a drawer would focus-trap that field out
+            of reach — you would have to switch off the scrim, the trap and the
+            auto-focus, which is everything a drawer is. It also keeps a third
+            vaul root out of the race the stop sheet already runs. */}
+        {!isDesktop && nav.isOpen("search") && (
+          <div className="pointer-events-auto flex min-h-0 flex-1 flex-col lg:hidden">
+            <SearchPanel variant="overlay" onClose={nav.close} />
+          </div>
+        )}
+
         <LinesButton
-          open={linesOpen}
-          onToggle={toggleLines}
+          open={nav.isOpen("lines")}
+          onToggle={() => nav.toggle("lines", "tools")}
           className="pointer-events-auto hidden shrink-0 self-start lg:inline-flex"
         />
       </div>
@@ -236,15 +280,11 @@ const BusMap = () => {
         </StopEtasProvider>
       </MapComponent>
 
-      {/* `ml-auto` on the location button rather than `justify-between` on the
-          row: from `lg` the line button has moved into the column, and a lone
-          child under `justify-between` would slide to the left edge. */}
-      <div className="pointer-events-none absolute bottom-0 z-10 flex w-full items-end p-4 md:p-6">
-        <LinesButton
-          open={linesOpen}
-          onToggle={toggleLines}
-          className="pointer-events-auto lg:hidden"
-        />
+      {/* The location button's own row. It is the one control here now that the
+          line browser is reached from the nav, so `ml-auto` parks it right.
+          The bottom offset clears the bar below `lg` and collapses to nothing
+          from `lg`, where `--nav-height` is `0px` and there is no bar. */}
+      <div className="pointer-events-none absolute bottom-[var(--nav-height)] z-10 flex w-full items-end p-4 md:p-6">
         <Button
           variant="outline"
           onClick={requestLocation}
@@ -266,9 +306,23 @@ const BusMap = () => {
         </Button>
       </div>
 
+      <MapNav
+        active={nav.panel}
+        onSelect={onNavSelect}
+        visible={nav.barVisible}
+      />
+
       {!isDesktop && (
-        <LinesPanel open={linesOpen} onClose={() => setLinesOpen(false)} />
+        <LinesPanel open={nav.isOpen("lines")} onClose={nav.close} />
       )}
+
+      {/* Mounted once, for both doors: the gear from `lg`, the nav tab below it. */}
+      <SettingsSurface
+        open={nav.isOpen("settings")}
+        onOpenChange={(open) => {
+          if (!open) nav.close();
+        }}
+      />
     </div>
   );
 };

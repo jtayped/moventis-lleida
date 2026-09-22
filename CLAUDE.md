@@ -108,6 +108,8 @@ Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.t
 
 - `routes.getAll` — returns all routes from DB (weekly cached)
 - `stops.getMany` — filters stops by route codes and/or search query
+- `stops.getByRoute` — every stop on one line
+- Both of the two above return `StopWithLines` (a `Stop` plus `lineCodes: string[]`), not a bare `Stop`, so a search result can draw its line chips without a second query. Codes only — the colour is already on the client from the weekly-cached `routes.getAll`. The `deletedAt: null` filter has to be written into that `include` by hand: the soft-delete extension in `packages/db` reaches `findMany`, never an included relation.
 - `stops.get` — fetches a single stop + live schedules from Moventis API, keyed by `Stop.externalId` (not the internal cuid) because that id is public in the URL. It also returns `failedRoutes: string[]`, the `code` of every route whose live fetch was unavailable, so a partial outage reads as a short timetable rather than a complete one; when every route fails it throws `INTERNAL_SERVER_ERROR` instead, and `buses.byLine` does the same when every probe fails — an outage must not reach the UI as "no buses are running".
 - `stops.getByExternalIds` — bare stops for the saved-stops list. Database-only and includes soft-deleted stops, unlike every other stop query. `stops.get` would fire one live Moventis request per route on the stop, so resolving N saved ids through it would push ~3N calls through the 5 req/s throttle before the map could draw anything.
 
@@ -155,6 +157,12 @@ Both are normalized into `Date` objects. The `trayectos` field is a map of journ
 - Selected stop, held as a `Stop.externalId` (opens a Drawer with `StopDetails`, which fetches the stop itself)
 
 The map renders via `@vis.gl/react-google-maps`. Pins are rendered by `MapPinsRenderer`; clicking a pin calls `selectStop`, which triggers the Drawer.
+
+### Bottom navigation (`useNavPanel`, `--nav-height`)
+
+Below `lg` the three destinations — línies, cerca, configuració — are one bottom bar. `apps/web/src/hooks/use-nav-panel.ts` holds which one is showing as a single `NavPanel | null`, not a boolean per surface, so "only one at a time" is true by construction. The stop timetable is deliberately **not** a member: it is owned by `selectedStopId`, it survives a destination opening over it, and making it a fourth member would throw the open stop away. Every callback the hook returns is `[]`-stable and reads the live panel through a ref, because they are effect dependencies — a callback that changed identity per panel change re-ran the shell's search effect and made a stop unreachable while anything was typed.
+
+The bar's footprint is `--nav-height` in `globals.css` (`4rem` plus the safe-area inset, and `0px` from `lg`), which is why the location button, the cookie banner and the map's chrome column can each clear it with no `lg:` variant of their own. JS consumers must go through `useNavHeight`, never `getComputedStyle`: an unregistered custom property computes to its _token_, so reading `--nav-height` returns the literal `calc(...)` string and `parseFloat` of it is `NaN` — silently, with the drawer's peek snap simply never moving. The hook resolves it by measuring a probe element instead.
 
 ### Arrival drift
 
