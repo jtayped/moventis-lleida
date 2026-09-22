@@ -13,6 +13,8 @@ import { track, type StopOpenSource } from "@/lib/analytics";
 import { keepPreviousData } from "@tanstack/react-query";
 import type { BusPosition, Lines, Line } from "@moventis/shared";
 import type { Stop } from "@moventis/db";
+import type { StopWithLines } from "@moventis/api";
+import { useNavHeight } from "@/hooks/use-nav-height";
 import React, {
   createContext,
   useCallback,
@@ -24,18 +26,29 @@ import React, {
 } from "react";
 
 /**
- * Peek, middle, full. The peek is tall enough for the drag handle, the line
- * badges and the stop name — enough to know which stop is held while the map
- * is what you are looking at.
+ * How much of the sheet the peek snap shows: enough for the drag handle, the
+ * line badges and the stop name — enough to know which stop is held while the
+ * map is what you are looking at.
+ *
+ * vaul measures a pixel snap from the bottom of the *viewport*, and the bottom
+ * navigation covers the bottom of the viewport. So the bar's height is added to
+ * this at runtime, or the peek loses exactly the stop name.
+ *
+ * It has to be added as a number: vaul does `parseInt(snapPoint, 10)`, so a
+ * `calc()` string becomes `NaN` and the sheet lands nowhere. `useNavHeight`
+ * reads the resolved pixel value of `--nav-height` for that reason — which also
+ * keeps this correct if `viewportFit: "cover"` is ever added to the viewport
+ * metadata and `env(safe-area-inset-bottom)` stops being zero.
  */
-const SNAP_POINTS = ["148px", 0.65, 0.94] as const;
-type SnapPoint = (typeof SNAP_POINTS)[number];
+export const PEEK_CONTENT_PX = 148;
+const MID_SNAP = 0.65;
+const FULL_SNAP = 0.94;
 const SNAP_NAMES = ["peek", "mid", "full"] as const;
-const DEFAULT_SNAP: SnapPoint = SNAP_POINTS[1];
+const DEFAULT_SNAP: number = MID_SNAP;
 
 interface BusFinderValue {
   routes: Line[];
-  stops: Stop[];
+  stops: StopWithLines[];
   selectedRoutes: Lines[];
   isLoadingStops: boolean;
   /**
@@ -199,7 +212,7 @@ export const BusFinderProvider = ({
 
   // Stops of all selected routes, deduplicated (lines share stops).
   const routeStops = useMemo(() => {
-    const map = new Map<string, Stop>();
+    const map = new Map<string, StopWithLines>();
     for (const q of routeQueries) {
       for (const stop of q.data ?? []) {
         map.set(stop.id, stop);
@@ -382,11 +395,20 @@ export const BusFinderProvider = ({
 
   const [snap, setSnap] = useState<number | string | null>(DEFAULT_SNAP);
 
-  const isAtPeek = snap === SNAP_POINTS[0];
+  // `0` until the layout effect in `useNavHeight` runs, which is before paint
+  // and long before the drawer can be opened — and from `lg` it stays `0`,
+  // where there is no bar and the timetable is a panel rather than a sheet.
+  const navHeight = useNavHeight();
+  const snapPoints = useMemo<(string | number)[]>(
+    () => [`${PEEK_CONTENT_PX + navHeight}px`, MID_SNAP, FULL_SNAP],
+    [navHeight],
+  );
+
+  const isAtPeek = snap === snapPoints[0];
 
   const stepDrawerSnap = useCallback(
     (delta: number) => {
-      const index = SNAP_POINTS.indexOf(snap as SnapPoint);
+      const index = snap === null ? -1 : snapPoints.indexOf(snap);
       if (index === -1) return;
       const target = index + delta;
       // Pushing down at the floor is a dismissal, not a no-op — the same thing
@@ -395,9 +417,9 @@ export const BusFinderProvider = ({
         requestCloseStop();
         return;
       }
-      setSnap(SNAP_POINTS[Math.min(target, SNAP_POINTS.length - 1)] ?? snap);
+      setSnap(snapPoints[Math.min(target, snapPoints.length - 1)] ?? snap);
     },
-    [snap, requestCloseStop],
+    [snap, snapPoints, requestCloseStop],
   );
 
   // The other half of the same gesture: a drag down on the sheet itself. vaul
@@ -480,16 +502,19 @@ export const BusFinderProvider = ({
             if (!isOpen) setSelectedStopId(null);
           }}
           dismissible={closing}
-          snapPoints={[...SNAP_POINTS]}
+          snapPoints={snapPoints}
           activeSnapPoint={snap}
           setActiveSnapPoint={(value) => {
             setSnap(value);
-            const name = SNAP_NAMES[SNAP_POINTS.indexOf(value as SnapPoint)];
+            const name =
+              value === null
+                ? undefined
+                : SNAP_NAMES[snapPoints.indexOf(value)];
             if (name) track("drawer snapped", { snap: name });
           }}
           // Only the top snap dims the map; below it the sheet is a panel over a
           // map you are still meant to read.
-          fadeFromIndex={SNAP_POINTS.length - 1}
+          fadeFromIndex={snapPoints.length - 1}
           // The peek snap is only worth having if the map behind it still works,
           // which rules out the scrim, the focus trap and dismiss-on-outside.
           modal={false}

@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils";
 
 /**
  * Anchored above the map's own bottom row (`h-12` buttons inside `p-4`, `md:p-6`)
- * rather than over it, so the notice never covers "línies" or "ubicació".
+ * rather than over it, so the notice never covers "ubicació" — and, below `lg`,
+ * above the bottom navigation under that. `--nav-height` is `0px` from `lg`, so
+ * the two offsets here are right in both layouts without a third breakpoint.
  *
  * Which corner it takes follows which one is free. From `md` that is the left,
  * because "ubicació" holds the right. From `lg` it swaps back: the whole left
@@ -17,7 +19,8 @@ import { cn } from "@/lib/utils";
  * `z-20` clears the map's overlays at `z-10` and stays under the drawer at `z-50`
  * — an open stop should not have a banner floating on top of it.
  */
-const ANCHOR = "fixed bottom-20 z-20 md:bottom-24";
+const ANCHOR =
+  "fixed z-20 bottom-[calc(var(--nav-height)+5rem)] md:bottom-[calc(var(--nav-height)+6rem)]";
 
 /**
  * The storage notice, shown once and never again.

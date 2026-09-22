@@ -10,6 +10,7 @@ import React, {
 import { useMap } from "@vis.gl/react-google-maps";
 import { api } from "@/trpc/react";
 import { useBusFinder } from "@/context/buses";
+import { useColorByLine } from "@/hooks/use-color-by-line";
 import { useSettings } from "@/hooks/use-settings";
 import { getZoomBucket } from "@/lib/zoom-buckets";
 import { ETA_REFETCH_MS, MAX_ETA_STOPS } from "@/lib/stop-etas";
@@ -43,7 +44,8 @@ export function useStopEtas(): Map<string, StopEta> {
  */
 export function StopEtasProvider({ children }: { children: React.ReactNode }) {
   const map = useMap();
-  const { stops, preferidesStops, selectedRoutes, routes } = useBusFinder();
+  const { stops, preferidesStops, selectedRoutes } = useBusFinder();
+  const colorByLine = useColorByLine();
   const { settings, hydrated } = useSettings();
 
   const [camera, setCamera] = useState<{
@@ -125,11 +127,6 @@ export function StopEtasProvider({ children }: { children: React.ReactNode }) {
         },
       ),
     ),
-  );
-
-  const colorByLine = useMemo(
-    () => new Map(routes.map((r) => [r.code, r.color])),
-    [routes],
   );
 
   const etas = useMemo(() => {

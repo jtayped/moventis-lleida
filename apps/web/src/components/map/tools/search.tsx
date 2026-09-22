@@ -8,7 +8,17 @@ import { Search } from "lucide-react";
 import { useBusFinder } from "@/context/buses";
 import { Spinner } from "@/components/ui/spinner";
 
-const SearchInput = () => {
+/**
+ * `inputRef` is how the bottom nav's `Cerca` tab reaches this field: the tab and
+ * the field are meant to be one control, so the tab focuses this rather than
+ * opening a second input of its own. React 19 passes `ref` straight through
+ * `InputGroupInput` as an ordinary prop, so nothing in `ui/` needs changing.
+ */
+const SearchInput = ({
+  inputRef,
+}: {
+  inputRef?: React.Ref<HTMLInputElement>;
+}) => {
   const {
     stops,
     searchQuery,
@@ -29,6 +39,7 @@ const SearchInput = () => {
     // `components/map/index.tsx` for why a plain `bg-card` alone can't.
     <InputGroup className="bg-card dark:bg-card">
       <InputGroupInput
+        ref={inputRef}
         placeholder="busca la teva parada"
         aria-label="busca la teva parada"
         value={searchQuery}
