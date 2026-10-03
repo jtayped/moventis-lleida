@@ -18,6 +18,8 @@ const config = {
   // from the standalone build. Point it at the monorepo root explicitly instead.
   outputFileTracingRoot: path.join(__dirname, "../../"),
   transpilePackages: ["@moventis/api", "@moventis/db"],
+  // Dev only. Its default corner is the desktop column's bottom bar.
+  devIndicators: { position: "top-right" },
 };
 
 export default config;
