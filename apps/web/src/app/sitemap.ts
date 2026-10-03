@@ -1,26 +1,41 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/constants/metadata";
+import { api } from "@/trpc/server";
+
+// Lines come from the database, which the build cannot reach.
+export const dynamic = "force-dynamic";
+
+const STATIC_PAGES: MetadataRoute.Sitemap = [
+  { url: SITE_URL, changeFrequency: "daily", priority: 1 },
+  { url: `${SITE_URL}/linies`, changeFrequency: "daily", priority: 0.9 },
+  {
+    url: `${SITE_URL}/informacio`,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
+  { url: `${SITE_URL}/tarifes`, changeFrequency: "monthly", priority: 0.6 },
+  { url: `${SITE_URL}/privadesa`, changeFrequency: "yearly", priority: 0.2 },
+];
 
 /**
- * Every page Google should index.
+ * Every page Google should index: the fixed pages, then one per live line.
  *
- * Static for now: none of these pages reads the database. When the line and
- * stop pages land, this turns into a request-time route, because the build has
- * no database to list them from (see `ci.yml`'s note on the web build).
+ * If the database is down it still lists the fixed pages. A failing sitemap
+ * would hide every page from that crawl, not just the lines.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    { url: SITE_URL, changeFrequency: "daily", priority: 1 },
-    {
-      url: `${SITE_URL}/informacio`,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    { url: `${SITE_URL}/tarifes`, changeFrequency: "monthly", priority: 0.6 },
-    {
-      url: `${SITE_URL}/privadesa`,
-      changeFrequency: "yearly",
-      priority: 0.2,
-    },
-  ];
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  try {
+    const { lines } = await api.content.lines();
+    return [
+      ...STATIC_PAGES,
+      ...lines.map((line) => ({
+        url: `${SITE_URL}/linies/${line.code}`,
+        changeFrequency: "daily" as const,
+        priority: 0.8,
+      })),
+    ];
+  } catch (err) {
+    console.error("sitemap: could not list lines", err);
+    return STATIC_PAGES;
+  }
 }

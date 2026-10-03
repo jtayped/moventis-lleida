@@ -4,7 +4,8 @@ import { api } from "@/trpc/react";
 import { PanelHeader } from "@/components/map/panel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import Link from "next/link";
 import { getContrastTextColor } from "@/lib/contrast";
 import { useBusFinder } from "@/context/buses";
 interface LineStopListProps {
@@ -70,6 +71,21 @@ const LineStopList = ({ code, onBack, onClose }: LineStopListProps) => {
           ))}
         </div>
       )}
+
+      <div className="px-4 pb-3">
+        <Link
+          href={`/linies/${code}`}
+          className="hover:bg-muted/50 border-border flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+        >
+          <Clock size={16} aria-hidden className="shrink-0" />
+          <span className="flex-1">horaris de la línia</span>
+          <ChevronRight
+            size={16}
+            aria-hidden
+            className="text-muted-foreground shrink-0"
+          />
+        </Link>
+      </div>
 
       <ScrollArea className="min-h-0 flex-1 px-4 pb-4">
         {isLoading ? (
