@@ -83,6 +83,20 @@ describe("rankJourneys", () => {
     ]);
   });
 
+  it("drops a change that only buys a few minutes at the stop", () => {
+    const ranked = rankJourneys(net, [
+      j(100, 1000, 1), // direct
+      j(160, 1000, 2), // a minute later with a change, same arrival
+      j(500, 1000, 2), // much later: still worth offering
+      j(110, 900, 2), // a change that arrives earlier: always worth offering
+    ]);
+    expect(ranked.map((r) => [r.departAt, r.arriveAt, r.trips])).toEqual([
+      [110, 900, 2],
+      [100, 1000, 1],
+      [500, 1000, 2],
+    ]);
+  });
+
   it("prefers less walking between otherwise equal options", () => {
     const ranked = rankJourneys(net, [j(100, 300, 1, 400), j(101, 300, 1, 50)]);
     expect(ranked).toHaveLength(1);

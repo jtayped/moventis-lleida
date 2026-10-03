@@ -61,9 +61,18 @@ function signature(network: Network, j: RaptorJourney): string {
 }
 
 /**
- * Drop duplicates and any journey another one beats outright: leaves no
- * earlier, arrives no later, takes no more buses. Ranked by arrival, then
- * fewer buses, then less walking.
+ * Leaving up to this much earlier to save a change is always the better
+ * offer. Pareto-optimal is not the same as worth listing: line 20 then line 2,
+ * leaving at 19:29, is optimal next to the direct line 2 at 19:28 that arrives
+ * at the same minute, and nobody wants the change to buy one minute in bed.
+ */
+const CHANGE_WORTH_S = 5 * 60;
+
+/**
+ * Drop duplicates, any journey another one beats outright (leaves no earlier,
+ * arrives no later, takes no more buses), and any change that only saves a
+ * few minutes at the stop. Ranked by arrival, then fewer buses, then less
+ * walking.
  */
 export function rankJourneys(
   network: Network,
@@ -84,8 +93,15 @@ export function rankJourneys(
           o.trips < j.trips ||
           journeyWalkMeters(o) < journeyWalkMeters(j)),
     );
+  const changeNotWorthIt = (j: RaptorJourney) =>
+    unique.some(
+      (o) =>
+        o.trips < j.trips &&
+        o.arriveAt <= j.arriveAt &&
+        j.departAt - o.departAt <= CHANGE_WORTH_S,
+    );
   return unique
-    .filter((j) => !dominated(j))
+    .filter((j) => !dominated(j) && !changeNotWorthIt(j))
     .sort(
       (a, b) =>
         a.arriveAt - b.arriveAt ||
