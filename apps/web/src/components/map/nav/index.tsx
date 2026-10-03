@@ -163,8 +163,11 @@ export const DesktopNav = ({ className }: { className?: string }) => (
         onClick={() =>
           track("content page opened", { page: tab.page, source: "tools" })
         }
+        // Sized to their labels, then the spare width shared out evenly:
+        // equal quarters leave "informació" 6px from the bar's edge and
+        // "línies" swimming in space.
         className={cn(
-          "flex flex-1 items-center justify-center gap-2 text-sm font-medium",
+          "flex flex-auto items-center justify-center gap-2 px-2 text-sm font-medium",
           "hover:bg-accent transition-colors",
           "focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none focus-visible:ring-inset",
         )}
