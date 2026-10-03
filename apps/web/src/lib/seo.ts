@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ROOT_METADATA, TITLE_SUFFIX } from "@/constants/metadata";
+import { ROOT_METADATA, SITE_URL, TITLE_SUFFIX } from "@/constants/metadata";
 
 interface PageMetadataInput {
   /** The page's own title. The root template appends the site suffix. */
@@ -39,5 +39,34 @@ export function pageMetadata({
       title: fullTitle,
       description,
     },
+  };
+}
+
+export interface Breadcrumb {
+  label: string;
+  /** Absolute path, e.g. `/linies`. */
+  href: string;
+}
+
+/**
+ * A schema.org `BreadcrumbList` for `ancestors` followed by the current page.
+ * The current page goes without a URL, which Google reads as "this page".
+ */
+export function breadcrumbJsonLd(ancestors: Breadcrumb[], current: string) {
+  const items = [
+    ...ancestors.map((crumb) => ({
+      name: crumb.label,
+      item: `${SITE_URL}${crumb.href}`,
+    })),
+    { name: current },
+  ];
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      ...item,
+    })),
   };
 }

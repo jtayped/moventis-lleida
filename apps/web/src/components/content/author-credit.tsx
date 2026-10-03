@@ -1,3 +1,5 @@
+import { FOCUS_RING } from "@/components/content/styles";
+import { cn } from "@/lib/utils";
 import {
   AUTHOR_NAME,
   GITHUB_URL,
@@ -5,7 +7,10 @@ import {
   PORTFOLIO_URL,
 } from "@/lib/project-links";
 
-const LINK = "text-foreground underline underline-offset-4";
+const LINK = cn(
+  "text-foreground rounded-sm underline underline-offset-4",
+  FOCUS_RING,
+);
 
 /**
  * Who made the site, where its code lives, and the tip jar, as one sentence.
