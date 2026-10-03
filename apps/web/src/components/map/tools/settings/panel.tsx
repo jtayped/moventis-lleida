@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   Clock,
   FlaskConical,
+  Info,
   Monitor,
   Moon,
   Palette,
@@ -20,6 +21,7 @@ import { useBusFinder } from "@/context/buses";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { useSettings, type ThemeSetting } from "@/hooks/use-settings";
 import { track } from "@/lib/analytics";
+import { CONTENT_LINKS } from "@/lib/content-links";
 
 const THEME_OPTIONS: {
   value: ThemeSetting;
@@ -312,6 +314,23 @@ const SettingsPanel = () => {
             </Button>
           </div>
         </div>
+      </Section>
+
+      {/* The phone's way to the content pages: the desktop column has its own
+          link row, which is hidden below `lg`. */}
+      <Section title="més informació" icon={Info}>
+        <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          {CONTENT_LINKS.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
       </Section>
     </div>
   );

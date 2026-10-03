@@ -28,6 +28,8 @@ import { useColorByLine } from "@/hooks/use-color-by-line";
 import UserLocationLayer from "@/components/map/user-location-layer";
 import { cn } from "@/lib/utils";
 import { StopEtasProvider } from "@/context/stop-etas";
+import { CONTENT_LINKS } from "@/lib/content-links";
+import Link from "next/link";
 
 /**
  * `outline`'s dark-mode background is a translucent overlay (`dark:bg-input/30`,
@@ -88,6 +90,36 @@ const LinesButton = ({
     <LayoutList className="size-5" />
     <span className="font-medium">Línies</span>
   </Button>
+);
+
+/**
+ * Plain links to the content pages, beside the desktop "línies" button.
+ *
+ * These are the only `<a>` elements in the map's server HTML. Every other way
+ * into a line or a stop is a button, which a crawler does not follow, so without
+ * this row nothing on `/` leads anywhere. The row is hidden below `lg` but stays
+ * in the DOM, and links in the DOM are still followed; phone users reach the
+ * same pages from the settings panel.
+ *
+ * Beside the button and not under it: under it, the row takes the column's last
+ * slot, which is where Google's logo sits on the map, and the logo must stay
+ * visible.
+ */
+const ContentLinks = () => (
+  <nav aria-label="més informació" className="pointer-events-auto">
+    <ul className="bg-card text-muted-foreground flex gap-3 rounded-xl border px-4 py-2 text-xs shadow-lg">
+      {CONTENT_LINKS.map((link) => (
+        <li key={link.href}>
+          <Link
+            href={link.href}
+            className="hover:text-foreground underline-offset-4 hover:underline"
+          >
+            {link.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  </nav>
 );
 
 const BusMap = () => {
@@ -240,11 +272,14 @@ const BusMap = () => {
           </div>
         )}
 
-        <LinesButton
-          open={nav.isOpen("lines")}
-          onToggle={() => nav.toggle("lines", "tools")}
-          className="pointer-events-auto hidden shrink-0 self-start lg:inline-flex"
-        />
+        <div className="hidden shrink-0 items-center gap-3 lg:flex">
+          <LinesButton
+            open={nav.isOpen("lines")}
+            onToggle={() => nav.toggle("lines", "tools")}
+            className="pointer-events-auto shrink-0"
+          />
+          <ContentLinks />
+        </div>
       </div>
 
       <MapComponent
