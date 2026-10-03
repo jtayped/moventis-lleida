@@ -1,4 +1,4 @@
-import { BusFront, Map as MapIcon, MapPin } from "lucide-react";
+import { LayoutList, Map as MapIcon, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
  * these pages are the way back to it as much as the way in.
  */
 const HEADER_LINKS = [
-  { href: "/linies", label: "línies", icon: BusFront },
+  { href: "/linies", label: "línies", icon: LayoutList },
   { href: "/parades", label: "parades", icon: MapPin },
   { href: "/", label: "mapa", icon: MapIcon },
 ] as const;

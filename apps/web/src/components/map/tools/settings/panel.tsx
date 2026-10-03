@@ -317,8 +317,8 @@ const SettingsPanel = () => {
         </div>
       </Section>
 
-      {/* The phone's way to tarifes, informació and privadesa: its bottom bar
-          only has room for línies and parades. Desktop has its own bar. */}
+      {/* The phone's way to the content pages: the desktop column has its own
+          link row, which is hidden below `lg`. */}
       <Section title="més informació" icon={Info}>
         <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
           {CONTENT_LINKS.map((link) => (
