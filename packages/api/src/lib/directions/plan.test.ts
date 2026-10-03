@@ -133,6 +133,33 @@ describe("planJourneys", () => {
     });
   });
 
+  it("keeps options leaving inside the window, not long waits for a later bus", () => {
+    const stops = streetStops(["a", "b", "c"], 2000);
+    const net = syntheticNetwork(
+      stops,
+      [
+        // A change at b gets there at 08:20...
+        { code: "1", stops: ["a", "b"], trips: [[m(8, 0), m(8, 5)]] },
+        { code: "2", stops: ["b", "c"], trips: [[m(8, 10), m(8, 20)]] },
+        // ...and the only direct bus leaves at 11:00.
+        {
+          code: "3",
+          stops: ["a", "x", "c"],
+          trips: [[m(11, 0), m(11, 3), m(11, 6)]],
+        },
+      ],
+      { stops: [...stops, ...streetStops(["x"], 0, 41.61)] },
+    );
+    const plan = planJourneys(net, {
+      from: stops[0]!,
+      to: stops[2]!,
+      departAt: hm(7, 55),
+    });
+    expect(plan.journeys.map((j) => [j.departAt, j.trips])).toEqual([
+      [hm(8, 0), 2],
+    ]);
+  });
+
   it("looks three hours ahead when the next hour has nothing", () => {
     const stops = streetStops(["a", "b"], 2000);
     const net = syntheticNetwork(stops, [

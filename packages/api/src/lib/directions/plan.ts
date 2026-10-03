@@ -131,13 +131,17 @@ export function planJourneys(network: Network, input: PlanInput): PlanOutput {
   if (access.length === 0 || egress.length === 0)
     return { journeys: [], walkOnlyMeters };
 
+  // A departure inside the window can still lead to a long wait at the stop
+  // for a far later bus — the one-bus n1 at 23:02 surfaced in a 19:23 "leave
+  // now" list. Valid, and not what the window asked for: options must leave
+  // within it.
   const search = (window: number) =>
     rangeRaptor(network, {
       access,
       egress,
       earliestDeparture: input.departAt,
       latestDeparture: input.departAt + window,
-    });
+    }).filter((j) => j.departAt <= input.departAt + window);
   let journeys = search(WINDOW_S);
   if (journeys.length === 0) journeys = search(WIDE_WINDOW_S);
 
