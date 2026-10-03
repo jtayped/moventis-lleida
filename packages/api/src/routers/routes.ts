@@ -5,14 +5,24 @@ import { createTRPCRouter, publicProcedure } from "../trpc";
 import { utcStartOfLocalDay } from "../lib/zoned-time";
 import { unstable_cache } from "next/cache";
 
+/**
+ * How long the scraped route data below is served from cache.
+ *
+ * The scraper rewrites it every night, from another container, and nothing
+ * tells this cache it happened. The TTL is therefore the only thing that brings
+ * a new line, a renamed stop or a changed variant to the site. An hour costs
+ * one query per entry per hour and shows a nightly sync by morning.
+ */
+const ROUTE_DATA_TTL_S = 60 * 60;
+
 const getCachedRoutes = unstable_cache(
   async () => db.route.findMany({ where: { deletedAt: null } }),
   ["all-bus-routes"],
-  { revalidate: 60 * 60 * 24 * 7 },
+  { revalidate: ROUTE_DATA_TTL_S },
 );
 
-// Route geometry is static and large, so it's fetched lazily (only when a line
-// is selected) and cached for a week, keyed by line code.
+// Route geometry is large, so it's fetched lazily (only when a line is
+// selected) and cached per line code.
 const getCachedPath = unstable_cache(
   async (code: string): Promise<RoutePath> => {
     const route = await db.route.findFirst({
@@ -23,7 +33,7 @@ const getCachedPath = unstable_cache(
     return parsed.success ? parsed.data : { paths: [] };
   },
   ["bus-route-path"],
-  { revalidate: 60 * 60 * 24 * 7 },
+  { revalidate: ROUTE_DATA_TTL_S },
 );
 
 const getCachedVariantStops = unstable_cache(
@@ -65,9 +75,9 @@ const getCachedVariantStops = unstable_cache(
     }));
   },
   // Key is versioned: `unstable_cache` does not invalidate on payload shape
-  // changes, so week-old entries would be served without newly added fields.
+  // changes, so cached entries would be served without newly added fields.
   ["route-variant-stops-v2"],
-  { revalidate: 60 * 60 * 24 * 7 },
+  { revalidate: ROUTE_DATA_TTL_S },
 );
 
 export const routesRouter = createTRPCRouter({

@@ -99,14 +99,14 @@ Three things about this are easy to get wrong:
 
 ### Data Flow
 
-1. **Static data** (routes, stops) — stored in PostgreSQL, fetched once and cached for 1 week via Next.js `unstable_cache` (`packages/api/src/routers/routes.ts`).
+1. **Static data** (routes, stops) — stored in PostgreSQL, cached for 1 hour via Next.js `unstable_cache` (`packages/api/src/routers/routes.ts`). Nothing invalidates that cache when the scraper finishes, so the TTL is what carries a nightly sync to the site.
 2. **Real-time data** (arrival times) — fetched live from Moventis API on each `stops.get` tRPC call, never cached. The stop's `externalId` and its route's `externalId` are the foreign keys into the Moventis API.
 
 ### tRPC
 
 Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.ts`) and client components (via `apps/web/src/trpc/react.tsx`). Two routers:
 
-- `routes.getAll` — returns all routes from DB (weekly cached)
+- `routes.getAll` — returns all routes from DB (hourly cached)
 - `stops.getMany` — filters stops by route codes and/or search query
 - `stops.getByRoute` — every stop on one line
 - Both of the two above return `StopWithLines` (a `Stop` plus `lineCodes: string[]`), not a bare `Stop`, so a search result can draw its line chips without a second query. Codes only — the colour is already on the client from the weekly-cached `routes.getAll`. The `deletedAt: null` filter has to be written into that `include` by hand: the soft-delete extension in `packages/db` reaches `findMany`, never an included relation.
