@@ -1,11 +1,11 @@
-import { LayoutList, Map as MapIcon, MapPin } from "lucide-react";
+import { BusFront, Database, Info, Map as MapIcon, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { AuthorCredit } from "@/components/content/author-credit";
+import { AuthorCard } from "@/components/content/author-card";
+import { SiteLinks } from "@/components/content/site-links";
 import { FOCUS_RING } from "@/components/content/styles";
 import { JsonLd } from "@/components/seo/json-ld";
-import { CONTENT_LINKS } from "@/lib/content-links";
 import { breadcrumbJsonLd, type Breadcrumb } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
  * these pages are the way back to it as much as the way in.
  */
 const HEADER_LINKS = [
-  { href: "/linies", label: "línies", icon: LayoutList },
+  { href: "/linies", label: "línies", icon: BusFront },
   { href: "/parades", label: "parades", icon: MapPin },
   { href: "/", label: "mapa", icon: MapIcon },
 ] as const;
@@ -34,6 +34,7 @@ export const ContentPage = ({
   breadcrumbs,
   section,
   wide = false,
+  credit = true,
   children,
 }: {
   title: string;
@@ -46,6 +47,11 @@ export const ContentPage = ({
    * as a `BreadcrumbList`, which is what Google prints instead of the bare URL.
    */
   breadcrumbs?: Breadcrumb[];
+  /**
+   * The author card in the footer. Off on `/informacio`, which shows the same
+   * card in its own "sobre aquesta web" section just above.
+   */
+  credit?: boolean;
   /** The header section this page sits under, marked as the current page. */
   section?: "/linies" | "/parades";
   /**
@@ -147,46 +153,39 @@ export const ContentPage = ({
       </main>
 
       <footer className="border-border border-t">
-        <div
-          className={cn(
-            "text-muted-foreground mx-auto w-full space-y-3 px-4 py-8 text-sm leading-relaxed",
-            column,
-          )}
-        >
-          <nav aria-label="pàgines d'informació">
-            <ul className="flex flex-wrap gap-x-4 gap-y-2">
-              <li>
-                <Link
-                  href="/"
+        <div className={cn("mx-auto w-full space-y-6 px-4 py-10", column)}>
+          <SiteLinks label="pàgines del web" className="-mx-2" />
+          {credit && <AuthorCard />}
+          {/* The disclaimer is what keeps a page that ranks for "moventis"
+              from reading as Moventis' own; it stays on every page. */}
+          <ul className="text-muted-foreground space-y-2 text-sm">
+            <li className="flex items-start gap-2">
+              <Info size={16} aria-hidden className="mt-0.5 shrink-0" />
+              web no oficial, sense relació amb moventis, autobusos de lleida ni
+              la paeria.
+            </li>
+            <li className="flex items-start gap-2">
+              <Database size={16} aria-hidden className="mt-0.5 shrink-0" />
+              <span>
+                dades públiques de{" "}
+                <a
+                  href="https://www.moventis.es/ca"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={cn(
-                    "hover:text-foreground rounded-sm underline-offset-4 hover:underline",
+                    "text-foreground rounded-sm underline underline-offset-4",
                     FOCUS_RING,
                   )}
                 >
-                  mapa en directe
-                </Link>
-              </li>
-              {CONTENT_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className={cn(
-                      "hover:text-foreground rounded-sm underline-offset-4 hover:underline",
-                      FOCUS_RING,
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-          <p>
-            web no oficial, sense relació amb moventis, autobusos de lleida ni
-            la paeria. les línies, les parades i els horaris surten de les dades
-            públiques de moventis.es.
-          </p>
-          <AuthorCredit />
+                  moventis.es
+                  <span className="sr-only">
+                    {" "}
+                    (s&apos;obre en una pestanya nova)
+                  </span>
+                </a>
+              </span>
+            </li>
+          </ul>
         </div>
       </footer>
     </div>

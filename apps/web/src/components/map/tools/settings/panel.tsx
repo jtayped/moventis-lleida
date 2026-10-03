@@ -21,17 +21,17 @@ import { useBusFinder } from "@/context/buses";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { useSettings, type ThemeSetting } from "@/hooks/use-settings";
 import { track } from "@/lib/analytics";
-import { CONTENT_LINKS } from "@/lib/content-links";
-import { AuthorCredit } from "@/components/content/author-credit";
+import { AuthorCard } from "@/components/content/author-card";
+import { SiteLinks } from "@/components/content/site-links";
 
 const THEME_OPTIONS: {
   value: ThemeSetting;
   label: string;
   icon: LucideIcon;
 }[] = [
-  { value: "light", label: "Clar", icon: Sun },
-  { value: "dark", label: "Fosc", icon: Moon },
-  { value: "system", label: "Sistema", icon: Monitor },
+  { value: "light", label: "clar", icon: Sun },
+  { value: "dark", label: "fosc", icon: Moon },
+  { value: "system", label: "sistema", icon: Monitor },
 ];
 
 /**
@@ -135,16 +135,16 @@ const SettingsPanel = () => {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1">
             <Label htmlFor="live-bus-prediction" className="flex-wrap">
-              Posició estimada del bus
+              posició estimada del bus
               <Badge variant="secondary">experimental</Badge>
             </Label>
             <p
               id="live-bus-prediction-help"
               className="text-muted-foreground text-xs leading-relaxed"
             >
-              Dedueix entre quines dues parades és cada bus a partir de les
-              hores d&apos;arribada que publica Moventis, que no en dona ni la
-              posició ni el GPS. Encara s&apos;està ajustant i pot fallar. Només
+              dedueix entre quines dues parades és cada bus a partir de les
+              hores d&apos;arribada que publica moventis, que no en dona ni la
+              posició ni el gps. encara s&apos;està ajustant i pot fallar. només
               per a les {MAX_PREDICTED_LINES} últimes línies que marquis.
             </p>
           </div>
@@ -161,13 +161,13 @@ const SettingsPanel = () => {
       <Section title="horaris" icon={Clock}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1">
-            <Label htmlFor="stop-etas">Pròxim bus al mapa</Label>
+            <Label htmlFor="stop-etas">pròxim bus al mapa</Label>
             <p
               id="stop-etas-help"
               className="text-muted-foreground text-xs leading-relaxed"
             >
-              En apropar el mapa, mostra al costat de cada parada quant falta
-              per al pròxim bus. Consulta els horaris de les parades que veus,
+              en apropar el mapa, mostra al costat de cada parada quant falta
+              per al pròxim bus. consulta els horaris de les parades que veus,
               així que gasta dades.
             </p>
           </div>
@@ -182,13 +182,13 @@ const SettingsPanel = () => {
 
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1">
-            <Label htmlFor="arrival-drift">Avanç i retard dels busos</Label>
+            <Label htmlFor="arrival-drift">avanç i retard dels busos</Label>
             <p
               id="arrival-drift-help"
               className="text-muted-foreground text-xs leading-relaxed"
             >
-              Mostra quants minuts s&apos;ha avançat o endarrerit cada bus
-              respecte a la primera hora que t&apos;hem mostrat. Verd vol dir
+              mostra quants minuts s&apos;ha avançat o endarrerit cada bus
+              respecte a la primera hora que t&apos;hem mostrat. verd vol dir
               abans, vermell després.
             </p>
           </div>
@@ -204,7 +204,7 @@ const SettingsPanel = () => {
 
       <Section title="aparença" icon={Palette}>
         <div className="space-y-2">
-          <span className="text-sm font-medium">Tema</span>
+          <span className="text-sm font-medium">tema</span>
           <div className="flex gap-2">
             {THEME_OPTIONS.map(({ value, label, icon: Icon }) => {
               const isActive = settings.theme === value;
@@ -231,7 +231,7 @@ const SettingsPanel = () => {
         <div className="space-y-4">
           <div className="space-y-2">
             <p className="text-sm font-medium">
-              Emmagatzematge local:{" "}
+              emmagatzematge local:{" "}
               <span
                 className={
                   storageEnabled ? "text-foreground" : "text-muted-foreground"
@@ -241,8 +241,8 @@ const SettingsPanel = () => {
               </span>
             </p>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              Les parades preferides es guarden al navegador, només en aquest
-              dispositiu. No fem servir cookies de seguiment. Comptem visites de
+              les parades preferides es guarden al navegador, només en aquest
+              dispositiu. no fem servir cookies de seguiment. comptem visites de
               forma anònima amb una eina pròpia, i pots desactivar-ho a la
               configuració.
             </p>
@@ -273,13 +273,13 @@ const SettingsPanel = () => {
 
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-1">
-              <Label htmlFor="analytics">Analítica anònima</Label>
+              <Label htmlFor="analytics">analítica anònima</Label>
               <p
                 id="analytics-help"
                 className="text-muted-foreground text-xs leading-relaxed"
               >
                 Comptem visites i accions amb una eina pròpia (umami), sense
-                cookies ni identificadors. Serveix per saber quines línies i
+                cookies ni identificadors. serveix per saber quines línies i
                 parades es consulten més.
               </p>
             </div>
@@ -295,7 +295,7 @@ const SettingsPanel = () => {
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0 space-y-1">
               <p className="text-sm font-medium">
-                Esborra les parades preferides
+                esborra les parades preferides
               </p>
               <p className="text-muted-foreground text-xs">
                 {preferidesCount === 1
@@ -317,22 +317,12 @@ const SettingsPanel = () => {
         </div>
       </Section>
 
-      {/* The phone's way to the content pages: the desktop column has its own
-          link row, which is hidden below `lg`. */}
+      {/* Every content page, on any screen. The map's bars link only some:
+          línies and parades on a phone, plus tarifes and informació on
+          desktop. Privadesa is reached from here and the footer. */}
       <Section title="més informació" icon={Info}>
-        <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-          {CONTENT_LINKS.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                className="text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <AuthorCredit className="text-muted-foreground text-xs leading-relaxed" />
+        <SiteLinks label="pàgines d'informació" className="-mx-2" />
+        <AuthorCard compact />
       </Section>
     </div>
   );
