@@ -1,13 +1,22 @@
 import type { Metadata, Viewport } from "next";
 
-const siteUrl = "https://moventis-lleida.joeltaylor.business";
+export const SITE_URL = "https://moventis-lleida.joeltaylor.business";
+
+export const SITE_NAME = "bus urbà lleida";
+
+/**
+ * What `title.template` appends to every page title. Exported because Open
+ * Graph and Twitter titles do not go through the template, and `pageMetadata`
+ * has to rebuild the same string for them by hand.
+ */
+export const TITLE_SUFFIX = " | bus lleida";
 
 export const ROOT_METADATA: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
 
   title: {
     default: "bus urbà lleida | temps real",
-    template: "%s | bus lleida",
+    template: `%s${TITLE_SUFFIX}`,
   },
 
   description:
@@ -52,7 +61,7 @@ export const ROOT_METADATA: Metadata = {
 
   appleWebApp: {
     capable: true,
-    title: "horaris bus urbá lleida | temps real",
+    title: "horaris bus urbà lleida | temps real",
     statusBarStyle: "default",
   },
 
@@ -66,9 +75,9 @@ export const ROOT_METADATA: Metadata = {
     description:
       "consulta els horaris de l'autobús urbà de lleida en temps real.",
 
-    url: siteUrl,
+    url: SITE_URL,
 
-    siteName: "bus urbà lleida",
+    siteName: SITE_NAME,
 
     images: [
       {

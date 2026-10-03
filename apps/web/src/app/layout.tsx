@@ -1,9 +1,15 @@
-import { ROOT_METADATA, ROOT_VIEWPORT } from "@/constants/metadata";
+import {
+  ROOT_METADATA,
+  ROOT_VIEWPORT,
+  SITE_NAME,
+  SITE_URL,
+} from "@/constants/metadata";
 import "@/styles/globals.css";
 
 import type { Viewport, Metadata } from "next";
 import { Geist } from "next/font/google";
 import Script from "next/script";
+import { JsonLd } from "@/components/seo/json-ld";
 import { env } from "@/env";
 import RootProviders from "./providers";
 
@@ -36,6 +42,25 @@ const THEME_INIT_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem
  */
 const UMAMI_DOMAIN = "moventis-lleida.joeltaylor.business";
 
+/**
+ * Names the site for search engines. The publisher is a person on purpose: this
+ * is not Moventis' site, and structured data claiming an organisation would say
+ * otherwise in the one place Google reads as fact.
+ */
+const WEBSITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  alternateName: "horaris bus lleida",
+  url: SITE_URL,
+  inLanguage: "ca",
+  publisher: {
+    "@type": "Person",
+    name: "Joel Taylor Pedrós",
+    url: "https://joeltaylor.business",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -49,6 +74,7 @@ export default function RootLayout({
     <html lang="ca" className={`${geist.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <JsonLd data={WEBSITE_JSON_LD} />
       </head>
       <body className="lowercase">
         <RootProviders>{children}</RootProviders>
