@@ -4,9 +4,8 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import React, { useDeferredValue, useId, useState } from "react";
 import type { StopIndexEntry } from "@moventis/api";
-import { LineBadge } from "@/components/content/line-badge";
+import { LineBadges } from "@/components/content/line-badge";
 import { FOCUS_RING } from "@/components/content/styles";
-import { compareLineCodes } from "@/lib/lines";
 import { slugify, stopPath } from "@/lib/stops";
 import { cn } from "@/lib/utils";
 
@@ -116,18 +115,7 @@ export const StopFinder = ({
                     <span className="min-w-0 flex-1 text-sm font-medium">
                       {stop.name}
                     </span>
-                    <span className="flex shrink-0 flex-wrap justify-end gap-1">
-                      {[...stop.lineCodes]
-                        .sort(compareLineCodes)
-                        .map((code) => (
-                          <LineBadge
-                            key={code}
-                            code={code}
-                            color={colors[code] ?? "#888888"}
-                            className="size-7 rounded text-xs"
-                          />
-                        ))}
-                    </span>
+                    <LineBadges codes={stop.lineCodes} colors={colors} />
                   </Link>
                 </li>
               ))}
