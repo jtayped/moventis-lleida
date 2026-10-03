@@ -1,4 +1,21 @@
 import { parseParadasResponse, type StoredTimetable } from "@moventis/shared";
+import { z } from "zod";
+import {
+  incidenciaSchema,
+  lineFeedRowSchema,
+  trayectosResponseSchema,
+  type MoventisIncidencia,
+  type MoventisLine,
+  type MoventisTrayecto,
+} from "./schemas.js";
+
+export type {
+  MoventisIncidencia,
+  MoventisLine,
+  MoventisStopInfo,
+  MoventisTrayecto,
+  MoventisVariantStop,
+} from "./schemas.js";
 
 const BASE = "https://www.moventis.es";
 
@@ -17,40 +34,14 @@ const timeout = () => AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
 export const LLEIDA_ZONE = "2";
 
-export interface MoventisLine {
-  ID_LINEA: string;
-  COD_LINEA: string;
-  DESC_LINEA: string;
-  ID_ZONA: string;
-  COLOR: string;
-  TREAL: string;
-  DIAS_QUE_CIRCULA: string;
-}
-
-export interface MoventisStopInfo {
-  DESC_PARADA: string;
-  COD_PARADA: number;
-  ID_PARADA: number;
-  LATITUD: number;
-  LONGITUD: number;
-}
-
-export interface MoventisVariantStop {
-  Parada: MoventisStopInfo;
-  ID_TRAYECTO: number;
-  SECUENCIA: number;
-  SUBE_BAJA: number;
-}
-
-export interface MoventisTrayecto {
-  ID_LINEA: number;
-  ID_TRAYECTO: number[];
-  ID_TRAYECTO_CONCAT: number | null;
-  DESC_TRAYECTO: string;
-  DESC_REDUCIDA: string;
-  PRINCIPAL: string;
-  SENTIDO: string;
-  TrayectosDet: MoventisVariantStop[];
+/** Reads only the two keys the Lleida filter needs, and trusts nothing else. */
+function isLleidaRow(row: unknown, knownLineIds: ReadonlySet<string>): boolean {
+  if (typeof row !== "object" || row === null) return false;
+  const { ID_ZONA, ID_LINEA } = row as Record<string, unknown>;
+  return (
+    ID_ZONA === LLEIDA_ZONE ||
+    (typeof ID_LINEA === "string" && knownLineIds.has(ID_LINEA))
+  );
 }
 
 /**
@@ -62,6 +53,13 @@ export interface MoventisTrayecto {
  * vanished from the feed. Matching known `ID_LINEA`s as well means a
  * renumbering upstream is picked up automatically, and only a line genuinely
  * absent from the feed falls through to the database fallback.
+ *
+ * Only the kept rows are validated. The rest of the feed, about 11,000 rows,
+ * belongs to other zones, and a malformed row there must not cost Lleida its
+ * sync. A malformed Lleida row rejects the whole feed rather than being
+ * dropped: dropping every row of one line would leave it out of discovery, and
+ * a complete run soft-deletes a line it did not see. A rejected feed sends
+ * discovery to the database fallback instead, which probes every stored line.
  */
 export async function fetchLleidaLines(
   knownLineIds: ReadonlySet<string> = new Set(),
@@ -70,12 +68,17 @@ export async function fetchLleidaLines(
     signal: timeout(),
   });
   if (!res.ok) throw new Error(`/lines ${res.status}`);
-  const all = (await res.json()) as MoventisLine[];
-  return all.filter(
-    (l) => l.ID_ZONA === LLEIDA_ZONE || knownLineIds.has(l.ID_LINEA),
-  );
+  const rows = z.array(z.unknown()).parse(await res.json());
+  return z
+    .array(lineFeedRowSchema)
+    .parse(rows.filter((row) => isLleidaRow(row, knownLineIds)));
 }
 
+/**
+ * The variants a line runs on `date` (`YYYYMMDD`), or `[]` when it does not run
+ * that day. Throws on a malformed response; {@link trayectosResponseSchema}
+ * says why that is safer than dropping the odd row.
+ */
 export async function fetchTrayectos(
   lineId: string,
   date: string,
@@ -84,22 +87,42 @@ export async function fetchTrayectos(
     signal: timeout(),
   });
   if (!res.ok) throw new Error(`GetTrayectos/${lineId} ${res.status}`);
-  const data = (await res.json()) as unknown[];
-  // Filter out stub responses like [{ numLinea: "xxx" }] that have no TrayectosDet
-  return data
-    .filter(
-      (t): t is MoventisTrayecto =>
-        typeof t === "object" &&
-        t !== null &&
-        Array.isArray((t as MoventisTrayecto).TrayectosDet),
-    )
-    .map((t) => ({
-      ...t,
-      // API occasionally returns a bare number instead of a single-element array
-      ID_TRAYECTO: Array.isArray(t.ID_TRAYECTO)
-        ? t.ID_TRAYECTO
-        : [t.ID_TRAYECTO as number],
-    }));
+  return trayectosResponseSchema.parse(await res.json());
+}
+
+/**
+ * Every current service alert across the Moventis network, in `lang`.
+ *
+ * Node ids are per language: `NID_LINEA` and `NID_MARCA` only match the line
+ * feed's `nid` and `MARCA` when both were fetched in the same language.
+ *
+ * A malformed row is dropped and logged, and the rest are returned. Nothing
+ * destructive hangs off this feed, so one odd alert is not worth losing the
+ * others over.
+ */
+export async function fetchIncidencias(
+  lang: "es" | "ca" = "es",
+): Promise<MoventisIncidencia[]> {
+  const res = await fetch(`${BASE}/${lang}/moventis/${lang}/incidencias`, {
+    signal: timeout(),
+  });
+  if (!res.ok) throw new Error(`/incidencias ${res.status}`);
+  const rows = z.array(z.unknown()).parse(await res.json());
+
+  const alerts: MoventisIncidencia[] = [];
+  const rejected: z.ZodError[] = [];
+  for (const row of rows) {
+    const parsed = incidenciaSchema.safeParse(row);
+    if (parsed.success) alerts.push(parsed.data);
+    else rejected.push(parsed.error);
+  }
+  if (rejected.length > 0) {
+    console.warn(
+      `[api] Dropped ${rejected.length} malformed incidencia row(s); first:`,
+      JSON.stringify(rejected[0]?.issues),
+    );
+  }
+  return alerts;
 }
 
 export async function fetchKml(

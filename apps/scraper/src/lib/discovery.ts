@@ -233,7 +233,8 @@ function groupFeedEntries(
  * Find the Lleida lines and everything needed to sync them.
  *
  * The feed (`/es/moventis/es/lines`) is still the preferred source — it is the
- * only one carrying names, colours and a 60-day calendar. But it stopped listing
+ * only one carrying names, colours and a calendar. The calendar's reach varies:
+ * 60 days once, 29 days for Lleida on 2026-10-03. But it stopped listing
  * the Lleida zone entirely on 2026-08-02 while every per-line endpoint kept
  * serving Lleida data, so the feed can no longer be treated as the authority on
  * whether the network exists.

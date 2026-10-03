@@ -10,13 +10,15 @@
     "sync:dev": "tsx --env-file=../../.env src/sync-once.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:live": "vitest run --config vitest.live.config.ts"
   },
   "dependencies": {
     "@moventis/db": "workspace:*",
     "@moventis/shared": "workspace:*",
     "node-cron": "^3.0.3",
-    "tsx": "^4.23.13"
+    "tsx": "^4.23.13",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@moventis/eslint-config": "workspace:*",

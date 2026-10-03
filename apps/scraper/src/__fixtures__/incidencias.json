@@ -1,0 +1,41 @@
+[
+  {
+    "nid": "170669",
+    "destacada": "1",
+    "TITLE_INCIDENCIA": "A partir de jueves 1 de octubre. Mejoramos horarios de lunes a viernes ( salidas Pl. d´Espanya).",
+    "RESUMEN_INCIDENCIA": "A partir de jueves 1 de octubre. Mejoramos horarios de lunes a viernes ( salidas Pl. d´Espanya).",
+    "TITLE_LINEA": "SABADELL - CASTELLAR",
+    "NID_LINEA": "86776",
+    "CODE_LINEA": "C1",
+    "ID_SUBZONA": "7",
+    "ID_ZONA": null,
+    "NID_MARCA": "120759",
+    "ENDATE": "2026-10-11 12:00:00"
+  },
+  {
+    "nid": "170669",
+    "destacada": "1",
+    "TITLE_INCIDENCIA": "A partir de jueves 1 de octubre. Mejoramos horarios de lunes a viernes ( salidas Pl. d´Espanya).",
+    "RESUMEN_INCIDENCIA": "A partir de jueves 1 de octubre. Mejoramos horarios de lunes a viernes ( salidas Pl. d´Espanya).",
+    "TITLE_LINEA": "SABADELL - CASTELLAR",
+    "NID_LINEA": "86776",
+    "CODE_LINEA": "C1",
+    "ID_SUBZONA": "5",
+    "ID_ZONA": null,
+    "NID_MARCA": "120759",
+    "ENDATE": "2026-10-11 12:00:00"
+  },
+  {
+    "nid": "170720",
+    "destacada": "0",
+    "TITLE_INCIDENCIA": "CERDANYOLA DEL VALLÈS. \"Botiga al carrer\". Sábado 3 de octubre, de 9:00 a 21:00",
+    "RESUMEN_INCIDENCIA": "\"Botiga al carrer\". Sábado 3 de octubre, de 9:00 a 21:00",
+    "TITLE_LINEA": "CAP CANALETES - CAN COLL\t\t\t\t\t",
+    "NID_LINEA": "170115",
+    "CODE_LINEA": "CV1",
+    "ID_SUBZONA": "1",
+    "ID_ZONA": null,
+    "NID_MARCA": "120759",
+    "ENDATE": "2026-10-03 21:30:00"
+  }
+]

@@ -48,7 +48,7 @@ Deploys: merging to `main` is the only deploy path. Nothing is built on the VPS 
 
 ## Testing
 
-Vitest, in `packages/api` and `packages/shared` (run from root via Turbo):
+Vitest, in `packages/api`, `packages/shared` and `apps/scraper` (run from root via Turbo):
 
 ```bash
 pnpm test       # default suite — deterministic, no network/DB
@@ -57,10 +57,10 @@ pnpm test:live  # opt-in Moventis API contract canary (needs DATABASE_URL + inte
 
 The suite is tiered to keep the non-deterministic live API at the edge:
 
-- **Contract layer** (`packages/api/src/lib/schedule-contract.test.ts`) validates recorded fixtures in `packages/api/src/__fixtures__/` against the Zod schemas — answers "did the API shape change?" before any logic test.
+- **Contract layer** (`packages/api/src/lib/schedule-contract.test.ts`) validates recorded fixtures in `packages/api/src/__fixtures__/` against the Zod schemas — answers "did the API shape change?" before any logic test. `apps/scraper/src/lib/moventis-contract.test.ts` does the same for the feeds the scraper reads, against `apps/scraper/src/__fixtures__/`.
 - **Logic** tests are pure: `stop-schedule.ts` parsing, `probe.ts`, `bus-locator.ts`, `geo.ts`. `now` is injected so arrival-time math never depends on the wall clock.
 - **Mocked-I/O**: `getStopSchedule` with a mocked axios; `buses.byLine` via `createCaller` with a fake `ctx.db` + stubbed `getStopSchedule` (the locator's probe is injected, so `bus-locator.ts` tests stay pure).
-- **Live canary** (`*.live.test.ts`, excluded from `pnpm test`) discovers a valid stop/route pair from the DB at runtime so it survives stop/route churn, and asserts only that the live response still parses — never values.
+- **Live canary** (`*.live.test.ts`, excluded from `pnpm test`) discovers a valid stop/route pair from the DB at runtime so it survives stop/route churn, and asserts only that the live response still parses — never values. The scraper's canary needs no DB. It takes its line and date from the live line feed.
 
 When a live test and a logic test fail together, fix the contract/fixtures first. The pure seams (`parseSchedulesResponse`, `toProbeResult`, `toGeometry`) exist to be tested without HTTP — keep I/O injected.
 
@@ -117,9 +117,13 @@ Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.t
 
 ### Scraper Line Discovery (`apps/scraper`)
 
-The line feed (`/es/moventis/es/lines`) **stopped listing the Lleida zone on 2026-08-02** while every per-line endpoint kept serving Lleida data. Do not treat the feed as the authority on whether the network exists.
+`docs/moventis-api.md` documents every Moventis endpoint and field we know of, and `docs/sources.md` lists the external sources with their terms. Read them before touching anything that parses a Moventis response.
+
+The line feed (`/es/moventis/es/lines`) **stopped listing the Lleida zone on 2026-08-02** while every per-line endpoint kept serving Lleida data; it was back by 2026-10-03. Do not treat the feed as the authority on whether the network exists.
 
 `src/lib/discovery.ts` therefore has two sources: the feed (matched by `ID_ZONA === "2"` _and_ by `ID_LINEA` against stored routes, so a zone renumber reconnects itself), falling back to the routes already in the database. In fallback mode the calendar is rebuilt by probing `GetTrayectos/{line}/{date}` per day — it returns a bare `[{ numLinea }]` stub on a non-operating date, which makes it a reliable operating-day oracle.
+
+Responses are parsed through the Zod schemas in `src/lib/schemas.ts`. A malformed Lleida row rejects the whole line feed, and a malformed trayecto rejects its whole `GetTrayectos` response. Never change either to drop the bad row. A dropped row reads as a line or variant that no longer runs, which the sync deletes. A rejection reads as doubt, which never prunes.
 
 Lines go dormant for a season (line 10 serves nothing in August, resumes in September). `src/lib/resolution.ts` keeps three outcomes apart, and the distinction is load-bearing:
 
@@ -296,13 +300,15 @@ The opt-out is `analytics` in `useSettings` (on by default). It is mirrored into
 ### Database Schema
 
 ```
-Route  (id, externalId, name, code, color, stops[], operatingDays[])
-Stop   (id, externalId, name, latitude, longitude, routes[])
-OperatingDay (routeId, date)  ← composite PK
+Route            (id, externalId, name, code, color, path, stops[], variants[], operatingDays[], createdAt, updatedAt, deletedAt)
+RouteVariant     (id, routeId, externalId, trayectoIds[], description, direction, isPrincipal, geometry, stops[], createdAt, updatedAt)  ← unique (routeId, externalId)
+RouteVariantStop (id, variantId, stopId, sequence)  ← unique (variantId, sequence)
+Stop             (id, externalId, name, latitude, longitude, routes[], variantStops[], createdAt, updatedAt, deletedAt)
+OperatingDay     (routeId, date)  ← composite PK
 Timetable (routeId, trayectoId, date, stops[], trips, unpaired)  ← composite PK; see Timetables
 ```
 
-`externalId` on both `Route` and `Stop` is what gets passed to the Moventis API. `code` on `Route` is cast to the `Lines` union type at the application layer.
+`externalId` on both `Route` and `Stop` is what gets passed to the Moventis API. `code` on `Route` is cast to the `Lines` union type at the application layer. `RouteVariant.externalId` is a single trayecto id; the endpoints keyed by trayecto segment (`GetKMLs`, `GetParadas`) take the ids in `trayectoIds`, not it.
 
 **A client extension in `packages/db/index.ts` injects `deletedAt: null` into every `route.findMany` and `stop.findMany`.** So on those two methods, _omitting_ `deletedAt` does not mean "no filter" — it means "live rows only", silently. Writing a query that must see soft-deleted rows takes an explicit `where: { deletedAt: undefined }`, which spreads over the injected `null` and restores "no filter" (verified against the real client, not assumed). Only `findMany` is extended; `count`, `upsert`, `updateMany` and `deleteMany` see everything.
 
