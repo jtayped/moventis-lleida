@@ -405,6 +405,7 @@ const StopDetails = ({
       <StopDetailsHeader
         externalId={externalId}
         name={details.name}
+        position={{ lat: details.latitude, lng: details.longitude }}
         lines={details.routes}
         nextByLine={nextByLine}
         dataUpdatedAt={dataUpdatedAt}

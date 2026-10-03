@@ -34,46 +34,57 @@ export function useGeolocation() {
     [],
   );
 
-  const requestLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setState({ status: "unsupported", position: null, error: null });
-      reportOutcome("unsupported");
-      return;
-    }
+  const startWatch = useCallback(
+    (pan: boolean) => {
+      if (!navigator.geolocation) {
+        setState({ status: "unsupported", position: null, error: null });
+        reportOutcome("unsupported");
+        return;
+      }
 
-    setShouldPan(true);
+      if (pan) setShouldPan(true);
 
-    // Already watching: this click only re-centres the map, and the outcome was
-    // reported when the watch started.
-    if (watchIdRef.current !== null) return;
+      // Already watching: this click only re-centres the map, and the outcome was
+      // reported when the watch started.
+      if (watchIdRef.current !== null) return;
 
-    setState((s) => ({ ...s, status: "loading", error: null }));
-    reportedRef.current = false;
+      setState((s) => ({ ...s, status: "loading", error: null }));
+      reportedRef.current = false;
 
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      ({ coords }) => {
-        setState({ status: "active", position: coords, error: null });
-        reportOutcome("active");
-      },
-      (error) => {
-        // Dropping the id without clearing the watch left the GPS running: it
-        // kept re-firing this callback, and the next tap started a second watch
-        // on top of it. Stop it first, then forget it, so a retry starts clean.
-        if (watchIdRef.current !== null) {
-          navigator.geolocation.clearWatch(watchIdRef.current);
-          watchIdRef.current = null;
-        }
-        // A timeout in a tunnel doesn't invalidate the fix from a minute ago —
-        // the blue dot is still roughly right, and blanking it is worse than
-        // leaving it. `shouldPan` is dropped, though: panning to a stale
-        // position in answer to a tap that failed would be a lie.
-        setState((s) => ({ status: "error", position: s.position, error }));
-        setShouldPan(false);
-        reportOutcome("error");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
-    );
-  }, [reportOutcome]);
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        ({ coords }) => {
+          setState({ status: "active", position: coords, error: null });
+          reportOutcome("active");
+        },
+        (error) => {
+          // Dropping the id without clearing the watch left the GPS running: it
+          // kept re-firing this callback, and the next tap started a second watch
+          // on top of it. Stop it first, then forget it, so a retry starts clean.
+          if (watchIdRef.current !== null) {
+            navigator.geolocation.clearWatch(watchIdRef.current);
+            watchIdRef.current = null;
+          }
+          // A timeout in a tunnel doesn't invalidate the fix from a minute ago —
+          // the blue dot is still roughly right, and blanking it is worse than
+          // leaving it. `shouldPan` is dropped, though: panning to a stale
+          // position in answer to a tap that failed would be a lie.
+          setState((s) => ({ status: "error", position: s.position, error }));
+          setShouldPan(false);
+          reportOutcome("error");
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
+      );
+    },
+    [reportOutcome],
+  );
+
+  /** The locate button: find the device and centre the map on it. */
+  const requestLocation = useCallback(() => startWatch(true), [startWatch]);
+  /**
+   * Find the device without moving the map — for directions, whose "my
+   * location" must not yank the camera off the route it is about to frame.
+   */
+  const watchLocation = useCallback(() => startWatch(false), [startWatch]);
 
   const onPanned = useCallback(() => setShouldPan(false), []);
 
@@ -86,5 +97,5 @@ export function useGeolocation() {
     };
   }, []);
 
-  return { ...state, shouldPan, requestLocation, onPanned };
+  return { ...state, shouldPan, requestLocation, watchLocation, onPanned };
 }

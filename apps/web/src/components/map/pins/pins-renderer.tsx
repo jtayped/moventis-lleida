@@ -5,6 +5,8 @@ import type { Stop } from "@moventis/db";
 import { useBusFinder } from "@/context/buses";
 import { getZoomBucket, promote } from "@/lib/zoom-buckets";
 import { useStopEtas } from "@/context/stop-etas";
+import { useDirections } from "@/context/directions";
+import { track } from "@/lib/analytics";
 
 const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
   const map = useMap();
@@ -23,9 +25,25 @@ const MapPinsRenderer = React.memo(({ stops }: { stops: Stop[] }) => {
   // one stop's arrival landed — and they land one at a time, by design.
   const etas = useStopEtas();
 
+  // While directions are picking a place, a pin is an answer to "which
+  // stop?", not a request to open its timetable.
+  const { picking, setPlace } = useDirections();
   const handleClick = useCallback(
-    (stop: Stop) => selectStop(stop.externalId),
-    [selectStop],
+    (stop: Stop) => {
+      if (picking) {
+        track("directions place chosen", { field: picking, kind: "stop" });
+        setPlace(picking, {
+          kind: "stop",
+          externalId: stop.externalId,
+          name: stop.name,
+          lat: stop.latitude,
+          lng: stop.longitude,
+        });
+        return;
+      }
+      selectStop(stop.externalId);
+    },
+    [selectStop, picking, setPlace],
   );
 
   const [zoom, setZoom] = useState<number>(() => map?.getZoom() ?? 12);

@@ -7,6 +7,9 @@ interface UmamiTracker {
 /** Where a stop drawer was opened from. */
 export type StopOpenSource = "pin" | "navigation" | "url" | "search";
 
+/** Where directions were opened from: the map's button, or a stop's "com arribar-hi". */
+export type DirectionsSource = "button" | "stop";
+
 /** The three destinations the bottom navigation switches between. */
 export type NavPanel = "lines" | "search" | "settings";
 
@@ -55,6 +58,18 @@ export interface AnalyticsEvents {
    *  snap is used at all. */
   "drawer snapped": { snap: "peek" | "mid" | "full" };
   "line detail opened": { code: string };
+  /**
+   * Directions carry no places in any event — an origin and a destination are
+   * as good as a home address. Only how the panel was reached, what *kind* of
+   * place was chosen, and how many options came back.
+   */
+  "directions opened": { source: DirectionsSource };
+  "directions place chosen": {
+    field: "from" | "to";
+    kind: "location" | "stop" | "pin";
+  };
+  "directions planned": { results: number };
+  "itinerary selected": { transfers: number };
   "setting changed": {
     setting:
       "theme" | "arrivalDrift" | "stopEtas" | "liveBusPrediction" | "analytics";

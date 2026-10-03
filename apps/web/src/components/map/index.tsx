@@ -19,7 +19,7 @@ import StopDetails from "@/components/map/stop-details";
 import { Panel } from "@/components/map/panel";
 import StopsError from "@/components/map/stops-error";
 import MapNav from "@/components/map/nav";
-import { Coffee, LayoutList, LocateFixed, Loader2 } from "lucide-react";
+import { Coffee, LayoutList, LocateFixed, Loader2, Route } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useSettings } from "@/hooks/use-settings";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
@@ -31,6 +31,12 @@ import { StopEtasProvider } from "@/context/stop-etas";
 import { CONTENT_LINKS } from "@/lib/content-links";
 import { KO_FI_URL } from "@/lib/project-links";
 import Link from "next/link";
+import DirectionsPanel from "@/components/map/directions";
+import DirectionsLayer, {
+  MapPointPicker,
+} from "@/components/map/directions/directions-layer";
+import { useDirections } from "@/context/directions";
+import { useDirectionsPlan } from "@/hooks/use-directions-plan";
 
 /**
  * `outline`'s dark-mode background is a translucent overlay (`dark:bg-input/30`,
@@ -89,7 +95,7 @@ const LinesButton = ({
     className={cn(FLOATING_BUTTON, className)}
   >
     <LayoutList className="size-5" />
-    <span className="font-medium">Línies</span>
+    <span className="font-medium">línies</span>
   </Button>
 );
 
@@ -150,21 +156,35 @@ const BusMap = () => {
     retryStops,
     selectedStopId,
     debouncedSearchQuery,
+    requestCloseStop,
   } = useBusFinder();
   const { resolvedTheme } = useSettings();
   const isDesktop = useIsDesktop();
   const nav = useNavPanel();
   const colorByLine = useColorByLine();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { status, position, shouldPan, requestLocation, onPanned } =
-    useGeolocation();
+  const {
+    status,
+    position,
+    shouldPan,
+    requestLocation,
+    watchLocation,
+    onPanned,
+  } = useGeolocation();
+  const directions = useDirections();
+  const plan = useDirectionsPlan(
+    position,
+    status === "error" || status === "unsupported",
+  );
+  // On a phone directions take the whole screen, chrome and all.
+  const directionsFullScreen = directions.isOpen && !isDesktop;
 
   const locateTitle =
     status === "error"
-      ? "No s'ha pogut obtenir la ubicació"
+      ? "no s'ha pogut obtenir la ubicació"
       : status === "unsupported"
-        ? "El navegador no suporta la geolocalització"
-        : "La meva ubicació";
+        ? "el navegador no suporta la geolocalització"
+        : "la meva ubicació";
 
   // Picking a stop is a request to see that stop, and from `lg` the line
   // browser and the search results sit in the only place it can be shown.
@@ -175,6 +195,28 @@ const BusMap = () => {
   useEffect(() => {
     if (selectedStopId) dismissPanels();
   }, [selectedStopId, dismissPanels]);
+
+  // Directions share that slot too, and the same two rules hold: opening them
+  // closes the destination they cover, and a stop picked from the map (outside
+  // pick mode, where a pin fills a field instead) is a request to see that
+  // stop. The second is what lets a pin tap leave directions at all on desktop,
+  // where the panel would otherwise keep the slot.
+  const { isOpen: directionsOpen, close: closeDirections } = directions;
+  useEffect(() => {
+    if (directionsOpen) dismissPanels();
+  }, [directionsOpen, dismissPanels]);
+  useEffect(() => {
+    if (selectedStopId) closeDirections();
+  }, [selectedStopId, closeDirections]);
+
+  const toggleDirections = () => {
+    if (directions.isOpen) {
+      directions.close();
+      return;
+    }
+    directions.open({}, "button");
+    if (selectedStopId) requestCloseStop();
+  };
 
   // The field and the `Cerca` tab are one control, so a query typed straight
   // into the field opens the same destination the tab does.
@@ -199,6 +241,7 @@ const BusMap = () => {
   // A second tap on the live tab closes it — and must not re-focus the field,
   // or the software keyboard springs back up over the map you just asked to see.
   const onNavSelect = (panel: Parameters<typeof nav.open>[0]) => {
+    directions.close();
     if (nav.isOpen(panel)) {
       nav.close();
       return;
@@ -229,7 +272,14 @@ const BusMap = () => {
   );
 
   /** The desktop column's one content slot, and the order it resolves in. */
-  const desktopSlot = nav.isOpen("search") ? (
+  const desktopSlot = directions.isOpen ? (
+    <DirectionsPanel
+      variant="panel"
+      plan={plan}
+      locationStatus={status}
+      requestLocation={watchLocation}
+    />
+  ) : nav.isOpen("search") ? (
     <SearchPanel variant="panel" onClose={nav.close} />
   ) : nav.isOpen("lines") ? (
     <LinesPanel variant="panel" open onClose={nav.close} />
@@ -254,17 +304,21 @@ const BusMap = () => {
         in both layouts with no breakpoint of its own.
       */}
       <div className="pointer-events-none absolute inset-x-0 top-0 bottom-[var(--nav-height)] z-10 flex flex-col lg:w-[28rem] lg:gap-3 lg:p-4">
-        <div
-          className={cn(
-            TOOLS_PANEL,
-            // Below `md` this card has no surface of its own — it is painted
-            // onto the map. With results underneath it that leaves the search
-            // field floating over an opaque list, so it takes one on demand.
-            nav.isOpen("search") && "bg-card",
-          )}
-        >
-          {tools}
-        </div>
+        {/* Directions bring their own two fields; the stop search above them
+            would be a third, asking a different question. */}
+        {!directions.isOpen && (
+          <div
+            className={cn(
+              TOOLS_PANEL,
+              // Below `md` this card has no surface of its own — it is painted
+              // onto the map. With results underneath it that leaves the search
+              // field floating over an opaque list, so it takes one on demand.
+              nav.isOpen("search") && "bg-card",
+            )}
+          >
+            {tools}
+          </div>
+        )}
 
         {/* One content panel at a time. Opening a destination covers the open
             stop rather than discarding it — the stop is still selected, still
@@ -294,7 +348,10 @@ const BusMap = () => {
         <div className="hidden shrink-0 items-center gap-3 lg:flex">
           <LinesButton
             open={nav.isOpen("lines")}
-            onToggle={() => nav.toggle("lines", "tools")}
+            onToggle={() => {
+              directions.close();
+              nav.toggle("lines", "tools");
+            }}
             className="pointer-events-auto shrink-0"
           />
           <ContentLinks />
@@ -313,14 +370,16 @@ const BusMap = () => {
             three pin renderers. */}
         <StopEtasProvider>
           <InitialStopFocus />
-          <RoutePaths />
+          {/* An itinerary is drawn in its lines' colours; the selected lines'
+              full routes underneath would read as part of it. */}
+          {!directions.isOpen && <RoutePaths />}
           {stops.length > 0 && <MapPinsRenderer stops={stops} />}
           {/* Saved stops that no selected line already draws — the context has
               removed the overlap, so nothing here doubles up on `stops`. */}
           {preferidesStops.length > 0 && (
             <MapPinsRenderer stops={preferidesStops} />
           )}
-          {busPositions.length > 0 && (
+          {busPositions.length > 0 && !directions.isOpen && (
             <BusMarkersRenderer
               positions={busPositions}
               colorByLine={colorByLine}
@@ -331,6 +390,8 @@ const BusMap = () => {
             shouldPan={shouldPan}
             onPanned={onPanned}
           />
+          <DirectionsLayer plan={plan} isDesktop={isDesktop} />
+          <MapPointPicker />
         </StopEtasProvider>
       </MapComponent>
 
@@ -340,7 +401,12 @@ const BusMap = () => {
           drops in as a sibling. The bottom offset clears the bar below `lg`
           and collapses to nothing from `lg`, where `--nav-height` is `0px` and
           there is no bar. */}
-      <div className="pointer-events-none absolute bottom-[var(--nav-height)] z-10 flex w-full items-end p-4 md:p-6">
+      <div
+        className={cn(
+          "pointer-events-none absolute bottom-[var(--nav-height)] z-10 flex w-full items-end p-4 md:p-6",
+          directionsFullScreen && "hidden",
+        )}
+      >
         <div className="pointer-events-none ml-auto flex flex-col items-end gap-3">
           <KoFiLink />
           <Button
@@ -360,7 +426,20 @@ const BusMap = () => {
             ) : (
               <LocateFixed className="size-5" />
             )}
-            <span className="font-medium">Ubicació</span>
+            <span className="font-medium">ubicació</span>
+          </Button>
+          {/* The primary action, so the filled one and nearest the thumb. */}
+          <Button
+            onClick={toggleDirections}
+            aria-pressed={directions.isOpen}
+            title="com arribar-hi"
+            className={cn(
+              FLOATING_BUTTON,
+              "pointer-events-auto border-transparent bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
+            )}
+          >
+            <Route className="size-5" />
+            <span className="font-medium">ruta</span>
           </Button>
         </div>
       </div>
@@ -368,8 +447,17 @@ const BusMap = () => {
       <MapNav
         active={nav.panel}
         onSelect={onNavSelect}
-        visible={nav.barVisible}
+        visible={nav.barVisible && !directionsFullScreen}
       />
+
+      {directionsFullScreen && (
+        <DirectionsPanel
+          variant="overlay"
+          plan={plan}
+          locationStatus={status}
+          requestLocation={watchLocation}
+        />
+      )}
 
       {!isDesktop && (
         <LinesPanel open={nav.isOpen("lines")} onClose={nav.close} />
