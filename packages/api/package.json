@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:live": "vitest run --config vitest.live.config.ts",
     "validate-bus-positions": "tsx --env-file=../../.env src/scripts/validate-bus-positions.ts",
-    "list-loop-variants": "tsx --env-file=../../.env src/scripts/list-loop-variants.ts"
+    "list-loop-variants": "tsx --env-file=../../.env src/scripts/list-loop-variants.ts",
+    "plan-journey": "tsx --env-file=../../.env src/scripts/plan-journey.ts"
   },
   "dependencies": {
     "@moventis/db": "workspace:*",

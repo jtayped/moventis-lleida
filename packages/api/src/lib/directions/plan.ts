@@ -1,0 +1,168 @@
+import { distanceMeters, type DirectionsPoint } from "@moventis/shared";
+import { walkMeters, walkSeconds, type Network } from "./network";
+import { rangeRaptor, type RaptorJourney, type StopWalk } from "./raptor";
+
+/** Stops this close to an end of the trip are always candidates. */
+export const ACCESS_RADIUS_M = 800;
+/** When fewer than {@link ACCESS_MIN_STOPS} are that close, look this far for them. */
+const ACCESS_FALLBACK_RADIUS_M = 1500;
+const ACCESS_MIN_STOPS = 3;
+
+/** Walking the whole way is offered up to this straight-line distance. */
+export const WALK_ONLY_MAX_M = 1500;
+
+/** "Leave now" looks this far ahead for departures... */
+const WINDOW_S = 60 * 60;
+/** ...and this far when the first hour has none (late evening, Sunday lines). */
+const WIDE_WINDOW_S = 3 * 60 * 60;
+
+export const MAX_ITINERARIES = 5;
+
+const at = (p: DirectionsPoint): [number, number] => [p.lng, p.lat];
+
+/** Served stops within walking range of a point, nearest first. */
+export function nearbyStops(
+  network: Network,
+  point: DirectionsPoint,
+): StopWalk[] {
+  const served = network.stops
+    .map((s, stop) => ({ stop, d: distanceMeters(at(point), [s.lng, s.lat]) }))
+    .filter(({ stop }) => (network.patternsAtStop[stop]?.length ?? 0) > 0)
+    .sort((a, b) => a.d - b.d);
+  const close = served.filter((s) => s.d <= ACCESS_RADIUS_M);
+  const chosen =
+    close.length >= ACCESS_MIN_STOPS
+      ? close
+      : served
+          .filter((s) => s.d <= ACCESS_FALLBACK_RADIUS_M)
+          .slice(0, ACCESS_MIN_STOPS);
+  return chosen.map(({ stop, d }) => ({
+    stop,
+    seconds: walkSeconds(d),
+    meters: walkMeters(d),
+  }));
+}
+
+export const journeyWalkMeters = (j: RaptorJourney): number =>
+  j.legs.reduce((sum, l) => (l.kind === "ride" ? sum : sum + l.meters), 0);
+
+/** Same buses between the same stops, walked the same way. */
+function signature(network: Network, j: RaptorJourney): string {
+  return j.legs
+    .map((l) => {
+      if (l.kind === "ride") {
+        const trip = network.patterns[l.pattern]!.trips[l.trip]!;
+        return `${trip.key}@${l.boardPosition}-${l.alightPosition}`;
+      }
+      if (l.kind === "transfer") return `w${l.from}-${l.to}`;
+      return `${l.kind}${l.stop}`;
+    })
+    .join("|");
+}
+
+/**
+ * Leaving up to this much earlier to save a change is always the better
+ * offer. Pareto-optimal is not the same as worth listing: line 20 then line 2,
+ * leaving at 19:29, is optimal next to the direct line 2 at 19:28 that arrives
+ * at the same minute, and nobody wants the change to buy one minute in bed.
+ */
+const CHANGE_WORTH_S = 5 * 60;
+
+/**
+ * Drop duplicates, any journey another one beats outright (leaves no earlier,
+ * arrives no later, takes no more buses), and any change that only saves a
+ * few minutes at the stop. Ranked by arrival, then fewer buses, then less
+ * walking.
+ */
+export function rankJourneys<J extends RaptorJourney>(
+  network: Network,
+  journeys: J[],
+): J[] {
+  const unique = [
+    ...new Map(journeys.map((j) => [signature(network, j), j])).values(),
+  ];
+  const dominated = (j: J) =>
+    unique.some(
+      (o) =>
+        o !== j &&
+        o.departAt >= j.departAt &&
+        o.arriveAt <= j.arriveAt &&
+        o.trips <= j.trips &&
+        (o.departAt > j.departAt ||
+          o.arriveAt < j.arriveAt ||
+          o.trips < j.trips ||
+          journeyWalkMeters(o) < journeyWalkMeters(j)),
+    );
+  const changeNotWorthIt = (j: J) =>
+    unique.some(
+      (o) =>
+        o.trips < j.trips &&
+        o.arriveAt <= j.arriveAt &&
+        j.departAt - o.departAt <= CHANGE_WORTH_S,
+    );
+  return unique
+    .filter((j) => !dominated(j) && !changeNotWorthIt(j))
+    .sort(
+      (a, b) =>
+        a.arriveAt - b.arriveAt ||
+        a.trips - b.trips ||
+        journeyWalkMeters(a) - journeyWalkMeters(b),
+    );
+}
+
+export interface PlanInput {
+  from: DirectionsPoint;
+  to: DirectionsPoint;
+  /** Leave no earlier than this, in seconds after the service day's midnight. */
+  departAt: number;
+}
+
+export interface PlanOutput {
+  journeys: RaptorJourney[];
+  /** Straight-line distance between the two ends, when walking it is an option. */
+  walkOnlyMeters: number | null;
+}
+
+/** "Leave now" windows, in the order they are tried. */
+export const PLAN_WINDOWS_S = [WINDOW_S, WIDE_WINDOW_S] as const;
+
+/** Straight-line distance between the two ends, when walking it is an option. */
+export function walkOnlyMetersFor(input: PlanInput): number | null {
+  const straight = distanceMeters(at(input.from), at(input.to));
+  return straight <= WALK_ONLY_MAX_M ? straight : null;
+}
+
+/** Every timetable journey leaving within `window` of `input.departAt`, unranked. */
+export function searchJourneys(
+  network: Network,
+  input: PlanInput,
+  window: number,
+): RaptorJourney[] {
+  const access = nearbyStops(network, input.from);
+  const egress = nearbyStops(network, input.to);
+  if (access.length === 0 || egress.length === 0) return [];
+  // A departure inside the window can still lead to a long wait at the stop
+  // for a far later bus — the one-bus n1 at 23:02 surfaced in a 19:23 "leave
+  // now" list. Valid, and not what the window asked for: options must leave
+  // within it.
+  return rangeRaptor(network, {
+    access,
+    egress,
+    earliestDeparture: input.departAt,
+    latestDeparture: input.departAt + window,
+  }).filter((j) => j.departAt <= input.departAt + window);
+}
+
+/** The timetable's own answer: the plan when no live listing is asked. */
+export function planJourneys(network: Network, input: PlanInput): PlanOutput {
+  const walkOnlyMeters = walkOnlyMetersFor(input);
+  for (const window of PLAN_WINDOWS_S) {
+    const journeys = searchJourneys(network, input, window);
+    if (journeys.length > 0)
+      return {
+        journeys: rankJourneys(network, journeys).slice(0, MAX_ITINERARIES),
+        walkOnlyMeters,
+      };
+  }
+  return { journeys: [], walkOnlyMeters };
+}

@@ -88,3 +88,46 @@ export function utcStartOfLocalDay(instant: Date): Date {
   const { year, month, day } = toWallClock(instant);
   return new Date(Date.UTC(year, month - 1, day));
 }
+
+const DAY_S = 24 * 60 * 60;
+
+const parseServiceDate = (serviceDate: string) => {
+  const [year, month, day] = serviceDate.split("-").map(Number);
+  return { year: year!, month: month!, day: day! };
+};
+
+/** The Lleida calendar day `instant` falls on, as `YYYY-MM-DD`. */
+export function lleidaServiceDate(instant: Date): string {
+  const { year, month, day } = toWallClock(instant);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/**
+ * Wall-clock seconds after `serviceDate`'s midnight (`YYYY-MM-DD`, in
+ * {@link TIME_ZONE}) at which `instant` falls — the footing timetable times are
+ * on. Negative before that midnight, past 86 400 on the following day.
+ *
+ * Wall-clock, not elapsed: on the two DST days the two differ by an hour, and a
+ * timetable printed as "08:15" means 08:15 on the clock either way.
+ */
+export function serviceSecondOf(serviceDate: string, instant: Date): number {
+  const { year, month, day } = parseServiceDate(serviceDate);
+  const wc = toWallClock(instant);
+  const dayDiff = Math.round(
+    (Date.UTC(wc.year, wc.month - 1, wc.day) - Date.UTC(year, month - 1, day)) /
+      (DAY_S * 1000),
+  );
+  return dayDiff * DAY_S + wc.hour * 3600 + wc.minute * 60 + wc.second;
+}
+
+/** Inverse of {@link serviceSecondOf}; `sec` may be negative or past a day. */
+export function instantAtServiceSecond(serviceDate: string, sec: number): Date {
+  const { year, month, day } = parseServiceDate(serviceDate);
+  const dayOffset = Math.floor(sec / DAY_S);
+  const rem = sec - dayOffset * DAY_S;
+  const hour = Math.floor(rem / 3600);
+  const minute = Math.floor((rem % 3600) / 60);
+  const second = rem % 60;
+  const base = fromWallClock(year, month, day + dayOffset, hour, minute);
+  return new Date(base.getTime() + second * 1000);
+}

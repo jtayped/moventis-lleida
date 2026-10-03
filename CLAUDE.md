@@ -112,6 +112,7 @@ Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.t
 - Both of the two above return `StopWithLines` (a `Stop` plus `lineCodes: string[]`), not a bare `Stop`, so a search result can draw its line chips without a second query. Codes only — the colour is already on the client from the weekly-cached `routes.getAll`. The `deletedAt: null` filter has to be written into that `include` by hand: the soft-delete extension in `packages/db` reaches `findMany`, never an included relation.
 - `stops.get` — fetches a single stop + live schedules from Moventis API, keyed by `Stop.externalId` (not the internal cuid) because that id is public in the URL. It also returns `failedRoutes: string[]`, the `code` of every route whose live fetch was unavailable, so a partial outage reads as a short timetable rather than a complete one; when every route fails it throws `INTERNAL_SERVER_ERROR` instead, and `buses.byLine` does the same when every probe fails — an outage must not reach the UI as "no buses are running".
 - `stops.getByExternalIds` — bare stops for the saved-stops list. Database-only and includes soft-deleted stops, unlike every other stop query. `stops.get` would fire one live Moventis request per route on the stop, so resolving N saved ids through it would push ~3N calls through the 5 req/s throttle before the map could draw anything.
+- `directions.plan` — bus itineraries between two points (see Directions), timed from Moventis's live boards: up to 12 requests in the queue's `"batch"` lane, so it answers in a second or a few. It throws `PRECONDITION_FAILED` when the day has no stored timetable rather than returning an empty list, for the same reason `stops.get` throws on a full outage.
 
 ### Scraper Line Discovery (`apps/scraper`)
 
@@ -140,6 +141,17 @@ The full scheduled day comes from `GetParadas/{line}/{trayecto}/{YYYYMMDD}/0`, t
 - **Same replacement rule as the rest of the sync:** a row is rewritten only by an answer; an answered empty day deletes it; a failed fetch keeps it; rows are swept for being absent only when the line's calendar and every fetch were complete (`planTimetableWrites`).
 
 `@moventis/shared` is `"type": "module"` because the scraper imports it at runtime under `tsx`; as CommonJS its `export *` barrel exposes no named exports to an ESM importer. Recorded `GetParadas` responses and their parses are exported for tests as `@moventis/shared/fixtures`.
+
+### Directions (`packages/api/src/lib/directions/`)
+
+Range RAPTOR (Delling, Pajor & Werneck 2012) over the stored timetable. Rounds are bus counts, so one search returns the Pareto set over (departure, arrival, buses), which is the itinerary list. At 246 stops a query costs ~5 ms (p50) and needs no preprocessing. The timetable only proposes the journeys; what Moventis lists at their stops right now sets every time shown.
+
+- **`network.ts` turns stored trip ids into rides.** It splits where time runs backwards or jumps over 20 min, stitches a fragment onto the one carrying the same bus on within 5 min (line 2's 125 → 181; line 6's two segments), and fills an unpaired stop for a trip when exactly one of the stop's times fits between the trip's neighbours. Patterns are split wherever trips would overtake, because the scan assumes FIFO.
+- **Two RAPTOR rules that each fixed a real bug, both pinned by the property test** (`raptor.test.ts`: range result equals one run per departure on 500 random cities, and every journey replays as rideable). Prune a round's label only against that round, never a best-over-all-rounds: labels carry over between departures, and a later departure's two-bus arrival would prune a still-optimal one-bus journey. And every walk after a bus starts from the round's _bus_ arrival (`rideTau`/`rideLabel`), never from the best label, or journeys chain two walks.
+- **Times are wall-clock seconds after the Lleida service day's midnight** (`serviceSecondOf` / `instantAtServiceSecond` in `zoned-time.ts`). The network for day D also holds D−1's trips past 24:00, shifted by a day, which is how n1 after midnight is plannable.
+- Walking is straight-line × 1.3 at 1.2 m/s, with transfers up to 400 m apart. Access and egress use stops within 800 m (else the nearest three within 1.5 km), plus a 60 s margin on every change. The network is cached per service date for 10 min in a `SettleCache`, not `unstable_cache`, because it holds Maps that do not survive JSON.
+- **Live times on timetable shapes** (`live.ts`, `live-plan.ts`). Up to 8 distinct shapes (lines, boarding and alighting stops, walks) from RAPTOR are re-timed from the boards of their stops (`lib/stop-boards.ts`: one request per stop answers every line, shared for 20 s; a plan waits 4 s, then takes a board up to 2 min old, then the timetable). Moventis names no trip, so each stop's list is aligned with that journey's timetabled trips by `alignLive` (in order, least total deviation, 2 min early to 20 min late). That identity follows one bus from the boarding stop to the alighting one, and makes a missed connection visible, so the next listed bus replaces it. A trip due before the last listed time and missing from the list is gone and never offered. One due after it, or at a stop that could not be asked, keeps its timetable time with `live: false`. Leaving more than an hour ahead, the timetable answers alone: boards reach 1 to 2.5 hours. Keep `alignLive`'s cost for an unmatched entry above its late bound; at 10 min it read every bus more than 10 min late as gone.
+- `pnpm plan-journey <from> <to> [HH:MM] [YYYY-MM-DD] [--timetable]` (from `packages/api`; stops by externalId or `lat,lng`) prints what `directions.plan` would return, asking Moventis like the API does unless `--timetable` is given.
 
 ### Real-time Schedule Parsing
 
@@ -216,8 +228,9 @@ Three things are load-bearing and not visible in the code:
   operates today where possible, because a dormant line's id answers the `{"idLinea":"N"}`
   sentinel and a stop served by a running line would report nothing.
 - **The cap is not what protects the drawer — the priority lane is.** `ThrottledQueue` has
-  two lanes, and `nextArrivals` is the only caller that passes `"low"`; everything else
-  defaults to `"high"` and keeps its old behaviour. Capping alone was tried first and is not
+  three lanes: `nextArrivals` is the only caller that passes `"low"`, `directions.plan` the
+  only one that passes `"batch"` (between the two, so a plan never delays a tap), and
+  everything else defaults to `"high"` and keeps its old behaviour. Capping alone was tried first and is not
   sufficient: with 15 legitimate prefetches queued FIFO ahead of a tap, 7 of 11 drawer opens
   took over three seconds and the worst took 8.9 s. With the lane, drawer latency under full
   prefetch load (median 3.1 s) matches an idle queue (2.4 s); the rest is Moventis's own

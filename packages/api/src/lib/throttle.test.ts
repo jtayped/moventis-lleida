@@ -182,6 +182,29 @@ describe("ThrottledQueue priority lanes", () => {
     vi.useRealTimers();
   });
 
+  it("lets a tap overtake a plan's batch, and the batch overtake pins", async () => {
+    vi.useFakeTimers();
+    const q = new ThrottledQueue(5);
+    const started: string[] = [];
+    const task = (name: string) => () => {
+      started.push(name);
+      return Promise.resolve(name);
+    };
+
+    void q.schedule(task("pin-a"), "low");
+    void q.schedule(task("pin-b"), "low");
+    void q.schedule(task("plan-a"), "batch");
+    void q.schedule(task("plan-b"), "batch");
+    void q.schedule(task("drawer"));
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    // pin-a took the first slot before anything else existed. After that the
+    // drawer goes first, then the plan in its own order, then pin-b.
+    expect(started).toEqual(["pin-a", "drawer", "plan-a", "plan-b", "pin-b"]);
+    vi.useRealTimers();
+  });
+
   it("runs speculative work once nothing is waiting", async () => {
     vi.useFakeTimers();
     const q = new ThrottledQueue(5);
