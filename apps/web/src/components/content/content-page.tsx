@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { AuthorCredit } from "@/components/content/author-credit";
+import { FOCUS_RING } from "@/components/content/styles";
 import { JsonLd } from "@/components/seo/json-ld";
 import { CONTENT_LINKS } from "@/lib/content-links";
 import { breadcrumbJsonLd, type Breadcrumb } from "@/lib/seo";
@@ -53,7 +54,10 @@ export const ContentPage = ({
         >
           <Link
             href="/"
-            className="flex items-center gap-2 text-sm font-semibold"
+            className={cn(
+              "flex items-center gap-2 rounded-sm text-sm font-semibold",
+              FOCUS_RING,
+            )}
           >
             <Image
               src="/android-chrome-192x192.png"
@@ -66,7 +70,10 @@ export const ContentPage = ({
           </Link>
           <Link
             href="/"
-            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
+            className={cn(
+              "text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 rounded-sm text-sm transition-colors",
+              FOCUS_RING,
+            )}
           >
             <ArrowLeft size={16} />
             torna al mapa
@@ -84,7 +91,10 @@ export const ContentPage = ({
                   <li key={crumb.href} className="flex items-center gap-1.5">
                     <Link
                       href={crumb.href}
-                      className="hover:text-foreground underline-offset-4 hover:underline"
+                      className={cn(
+                        "hover:text-foreground rounded-sm underline-offset-4 hover:underline",
+                        FOCUS_RING,
+                      )}
                     >
                       {crumb.label}
                     </Link>
@@ -117,7 +127,10 @@ export const ContentPage = ({
               <li>
                 <Link
                   href="/"
-                  className="hover:text-foreground underline-offset-4 hover:underline"
+                  className={cn(
+                    "hover:text-foreground rounded-sm underline-offset-4 hover:underline",
+                    FOCUS_RING,
+                  )}
                 >
                   mapa en directe
                 </Link>
@@ -126,7 +139,10 @@ export const ContentPage = ({
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="hover:text-foreground underline-offset-4 hover:underline"
+                    className={cn(
+                      "hover:text-foreground rounded-sm underline-offset-4 hover:underline",
+                      FOCUS_RING,
+                    )}
                   >
                     {link.label}
                   </Link>

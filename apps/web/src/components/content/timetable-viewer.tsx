@@ -133,6 +133,16 @@ export const TimetableViewer = ({
     dayTypes.includes(initialDay) ? initialDay : (dayTypes[0] ?? "weekday"),
   );
   const [picked, setPicked] = useState<number | null>(null);
+  // Only after a press: a live region filled on mount is read out on load.
+  const [touched, setTouched] = useState(false);
+  const pickDay = (type: DayType) => {
+    setDay(type);
+    setTouched(true);
+  };
+  const pickRoute = (trayectoId: number) => {
+    setPicked(trayectoId);
+    setTouched(true);
+  };
 
   const running = segments.filter((segment) => runsOn(segment, day));
   // Until someone picks, show the route with the most buses that day: line 6's
@@ -152,8 +162,26 @@ export const TimetableViewer = ({
   const textLabelOf = (segment: LinePageSegment) =>
     labels[segments.indexOf(segment)] ?? segmentTitle(segment);
 
+  const spokenRoute = (segment: LinePageSegment) => {
+    const { first, last } = endpoints(segment);
+    if (!first || !last) return segment.description;
+    return first === last
+      ? `circular des de ${first}`
+      : `de ${first} a ${last}`;
+  };
+  const announcement = !touched
+    ? ""
+    : current
+      ? `${DAY_TYPE_LABELS[day]}, ${spokenRoute(current)}: ${current.departures[day]!.length} sortides`
+      : `aquesta línia no circula ${DAY_TYPE_PHRASES[day]}`;
+
   return (
     <div className="space-y-5">
+      {/* The picked panel swaps in below the buttons, which a screen reader
+          does not notice on its own. This says what is showing now. */}
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
       <div className="space-y-2">
         <p id={`${id}-days`} className="text-sm font-medium">
           dia
@@ -167,7 +195,7 @@ export const TimetableViewer = ({
             <Choice
               key={type}
               pressed={type === day}
-              onClick={() => setDay(type)}
+              onClick={() => pickDay(type)}
             >
               <span className="block text-center">{DAY_TYPE_LABELS[type]}</span>
             </Choice>
@@ -192,7 +220,7 @@ export const TimetableViewer = ({
                 <select
                   id={`${id}-route`}
                   value={current?.trayectoId}
-                  onChange={(e) => setPicked(Number(e.target.value))}
+                  onChange={(e) => pickRoute(Number(e.target.value))}
                   className={cn(
                     "border-border bg-background min-h-11 w-full appearance-none rounded-lg border py-2 pr-10 pl-3 text-sm font-medium",
                     FOCUS_RING,
@@ -225,7 +253,7 @@ export const TimetableViewer = ({
                   <Choice
                     key={segment.trayectoId}
                     pressed={segment === current}
-                    onClick={() => setPicked(segment.trayectoId)}
+                    onClick={() => pickRoute(segment.trayectoId)}
                   >
                     {labelOf(segment)}
                   </Choice>

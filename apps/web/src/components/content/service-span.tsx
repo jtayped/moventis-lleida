@@ -60,7 +60,16 @@ export const ServiceSpan = ({
             </span>
             <span className="w-[6.75rem] shrink-0 text-right tabular-nums">
               {day ? (
-                `${formatServiceTime(day.first)}–${formatServiceTime(day.last)}`
+                <>
+                  <span aria-hidden>
+                    {formatServiceTime(day.first)}–{formatServiceTime(day.last)}
+                  </span>
+                  {/* The dash is read out as "en dash", or not at all. */}
+                  <span className="sr-only">
+                    de {formatServiceTime(day.first)} a{" "}
+                    {formatServiceTime(day.last)}
+                  </span>
+                </>
               ) : (
                 <span className="text-muted-foreground">no circula</span>
               )}

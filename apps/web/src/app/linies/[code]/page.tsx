@@ -82,7 +82,7 @@ const DayCards = ({ line }: { line: LinePage }) => (
                 {formatServiceTime(day.last)}
               </p>
               {day.headway && (
-                <p className="mt-2 flex items-center gap-1 text-sm whitespace-nowrap">
+                <p className="mt-2 flex items-center gap-1 text-sm">
                   <Clock
                     size={14}
                     aria-hidden
@@ -109,7 +109,7 @@ const LiniaPage = async ({ params }: Props) => {
   return (
     <ContentPage
       title={`línia ${line.code}: ${name}`}
-      leading={<LineBadge code={line.code} color={line.color} />}
+      leading={<LineBadge code={line.code} color={line.color} decorative />}
       breadcrumbs={[{ label: "línies", href: "/linies" }]}
     >
       <div style={lineAccentStyle(line.color)} className={LINE_ACCENT_CLASS}>
