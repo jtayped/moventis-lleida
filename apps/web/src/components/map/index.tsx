@@ -18,7 +18,7 @@ import StopDetails from "@/components/map/stop-details";
 import { Panel } from "@/components/map/panel";
 import StopsError from "@/components/map/stops-error";
 import MapNav, { DesktopNav } from "@/components/map/nav";
-import { HandCoins, Loader2, LocateFixed, Route } from "lucide-react";
+import { HeartHandshake, Loader2, LocateFixed, Route } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useSettings } from "@/hooks/use-settings";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
@@ -95,7 +95,7 @@ const KoFiLink = () => (
       aria-label="fes una donació al projecte a ko-fi"
       title="fes una donació a ko-fi"
     >
-      <HandCoins aria-hidden="true" />
+      <HeartHandshake aria-hidden="true" />
     </a>
   </Button>
 );
