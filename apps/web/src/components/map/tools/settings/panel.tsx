@@ -22,6 +22,7 @@ import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { useSettings, type ThemeSetting } from "@/hooks/use-settings";
 import { track } from "@/lib/analytics";
 import { CONTENT_LINKS } from "@/lib/content-links";
+import { AuthorCredit } from "@/components/content/author-credit";
 
 const THEME_OPTIONS: {
   value: ThemeSetting;
@@ -331,6 +332,7 @@ const SettingsPanel = () => {
             </li>
           ))}
         </ul>
+        <AuthorCredit className="text-muted-foreground text-xs leading-relaxed" />
       </Section>
     </div>
   );

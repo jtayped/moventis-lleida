@@ -19,7 +19,7 @@ import StopDetails from "@/components/map/stop-details";
 import { Panel } from "@/components/map/panel";
 import StopsError from "@/components/map/stops-error";
 import MapNav from "@/components/map/nav";
-import { LayoutList, LocateFixed, Loader2 } from "lucide-react";
+import { Coffee, LayoutList, LocateFixed, Loader2 } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useSettings } from "@/hooks/use-settings";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
@@ -29,6 +29,7 @@ import UserLocationLayer from "@/components/map/user-location-layer";
 import { cn } from "@/lib/utils";
 import { StopEtasProvider } from "@/context/stop-etas";
 import { CONTENT_LINKS } from "@/lib/content-links";
+import { KO_FI_URL } from "@/lib/project-links";
 import Link from "next/link";
 
 /**
@@ -120,6 +121,24 @@ const ContentLinks = () => (
       ))}
     </ul>
   </nav>
+);
+
+/**
+ * The tip jar. 40px against the location button's 48, outlined, muted: the
+ * quietest control on the map on purpose, because it is an ask and not a tool.
+ * `/informacio` says what it is for.
+ */
+const KoFiLink = () => (
+  <a
+    href={KO_FI_URL}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="dona suport al projecte a ko-fi"
+    title="convida'm a un cafè a ko-fi"
+    className="bg-card dark:bg-card text-muted-foreground hover:text-foreground hover:bg-accent dark:hover:bg-accent pointer-events-auto grid size-10 place-items-center rounded-full border shadow-lg transition-colors"
+  >
+    <Coffee className="size-4" aria-hidden="true" />
+  </a>
 );
 
 const BusMap = () => {
@@ -315,30 +334,35 @@ const BusMap = () => {
         </StopEtasProvider>
       </MapComponent>
 
-      {/* The location button's own row. It is the one control here now that the
-          line browser is reached from the nav, so `ml-auto` parks it right.
-          The bottom offset clears the bar below `lg` and collapses to nothing
-          from `lg`, where `--nav-height` is `0px` and there is no bar. */}
+      {/* The map's right rail: a column parked in the bottom-right corner,
+          quietest control at the top and the primary action nearest the thumb.
+          A plain flex column with no fixed heights, so a control added later
+          drops in as a sibling. The bottom offset clears the bar below `lg`
+          and collapses to nothing from `lg`, where `--nav-height` is `0px` and
+          there is no bar. */}
       <div className="pointer-events-none absolute bottom-[var(--nav-height)] z-10 flex w-full items-end p-4 md:p-6">
-        <Button
-          variant="outline"
-          onClick={requestLocation}
-          title={locateTitle}
-          disabled={status === "unsupported"}
-          className={cn(
-            FLOATING_BUTTON,
-            "pointer-events-auto ml-auto",
-            status === "active" && "border-blue-500 text-blue-500",
-            status === "error" && "border-destructive text-destructive",
-          )}
-        >
-          {status === "loading" ? (
-            <Loader2 className="size-5 animate-spin" />
-          ) : (
-            <LocateFixed className="size-5" />
-          )}
-          <span className="font-medium">Ubicació</span>
-        </Button>
+        <div className="pointer-events-none ml-auto flex flex-col items-end gap-3">
+          <KoFiLink />
+          <Button
+            variant="outline"
+            onClick={requestLocation}
+            title={locateTitle}
+            disabled={status === "unsupported"}
+            className={cn(
+              FLOATING_BUTTON,
+              "pointer-events-auto",
+              status === "active" && "border-blue-500 text-blue-500",
+              status === "error" && "border-destructive text-destructive",
+            )}
+          >
+            {status === "loading" ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <LocateFixed className="size-5" />
+            )}
+            <span className="font-medium">Ubicació</span>
+          </Button>
+        </div>
       </div>
 
       <MapNav

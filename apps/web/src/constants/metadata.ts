@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { AUTHOR_NAME, PORTFOLIO_URL } from "@/lib/project-links";
 
 export const SITE_URL = "https://moventis-lleida.joeltaylor.business";
 
@@ -32,9 +33,9 @@ export const ROOT_METADATA: Metadata = {
     "línies bus lleida",
   ],
 
-  authors: [{ name: "Joel Taylor", url: "https://joeltaylor.business" }],
-  creator: "Joel Taylor",
-  publisher: "Joel Taylor",
+  authors: [{ name: AUTHOR_NAME, url: PORTFOLIO_URL }],
+  creator: AUTHOR_NAME,
+  publisher: AUTHOR_NAME,
 
   robots: {
     index: true,

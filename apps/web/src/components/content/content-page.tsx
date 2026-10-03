@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import { AuthorCredit } from "@/components/content/author-credit";
 import { CONTENT_LINKS } from "@/lib/content-links";
 
 /**
@@ -85,6 +86,7 @@ export const ContentPage = ({
           paeria. les línies, les parades i els horaris surten de les dades
           públiques de moventis.es.
         </p>
+        <AuthorCredit />
       </div>
     </footer>
   </div>
