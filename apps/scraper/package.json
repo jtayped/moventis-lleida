@@ -17,7 +17,7 @@
     "@moventis/db": "workspace:*",
     "@moventis/shared": "workspace:*",
     "node-cron": "^3.0.3",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "zod": "^3.24.2"
   },
   "devDependencies": {
