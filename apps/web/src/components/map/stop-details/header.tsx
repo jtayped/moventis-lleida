@@ -1,4 +1,4 @@
-import { RefreshCw, X } from "lucide-react";
+import { RefreshCw, Route, X } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import CountdownTimer from "@/components/ui/countdown";
@@ -9,12 +9,14 @@ import { getContrastTextColor } from "@/lib/contrast";
 import PreferidaToggle from "@/components/map/stop-details/preferida-toggle";
 import { track } from "@/lib/analytics";
 import { useBusFinder } from "@/context/buses";
+import { useDirections } from "@/context/directions";
 import { DrawerClose } from "@/components/ui/drawer";
 import type { StopDetailsVariant } from "@/components/map/stop-details/shell";
 
 interface StopDetailsHeaderProps {
   externalId: string;
   name: string;
+  position: { lat: number; lng: number };
   lines: Line[];
   /** Soonest arrival per line code. A line absent from it has none due. */
   nextByLine: Map<string, Date>;
@@ -23,6 +25,39 @@ interface StopDetailsHeaderProps {
   refetch: () => void;
   variant: StopDetailsVariant;
 }
+
+/**
+ * Directions to this stop. The stop closes as directions open: on a phone the
+ * sheet would otherwise sit over the panel, and the stop is not lost — it is
+ * the destination now. `requestCloseStop` is the same path Escape takes, so it
+ * works from the sheet without arming anything first.
+ */
+const DirectionsButton = ({
+  externalId,
+  name,
+  position,
+}: {
+  externalId: string;
+  name: string;
+  position: { lat: number; lng: number };
+}) => {
+  const { open } = useDirections();
+  const { requestCloseStop } = useBusFinder();
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="mt-2"
+      onClick={() => {
+        open({ to: { kind: "stop", externalId, name, ...position } }, "stop");
+        requestCloseStop();
+      }}
+    >
+      <Route aria-hidden />
+      com arribar-hi
+    </Button>
+  );
+};
 
 /**
  * Two closes, because there are two containers.
@@ -46,7 +81,7 @@ const CloseButton = ({ variant }: { variant: StopDetailsVariant }) => {
         onClick={requestCloseStop}
         variant="ghost"
         size="icon"
-        aria-label="Tanca"
+        aria-label="tanca"
       >
         <X className="h-4 w-4" />
       </Button>
@@ -62,7 +97,7 @@ const CloseButton = ({ variant }: { variant: StopDetailsVariant }) => {
         }}
         variant="ghost"
         size="icon"
-        aria-label="Tanca"
+        aria-label="tanca"
       >
         <X className="h-4 w-4" />
       </Button>
@@ -73,6 +108,7 @@ const CloseButton = ({ variant }: { variant: StopDetailsVariant }) => {
 export const StopDetailsHeader = ({
   externalId,
   name,
+  position,
   lines,
   nextByLine,
   dataUpdatedAt,
@@ -146,6 +182,11 @@ export const StopDetailsHeader = ({
         </ul>
         <h2 className="mt-2 text-xl font-bold">{name}</h2>
         <LastUpdated timestamp={dataUpdatedAt} />
+        <DirectionsButton
+          externalId={externalId}
+          name={name}
+          position={position}
+        />
       </div>
       <div className="flex items-center gap-1">
         <PreferidaToggle externalId={externalId} />
@@ -157,7 +198,7 @@ export const StopDetailsHeader = ({
           variant="ghost"
           size="icon"
           className="text-muted-foreground hover:text-foreground"
-          aria-label="Refresh bus times"
+          aria-label="actualitza les hores"
           disabled={isFetching}
         >
           <RefreshCw size={20} className={isFetching ? "animate-spin" : ""} />

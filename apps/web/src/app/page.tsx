@@ -1,5 +1,6 @@
 import BusMap from "@/components/map";
 import { BusFinderProvider } from "@/context/buses";
+import { DirectionsProvider } from "@/context/directions";
 import { api, HydrateClient } from "@/trpc/server";
 import React from "react";
 
@@ -50,12 +51,16 @@ const HomePage = async ({
 
   return (
     <HydrateClient>
-      <BusFinderProvider
-        initialLines={initialLines}
-        initialStopId={initialStopId}
-      >
-        <BusMap />
-      </BusFinderProvider>
+      {/* Outside the bus finder: the phone's stop sheet is rendered by that
+          provider, and its "com arribar-hi" has to reach this. */}
+      <DirectionsProvider>
+        <BusFinderProvider
+          initialLines={initialLines}
+          initialStopId={initialStopId}
+        >
+          <BusMap />
+        </BusFinderProvider>
+      </DirectionsProvider>
     </HydrateClient>
   );
 };
