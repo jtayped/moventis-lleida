@@ -13,13 +13,20 @@ import BusMarkersRenderer from "@/components/map/bus-markers-renderer";
 import InitialStopFocus from "@/components/map/initial-stop-focus";
 import { Button } from "../ui/button";
 import { env } from "@/env";
-import LinesPanel from "@/components/map/lines-panel";
 import SearchPanel from "@/components/map/search-panel";
 import StopDetails from "@/components/map/stop-details";
 import { Panel } from "@/components/map/panel";
 import StopsError from "@/components/map/stops-error";
 import MapNav from "@/components/map/nav";
-import { Coffee, LayoutList, LocateFixed, Loader2, Route } from "lucide-react";
+import {
+  Coffee,
+  LayoutList,
+  Loader2,
+  LocateFixed,
+  MapPin,
+  Route,
+} from "lucide-react";
+import { track } from "@/lib/analytics";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useSettings } from "@/hooks/use-settings";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
@@ -74,59 +81,77 @@ const TOOLS_PANEL = [
 ].join(" ");
 
 /**
- * The desktop door to the line browser. Below `lg` the bottom nav's `Línies` tab
- * is the only one — this used to be rendered a second time as a floating pill
- * down there, which is exactly the scattered chrome the nav replaces.
+ * The desktop doors to the line and stop pages; below `lg` the bottom nav's
+ * línies and parades tabs are. Links, not buttons: they leave the map for a
+ * page, and as `<a>` elements a crawler follows them from `/`.
  */
-const LinesButton = ({
-  open,
-  onToggle,
-  className,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  className?: string;
-}) => (
-  <Button
-    variant="outline"
-    onClick={onToggle}
-    aria-pressed={open}
-    title="veure totes les línies"
-    className={cn(FLOATING_BUTTON, className)}
-  >
-    <LayoutList className="size-5" />
-    <span className="font-medium">línies</span>
-  </Button>
+const PageLinks = ({ className }: { className?: string }) => (
+  <>
+    <Button
+      asChild
+      variant="outline"
+      className={cn(FLOATING_BUTTON, className)}
+    >
+      <Link
+        href="/linies"
+        title="línies i horaris"
+        onClick={() =>
+          track("content page opened", { page: "linies", source: "tools" })
+        }
+      >
+        <LayoutList className="size-5" aria-hidden />
+        <span className="font-medium">línies</span>
+      </Link>
+    </Button>
+    <Button
+      asChild
+      variant="outline"
+      className={cn(FLOATING_BUTTON, className)}
+    >
+      <Link
+        href="/parades"
+        title="totes les parades"
+        onClick={() =>
+          track("content page opened", { page: "parades", source: "tools" })
+        }
+      >
+        <MapPin className="size-5" aria-hidden />
+        <span className="font-medium">parades</span>
+      </Link>
+    </Button>
+  </>
 );
 
+/** The pages `PageLinks` already has a button for, left out of the row beside it. */
+const PAGE_LINK_HREFS: readonly string[] = ["/linies", "/parades"];
+
 /**
- * Plain links to the content pages, beside the desktop "línies" button.
+ * Plain links to the remaining content pages, beside the desktop línies and
+ * parades links. The row is hidden below `lg` but stays in the DOM, and links
+ * in the DOM are still followed; phone users reach the same pages from the
+ * settings panel.
  *
- * These are the only `<a>` elements in the map's server HTML. Every other way
- * into a line or a stop is a button, which a crawler does not follow, so without
- * this row nothing on `/` leads anywhere. The row is hidden below `lg` but stays
- * in the DOM, and links in the DOM are still followed; phone users reach the
- * same pages from the settings panel.
- *
- * Beside the button and not under it: under it, the row takes the column's last
- * slot, which is where Google's logo sits on the map, and the logo must stay
- * visible.
+ * Beside the buttons and not under them: under them, the row takes the
+ * column's last slot, which is where Google's logo sits on the map, and the
+ * logo must stay visible.
  */
 const ContentLinks = () => (
   <nav aria-label="més informació" className="pointer-events-auto">
     {/* Wraps between links, never inside one: "línies i horaris" split over
         two rows read as two links. */}
     <ul className="bg-card text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 rounded-xl border px-4 py-2 text-sm shadow-lg">
-      {CONTENT_LINKS.map((link) => (
-        <li key={link.href}>
-          <Link
-            href={link.href}
-            className="hover:text-foreground rounded-sm whitespace-nowrap underline-offset-4 hover:underline"
-          >
-            {link.label}
-          </Link>
-        </li>
-      ))}
+      {CONTENT_LINKS.filter((link) => !PAGE_LINK_HREFS.includes(link.href)).map(
+        (link) => (
+          <li key={link.href}>
+            <Link
+              href={link.href}
+              className="hover:text-foreground rounded-sm whitespace-nowrap underline-offset-4 hover:underline"
+            >
+              {link.label}
+            </Link>
+          </li>
+        ),
+      )}
     </ul>
   </nav>
 );
@@ -283,8 +308,6 @@ const BusMap = () => {
     />
   ) : nav.isOpen("search") ? (
     <SearchPanel variant="panel" onClose={nav.close} />
-  ) : nav.isOpen("lines") ? (
-    <LinesPanel variant="panel" open onClose={nav.close} />
   ) : selectedStopId ? (
     <Panel aria-label="hores d'arribada" className="h-full">
       <StopDetails externalId={selectedStopId} variant="panel" />
@@ -348,14 +371,7 @@ const BusMap = () => {
         )}
 
         <div className="hidden shrink-0 items-center gap-3 lg:flex">
-          <LinesButton
-            open={nav.isOpen("lines")}
-            onToggle={() => {
-              directions.close();
-              nav.toggle("lines", "tools");
-            }}
-            className="pointer-events-auto shrink-0"
-          />
+          <PageLinks className="pointer-events-auto shrink-0" />
           <ContentLinks />
         </div>
       </div>
@@ -459,10 +475,6 @@ const BusMap = () => {
           locationStatus={status}
           requestLocation={watchLocation}
         />
-      )}
-
-      {!isDesktop && (
-        <LinesPanel open={nav.isOpen("lines")} onClose={nav.close} />
       )}
 
       {/* Mounted once, for both doors: the gear from `lg`, the nav tab below it. */}

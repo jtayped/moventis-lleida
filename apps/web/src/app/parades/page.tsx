@@ -22,7 +22,7 @@ const ParadesPage = async () => {
   const colors = Object.fromEntries(routes.map((r) => [r.code, r.color]));
 
   return (
-    <ContentPage title="parades del bus urbà de lleida" wide>
+    <ContentPage section="/parades" title="parades del bus urbà de lleida" wide>
       <p className="text-muted-foreground mt-3 text-base">
         busca la teva parada per veure&apos;n els horaris i les línies.
       </p>

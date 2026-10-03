@@ -16,7 +16,7 @@ export type { NavPanel, NavSource };
  * over a modal scrim is both wrong to look at and unreachable to a screen
  * reader, which Radix has just hidden along with the rest of the page.
  */
-const MODAL_PANELS: readonly NavPanel[] = ["lines", "settings"];
+const MODAL_PANELS: readonly NavPanel[] = ["settings"];
 
 export interface NavPanelState {
   /** The destination currently showing, or `null` for the bare map. */
@@ -37,19 +37,18 @@ export interface NavPanelState {
 }
 
 /**
- * Which of the three navigation destinations is showing.
+ * Which of the destinations that open over the map is showing: search or
+ * settings. The línies and parades doors are not members; they are links to
+ * pages (`/linies`, `/parades`) and leave the map rather than cover it.
  *
  * One value rather than a boolean per surface, so "only one at a time" is true
- * by construction instead of being maintained by three effects that have to
- * agree. Before this the line browser owned a `linesOpen` in the map shell and
- * the settings sheet owned a private `open` of its own, and nothing connected
- * them — opening one over the other was possible and looked like a bug.
+ * by construction instead of being maintained by effects that have to agree.
  *
  * The stop timetable is deliberately *not* a member. It is owned by
  * `selectedStopId` in `BusFinderContext`, it survives a destination opening
  * over it — the stop stays selected and stays pinned — and it is what the
- * desktop slot falls back to. A fourth member here would make "open the line
- * browser" throw the open stop away.
+ * desktop slot falls back to. Another member here would make "open search"
+ * throw the open stop away.
  *
  * Deliberately not a context, either. Every consumer is a direct child of the
  * map shell, and the one that isn't — the settings gear, nested in the tools

@@ -108,6 +108,7 @@ const LiniaPage = async ({ params }: Props) => {
 
   return (
     <ContentPage
+      section="/linies"
       title={`línia ${line.code}: ${name}`}
       leading={<LineBadge code={line.code} color={line.color} decorative />}
       breadcrumbs={[{ label: "línies", href: "/linies" }]}

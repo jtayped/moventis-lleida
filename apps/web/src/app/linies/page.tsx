@@ -28,7 +28,11 @@ const LiniesPage = async () => {
   const dates = describeServiceDays(days);
 
   return (
-    <ContentPage title="línies i horaris del bus urbà de lleida" wide>
+    <ContentPage
+      section="/linies"
+      title="línies i horaris del bus urbà de lleida"
+      wide
+    >
       <p className="text-muted-foreground mt-3 text-base">
         {sorted.length} línies. tria&apos;n una per veure&apos;n l&apos;horari i
         les parades.
