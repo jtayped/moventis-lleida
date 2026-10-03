@@ -22,6 +22,7 @@ model Route {
     stops         Stop[]
     variants      RouteVariant[]
     operatingDays OperatingDay[]
+    timetables    Timetable[]
 
     updatedAt DateTime  @updatedAt
     createdAt DateTime  @default(now())
@@ -74,6 +75,35 @@ model OperatingDay {
     route   Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
 
     @@id([routeId, date])
+    @@index([date])
+}
+
+/// One trayecto's timetable for one service day, from Moventis
+/// `GetParadas/{line}/{trayecto}/{YYYYMMDD}/0`. Written by the scraper for a
+/// rolling 7-day horizon; read only through `readStoredTimetable` in
+/// `@moventis/shared`, whose `StoredTimetable` documents the three columns.
+model Timetable {
+    routeId String
+    route   Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+    // A segment id from `RouteVariant.trayectoIds`, not `RouteVariant.externalId`:
+    // the two differ (line 7: variant 19 is trayecto 17), and GetParadas is
+    // keyed by the segment. A concatenated variant has one row per segment.
+    trayectoId Int
+    // Lleida service date. Times are minutes after its midnight, past 1440 for
+    // trips that run after midnight.
+    date       DateTime @db.Date
+
+    // `Stop.externalId` in sequence order.
+    stops    String[]
+    // `{ id, times: (number | null)[] }[]`, one slot per `stops` position.
+    trips    Json
+    // `{ position, times }[]` for stops whose times could not be paired with trips.
+    unpaired Json?
+
+    updatedAt DateTime @updatedAt
+
+    @@id([routeId, trayectoId, date])
     @@index([date])
 }
 

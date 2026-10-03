@@ -1,0 +1,18 @@
+[
+  {
+    "ID_GRUPO": null,
+    "DESC_PARADA": "S",
+    "COD_PARADA_WEB": "S",
+    "TREAL": null,
+    "secuencia": 1,
+    "LATITUD": "S",
+    "LONGITUD": "S",
+    "CIRCULAR": "N",
+    "SubeBaja": "S",
+    "hora": ["00:00"],
+    "IdExpedicion": ["S"],
+    "nHoras": 1,
+    "COD_PARADA": "S-S",
+    "COLOR": null
+  }
+]

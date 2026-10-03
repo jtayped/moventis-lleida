@@ -2,10 +2,12 @@
   "name": "@moventis/shared",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "main": "./index.ts",
   "types": "./index.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./fixtures": "./src/__fixtures__/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

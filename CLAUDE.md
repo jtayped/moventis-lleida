@@ -129,6 +129,18 @@ Pruning is the only destructive step and runs **only on a provably complete run*
 
 The same "only when we saw the whole thing" rule governs the two other replacements. A line's stop set (`stops: { set }`) and its variant list (`routeVariant.deleteMany`) are replaced only after every one of its variants synced from probes that all answered; on a partial failure the stops this run did see are merely connected, never removed, because a stop dropped for a failed fetch is a stop that `prune()` later hard-deletes as an orphan.
 
+### Timetables (`Timetable`)
+
+The full scheduled day comes from `GetParadas/{line}/{trayecto}/{YYYYMMDD}/0`, the endpoint behind Moventis's own "tabla horaria". `apps/scraper/src/jobs/sync-timetables.ts` stores one row per route × trayecto **segment** × Lleida service date, for a rolling 7-day horizon, as the last step of each `syncLine`. Things that are easy to get wrong:
+
+- **Keyed by segment id, not by variant.** The `{trayecto}` is an element of `RouteVariant.trayectoIds`; `RouteVariant.externalId` can name a different trayecto entirely (line 7: variant 19 is segment 17). A concatenated variant (line 6 `{2,3}`) is one row per segment.
+- **Times are minutes after the service day's midnight**, above 1440 past midnight: n1's Saturday row runs 1370–1755. Yesterday's row is kept until the next prune for exactly that tail.
+- **Rows are raw per Moventis trip id.** On a loop, one id can carry another bus's pull-in times at the closing stops, and a concatenated variant's two segments use different ids for one bus. Splitting and stitching are the reader's job; the stored row never guesses. Stops whose time and trip-id lists disagree in length are nulled in every trip and kept under `unpaired`. That is common, because `hora` lists a minute once even when two trips share it.
+- **Read rows only through `readStoredTimetable`** (`@moventis/shared`), and write them only through `parseParadasResponse`. The quirks above are documented on that module.
+- **Same replacement rule as the rest of the sync:** a row is rewritten only by an answer; an answered empty day deletes it; a failed fetch keeps it; rows are swept for being absent only when the line's calendar and every fetch were complete (`planTimetableWrites`).
+
+`@moventis/shared` is `"type": "module"` because the scraper imports it at runtime under `tsx`; as CommonJS its `export *` barrel exposes no named exports to an ESM importer. Recorded `GetParadas` responses and their parses are exported for tests as `@moventis/shared/fixtures`.
+
 ### Real-time Schedule Parsing
 
 `packages/api/src/lib/stop-schedule.ts` handles all Moventis API interaction. The API returns two kinds of arrival data distinguished by `real`:
@@ -268,6 +280,7 @@ The opt-out is `analytics` in `useSettings` (on by default). It is mirrored into
 Route  (id, externalId, name, code, color, stops[], operatingDays[])
 Stop   (id, externalId, name, latitude, longitude, routes[])
 OperatingDay (routeId, date)  ← composite PK
+Timetable (routeId, trayectoId, date, stops[], trips, unpaired)  ← composite PK; see Timetables
 ```
 
 `externalId` on both `Route` and `Stop` is what gets passed to the Moventis API. `code` on `Route` is cast to the `Lines` union type at the application layer.

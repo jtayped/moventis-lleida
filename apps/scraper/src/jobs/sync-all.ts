@@ -15,6 +15,7 @@ import { parseKmlPath } from "../lib/kml.js";
 import { normalizeName } from "../lib/normalize.js";
 import { onceAtATime } from "../lib/once-at-a-time.js";
 import { shouldPrune } from "../lib/prune.js";
+import { pruneTimetables, syncTimetables } from "./sync-timetables.js";
 
 /**
  * Stop `externalId` → DB id for every stop this run upserted.
@@ -261,6 +262,12 @@ async function syncLine(line: ResolvedLine, seen: SeenStops): Promise<void> {
       data: { path: { paths: aggregatedPaths } },
     });
   }
+
+  // Last, and on its own: a timetable failure must not count against the line,
+  // whose stops and variants are already written.
+  await syncTimetables(route.id, line).catch((err: unknown) => {
+    console.error(`  [${line.code}] timetable sync failed:`, err);
+  });
 }
 
 /**
@@ -333,6 +340,10 @@ async function runSync(): Promise<void> {
       console.error(`[sync-all] Error on line ${line.code}:`, err);
     }
   }
+
+  await pruneTimetables().catch((err: unknown) => {
+    console.error("[sync-all] Timetable prune failed:", err);
+  });
 
   const knownStopCount = await db.stop.count({ where: { deletedAt: null } });
   const decision = shouldPrune({

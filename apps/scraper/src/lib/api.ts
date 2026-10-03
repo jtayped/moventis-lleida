@@ -1,3 +1,5 @@
+import { parseParadasResponse, type StoredTimetable } from "@moventis/shared";
+
 const BASE = "https://www.moventis.es";
 
 /**
@@ -109,6 +111,27 @@ export async function fetchKml(
   });
   if (!res.ok) throw new Error(`GetKMLs/${lineId}/${trayectoId} ${res.status}`);
   return res.text();
+}
+
+/**
+ * One trayecto's timetable for one service day, parsed into the stored shape.
+ * `trayectoId` is a segment id (`ID_TRAYECTO` element), not the variant's
+ * primary id. A day without service resolves to empty `stops`/`trips`; a shape
+ * the parser does not know rejects, like a network failure, so it is never
+ * written down as "no service".
+ */
+export async function fetchParadas(
+  lineId: string,
+  trayectoId: number,
+  date: string,
+): Promise<StoredTimetable> {
+  const res = await fetch(
+    `${BASE}/api/json/GetParadas/${lineId}/${trayectoId}/${date}/0`,
+    { signal: timeout() },
+  );
+  if (!res.ok)
+    throw new Error(`GetParadas/${lineId}/${trayectoId}/${date} ${res.status}`);
+  return parseParadasResponse(await res.json());
 }
 
 export function toYyyymmdd(date: Date): string {

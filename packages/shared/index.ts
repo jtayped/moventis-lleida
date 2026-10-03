@@ -3,10 +3,12 @@ export * from "./src/constants/lleida";
 export * from "./src/lib/geo";
 export * from "./src/lib/arrival-drift";
 export * from "./src/lib/drawer-pull";
+export * from "./src/lib/timetable";
 
 export * from "./src/schemas/schedule";
 export * from "./src/schemas/route-path";
 export * from "./src/schemas/bus-position";
+export * from "./src/schemas/timetable";
 
 export * from "./src/types/lines";
 export * from "./src/types/schedule";
