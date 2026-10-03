@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { LayoutList, Map as MapIcon, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -17,11 +17,22 @@ import { cn } from "@/lib/utils";
  * rest, and its disclaimer is what keeps a page that ranks for "moventis" from
  * reading as Moventis' own.
  */
+/**
+ * The header's sections. The map is one of them, and last: it is the app, and
+ * these pages are the way back to it as much as the way in.
+ */
+const HEADER_LINKS = [
+  { href: "/linies", label: "línies", icon: LayoutList },
+  { href: "/parades", label: "parades", icon: MapPin },
+  { href: "/", label: "mapa", icon: MapIcon },
+] as const;
+
 export const ContentPage = ({
   title,
   updated,
   leading,
   breadcrumbs,
+  section,
   wide = false,
   children,
 }: {
@@ -35,6 +46,8 @@ export const ContentPage = ({
    * as a `BreadcrumbList`, which is what Google prints instead of the bare URL.
    */
   breadcrumbs?: Breadcrumb[];
+  /** The header section this page sits under, marked as the current page. */
+  section?: "/linies" | "/parades";
   /**
    * A wider column for pages of cards rather than prose. Prose stays at
    * `max-w-2xl`, the measure `DESIGN.md` asks for.
@@ -55,7 +68,7 @@ export const ContentPage = ({
           <Link
             href="/"
             className={cn(
-              "flex items-center gap-2 rounded-sm text-sm font-semibold",
+              "flex shrink-0 items-center gap-2 rounded-sm text-sm font-semibold",
               FOCUS_RING,
             )}
           >
@@ -66,18 +79,36 @@ export const ContentPage = ({
               alt=""
               className="size-6"
             />
-            bus urbà lleida
+            {/* Kept as the link's name on a phone, where the row has room
+                for the three sections and not for the site name too. */}
+            <span className="max-sm:sr-only">bus urbà lleida</span>
           </Link>
-          <Link
-            href="/"
-            className={cn(
-              "text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 rounded-sm text-sm transition-colors",
-              FOCUS_RING,
-            )}
-          >
-            <ArrowLeft size={16} />
-            torna al mapa
-          </Link>
+          <nav aria-label="seccions">
+            <ul className="flex items-center gap-1">
+              {HEADER_LINKS.map(({ href, label, icon: Icon }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    aria-current={section === href ? "page" : undefined}
+                    className={cn(
+                      "hover:bg-muted flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-sm transition-colors sm:px-3",
+                      section === href
+                        ? "bg-muted font-semibold"
+                        : "text-muted-foreground hover:text-foreground",
+                      FOCUS_RING,
+                    )}
+                  >
+                    <Icon
+                      size={16}
+                      aria-hidden
+                      className="shrink-0 max-sm:hidden"
+                    />
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </header>
 

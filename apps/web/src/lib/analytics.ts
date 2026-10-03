@@ -11,7 +11,7 @@ export type StopOpenSource = "pin" | "navigation" | "url" | "search";
 export type DirectionsSource = "button" | "stop";
 
 /** The three destinations the bottom navigation switches between. */
-export type NavPanel = "lines" | "search" | "settings";
+export type NavPanel = "search" | "settings";
 
 /**
  * Which door a destination was opened by.
@@ -47,17 +47,22 @@ export interface AnalyticsEvents {
   "search used": undefined;
   "location requested": { result: "active" | "error" | "unsupported" };
   /**
-   * One event for all three navigation destinations, replacing the old
-   * `lines panel opened`. Settings had no event at all before, so the question
+   * One event for the navigation destinations that open over the map,
+   * replacing the old `lines panel opened`. Settings had no event at all before, so the question
    * "does anyone open it?" was unanswerable; folding the three together also
    * makes them comparable, which is the only way to tell whether a tab earned
    * its third of the bar.
    */
   "nav panel opened": { panel: NavPanel; source: NavSource };
+  /**
+   * The línies and parades doors, which leave the map for a page. Kept apart
+   * from `nav panel opened` because they open no panel, but sent from the same
+   * two places, so the bar's four tabs can still be compared.
+   */
+  "content page opened": { page: "linies" | "parades"; source: NavSource };
   /** Which height the stop drawer was dragged to — tells us whether the peek
    *  snap is used at all. */
   "drawer snapped": { snap: "peek" | "mid" | "full" };
-  "line detail opened": { code: string };
   /**
    * Directions carry no places in any event — an origin and a destination are
    * as good as a home address. Only how the panel was reached, what *kind* of

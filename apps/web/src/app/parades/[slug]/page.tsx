@@ -77,6 +77,7 @@ const ParadaPage = async ({ params }: Props) => {
 
   return (
     <ContentPage
+      section="/parades"
       title={stop.name}
       leading={
         <span className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-md">

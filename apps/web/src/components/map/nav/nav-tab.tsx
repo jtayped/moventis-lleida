@@ -1,6 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
@@ -49,4 +50,36 @@ export const NavTab = ({
     <Icon className="size-5 shrink-0" aria-hidden="true" />
     <span className="text-xs font-medium">{label}</span>
   </button>
+);
+
+/**
+ * A destination in the bottom bar that is a page rather than a surface over
+ * the map: a link, so it is crawlable, opens in a new tab on a long press, and
+ * carries no `aria-pressed`, since nothing here is ever "on".
+ */
+export const NavTabLink = ({
+  icon: Icon,
+  label,
+  href,
+  title,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  href: string;
+  title?: string;
+  onClick?: () => void;
+}) => (
+  <Link
+    href={href}
+    onClick={onClick}
+    title={title ?? label}
+    className={cn(
+      "text-muted-foreground flex h-full flex-1 flex-col items-center justify-center gap-1",
+      "focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none",
+    )}
+  >
+    <Icon className="size-5 shrink-0" aria-hidden="true" />
+    <span className="text-xs font-medium">{label}</span>
+  </Link>
 );
