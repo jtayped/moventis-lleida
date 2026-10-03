@@ -7,6 +7,7 @@ import {
   lineSummary,
   originDepartures,
   pickServiceDays,
+  stopDepartures,
   typicalHeadway,
   type TimetableRowInput,
 } from "./timetable-views";
@@ -173,5 +174,96 @@ describe("lineSummary", () => {
         headway: typicalHeadway(one),
       },
     });
+  });
+});
+
+describe("stopDepartures", () => {
+  const days = { weekday: "2026-10-05", saturday: "2026-10-03" };
+
+  it("groups by line and where the bus is heading", () => {
+    const junction = line6Segment1.parsed.stops.at(-1)!;
+    const groups = stopDepartures(
+      junction,
+      [
+        {
+          lineCode: "6",
+          trayectoId: 2,
+          date: "2026-10-05",
+          timetable: line6Segment1.parsed,
+        },
+        {
+          lineCode: "6",
+          trayectoId: 3,
+          date: "2026-10-05",
+          timetable: line6Segment2.parsed,
+        },
+      ],
+      days,
+    );
+
+    // Segment 1 only arrives here; segment 2 leaves towards its own end.
+    expect(groups).toEqual([
+      {
+        lineCode: "6",
+        destination: line6Segment2.parsed.stops.at(-1),
+        departures: { weekday: departuresAt(line6Segment2.parsed, junction) },
+      },
+    ]);
+  });
+
+  it("merges segments that share a line and a destination", () => {
+    const { parsed } = line2Loop;
+    const terminal = parsed.stops[0]!;
+    const later = {
+      ...parsed,
+      trips: parsed.trips.map((trip) => ({
+        ...trip,
+        times: trip.times.map((t) => (t === null ? t : t + 1)),
+      })),
+    };
+    const groups = stopDepartures(
+      terminal,
+      [
+        { lineCode: "2", trayectoId: 4, date: "2026-10-05", timetable: parsed },
+        { lineCode: "2", trayectoId: 5, date: "2026-10-05", timetable: later },
+      ],
+      days,
+    );
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.destination).toBe(terminal);
+    expect(groups[0]!.departures.weekday).toHaveLength(51 * 2);
+  });
+
+  it("files each row under its date's day type and skips other dates", () => {
+    const stop = line5Weekday.parsed.stops[3]!;
+    const row = (date: string) => ({
+      lineCode: "5",
+      trayectoId: 13,
+      date,
+      timetable: line5Weekday.parsed,
+    });
+    const groups = stopDepartures(
+      stop,
+      [row("2026-10-03"), row("2026-10-07")],
+      days,
+    );
+
+    expect(Object.keys(groups[0]!.departures)).toEqual(["saturday"]);
+  });
+
+  it("sorts line codes numerically", () => {
+    const stop = line5Weekday.parsed.stops[3]!;
+    const groups = stopDepartures(
+      stop,
+      ["10", "9", "n1"].map((lineCode) => ({
+        lineCode,
+        trayectoId: 13,
+        date: "2026-10-05",
+        timetable: line5Weekday.parsed,
+      })),
+      days,
+    );
+    expect(groups.map((g) => g.lineCode)).toEqual(["9", "10", "n1"]);
   });
 });
