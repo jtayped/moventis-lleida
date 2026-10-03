@@ -37,4 +37,5 @@ export type {
   OperatingDay,
   RouteVariant,
   RouteVariantStop,
+  Timetable,
 } from "@prisma/client";
