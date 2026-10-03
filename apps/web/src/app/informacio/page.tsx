@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentPage } from "@/components/content/content-page";
 import { External, List, P, Section } from "@/components/content/prose";
-import {
-  AUTHOR_NAME,
-  GITHUB_URL,
-  KO_FI_URL,
-  PORTFOLIO_URL,
-} from "@/lib/project-links";
+import { Heart, Mail, RefreshCw, Shield } from "lucide-react";
+import { AuthorCard } from "@/components/content/author-card";
+import { FOCUS_RING } from "@/components/content/styles";
+import { cn } from "@/lib/utils";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -27,13 +25,20 @@ const InternalLink = ({
   href: string;
   children: React.ReactNode;
 }) => (
-  <Link href={href} className="text-foreground underline underline-offset-4">
+  <Link
+    href={href}
+    className={cn(
+      "text-foreground rounded-sm underline underline-offset-4",
+      FOCUS_RING,
+    )}
+  >
     {children}
   </Link>
 );
 
 const InformacioPage = () => (
   <ContentPage
+    credit={false}
     title="el bus urbà de lleida"
     updated={`revisat el ${REVIEWED_ON}`}
   >
@@ -145,27 +150,41 @@ const InformacioPage = () => (
     </Section>
 
     <Section title="sobre aquesta web" id="sobre">
-      <P>
-        és un projecte personal de{" "}
-        <External href={PORTFOLIO_URL}>{AUTHOR_NAME}</External>, sense relació
-        amb moventis, autobusos de lleida ni la paeria. les línies i les parades
-        s'actualitzen cada nit a partir de moventis.es, i les arribades es
-        consulten en directe cada vegada que obres una parada. si trobes un
-        error, escriu a{" "}
-        <a
-          href="mailto:jtayped@gmail.com"
-          className="text-foreground underline underline-offset-4"
-        >
-          jtayped@gmail.com
-        </a>
-        . què es desa al teu navegador, i què no, és a{" "}
-        <InternalLink href="/privadesa">privadesa</InternalLink>.
-      </P>
-      <P>
-        el codi és públic a <External href={GITHUB_URL}>github</External>. la
-        web no té publicitat. si et fa servei, pots{" "}
-        <External href={KO_FI_URL}>fer una donació a ko-fi</External>.
-      </P>
+      <AuthorCard />
+      <ul className="text-muted-foreground space-y-3 text-sm leading-relaxed">
+        <li className="flex items-start gap-3">
+          <Heart size={16} aria-hidden className="mt-0.5 shrink-0" />
+          projecte personal, sense publicitat i sense relació amb moventis,
+          autobusos de lleida ni la paeria.
+        </li>
+        <li className="flex items-start gap-3">
+          <RefreshCw size={16} aria-hidden className="mt-0.5 shrink-0" />
+          les línies i les parades s&apos;actualitzen cada nit des de
+          moventis.es; les arribades, en directe quan obres una parada.
+        </li>
+        <li className="flex items-start gap-3">
+          <Mail size={16} aria-hidden className="mt-0.5 shrink-0" />
+          <span>
+            has vist un error? escriu a{" "}
+            <a
+              href="mailto:jtayped@gmail.com"
+              className={cn(
+                "text-foreground rounded-sm underline underline-offset-4",
+                FOCUS_RING,
+              )}
+            >
+              jtayped@gmail.com
+            </a>
+          </span>
+        </li>
+        <li className="flex items-start gap-3">
+          <Shield size={16} aria-hidden className="mt-0.5 shrink-0" />
+          <span>
+            què es desa al teu navegador, i què no:{" "}
+            <InternalLink href="/privadesa">privadesa</InternalLink>
+          </span>
+        </li>
+      </ul>
     </Section>
   </ContentPage>
 );

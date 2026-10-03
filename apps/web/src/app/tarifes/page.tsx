@@ -23,16 +23,17 @@ export const metadata: Metadata = pageMetadata({
 });
 
 const FareList = ({ fares }: { fares: Fare[] }) => (
+  // dt and dd sit directly in each row's div, the one wrapper a <dl> allows;
+  // nested one level deeper, screen readers lost which price is which fare's.
   <dl className="border-border divide-border divide-y rounded-xl border">
     {fares.map((fare) => (
-      <div key={fare.name} className="space-y-1 p-4">
-        <div className="flex items-baseline justify-between gap-4">
-          <dt className="text-sm font-semibold">{fare.name}</dt>
-          <dd className="shrink-0 text-sm font-semibold tabular-nums">
-            {fare.price}
-          </dd>
-        </div>
-        <dd className="text-muted-foreground text-sm leading-relaxed">
+      <div
+        key={fare.name}
+        className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 p-4"
+      >
+        <dt className="text-sm font-semibold">{fare.name}</dt>
+        <dd className="text-sm font-semibold tabular-nums">{fare.price}</dd>
+        <dd className="text-muted-foreground col-span-2 text-sm leading-relaxed">
           {fare.detail}
         </dd>
       </div>
