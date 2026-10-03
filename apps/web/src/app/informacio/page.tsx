@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentPage } from "@/components/content/content-page";
 import { External, List, P, Section } from "@/components/content/prose";
+import {
+  AUTHOR_NAME,
+  GITHUB_URL,
+  KO_FI_URL,
+  PORTFOLIO_URL,
+} from "@/lib/project-links";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -140,8 +146,9 @@ const InformacioPage = () => (
 
     <Section title="sobre aquesta web" id="sobre">
       <P>
-        és un projecte personal de joel taylor pedrós, sense relació amb
-        moventis, autobusos de lleida ni la paeria. les línies i les parades
+        és un projecte personal de{" "}
+        <External href={PORTFOLIO_URL}>{AUTHOR_NAME}</External>, sense relació
+        amb moventis, autobusos de lleida ni la paeria. les línies i les parades
         s'actualitzen cada nit a partir de moventis.es, i les arribades es
         consulten en directe cada vegada que obres una parada. si trobes un
         error, escriu a{" "}
@@ -153,6 +160,11 @@ const InformacioPage = () => (
         </a>
         . què es desa al teu navegador, i què no, és a{" "}
         <InternalLink href="/privadesa">privadesa</InternalLink>.
+      </P>
+      <P>
+        el codi és públic a <External href={GITHUB_URL}>github</External>. la
+        web no té publicitat. si et fa servei, pots{" "}
+        <External href={KO_FI_URL}>fer una donació a ko-fi</External>.
       </P>
     </Section>
   </ContentPage>

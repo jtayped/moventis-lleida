@@ -10,6 +10,11 @@ import type { Viewport, Metadata } from "next";
 import { Geist } from "next/font/google";
 import Script from "next/script";
 import { JsonLd } from "@/components/seo/json-ld";
+import {
+  AUTHOR_NAME,
+  GITHUB_PROFILE_URL,
+  PORTFOLIO_URL,
+} from "@/lib/project-links";
 import { env } from "@/env";
 import RootProviders from "./providers";
 
@@ -56,8 +61,9 @@ const WEBSITE_JSON_LD = {
   inLanguage: "ca",
   publisher: {
     "@type": "Person",
-    name: "Joel Taylor Pedrós",
-    url: "https://joeltaylor.business",
+    name: AUTHOR_NAME,
+    url: PORTFOLIO_URL,
+    sameAs: [GITHUB_PROFILE_URL],
   },
 };
 
