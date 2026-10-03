@@ -15,11 +15,14 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
  * behind a slow one still resolves first, and a rejection only rejects its own
  * caller — it never blocks or poisons the tasks queued after it.
  *
- * Two lanes, because FIFO alone is not enough once a background feature can
- * enqueue in bulk. Work someone is *waiting on* — a stop drawer they just
- * tapped, a line they just selected — goes in `"high"` (the default, so every
- * existing call site keeps today's behaviour). Speculative work goes in
- * `"low"` and only starts when nothing is waiting.
+ * Three lanes, because FIFO alone is not enough once a feature can enqueue in
+ * bulk. Work someone is *waiting on* — a stop drawer they just tapped, a line
+ * they just selected — goes in `"high"` (the default, so every existing call
+ * site keeps today's behaviour). A directions plan is waited on too, but asks
+ * about a dozen stops at once; in `"high"` every one of them would sit in
+ * front of the next drawer tap, so it goes in `"batch"`, which starts only
+ * when no tap is waiting. Speculative work goes in `"low"` and only starts
+ * when neither is.
  *
  * Without this, the map's next-bus prefetch put ~15 requests in front of the
  * next drawer tap, and 7 of 11 drawer opens took over three seconds — up to
@@ -27,16 +30,19 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
  * how much the prefetch enqueues cannot fix that on its own: the requests are
  * legitimate, they just must never be the reason someone waits.
  *
- * `"low"` can be starved indefinitely by sustained `"high"` traffic. That is the
- * intended trade: the thing starved is a pin that shows no time for a while,
- * and it is retried on the caller's own timer.
+ * `"low"` can be starved indefinitely by sustained `"high"` or `"batch"`
+ * traffic. That is the intended trade: the thing starved is a pin that shows
+ * no time for a while, and it is retried on the caller's own timer. A starved
+ * `"batch"` request is a plan that falls back to an older listing or the
+ * timetable once its deadline passes (`lib/directions/live-plan.ts`).
  */
-export type QueuePriority = "high" | "low";
+export type QueuePriority = "high" | "batch" | "low";
 
 export class ThrottledQueue {
   private readonly intervalMs: number;
   private readonly lanes: Record<QueuePriority, (() => void)[]> = {
     high: [],
+    batch: [],
     low: [],
   };
   /** Earliest timestamp at which the next task may start. */
@@ -69,13 +75,20 @@ export class ThrottledQueue {
     if (this.dispatching) return;
     this.dispatching = true;
     try {
-      while (this.lanes.high.length > 0 || this.lanes.low.length > 0) {
+      while (
+        this.lanes.high.length > 0 ||
+        this.lanes.batch.length > 0 ||
+        this.lanes.low.length > 0
+      ) {
         const wait = this.nextStartTime - Date.now();
         if (wait > 0) await sleep(wait);
         // Re-read the lanes *after* the wait: something high-priority may have
         // arrived while this slot was ticking down, and it should take the slot
         // rather than watch a speculative fetch take it.
-        const start = this.lanes.high.shift() ?? this.lanes.low.shift();
+        const start =
+          this.lanes.high.shift() ??
+          this.lanes.batch.shift() ??
+          this.lanes.low.shift();
         if (!start) break;
         // Anchor on `now` when the queue has been idle, so an idle period does
         // not bank credit for a burst of immediate starts.

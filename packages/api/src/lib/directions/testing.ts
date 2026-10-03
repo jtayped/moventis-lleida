@@ -74,6 +74,7 @@ export function syntheticNetwork(
     stops,
     lines: lines.map((l) => ({
       routeId: `r${l.code}`,
+      externalId: `x${l.code}`,
       code: l.code,
       color: "#000000",
       name: `línia ${l.code}`,

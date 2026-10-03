@@ -10,6 +10,7 @@ import type {
 import { instantAtServiceSecond } from "../zoned-time";
 import { rideGeometry } from "./leg-geometry";
 import { walkMeters, walkSeconds, type Network } from "./network";
+import type { RideTiming } from "./live";
 import { journeyWalkMeters } from "./plan";
 import type { RaptorJourney } from "./raptor";
 
@@ -59,16 +60,20 @@ function walk(
   };
 }
 
-/** A RAPTOR journey as the client draws and lists it. */
+/**
+ * A journey as the client draws and lists it. `rides`, when given, holds each
+ * ride's live times; without them every time is the timetable's.
+ */
 export function toItinerary(
   network: Network,
-  journey: RaptorJourney,
+  journey: RaptorJourney & { rides?: RideTiming[] },
   ctx: ItineraryContext,
 ): Itinerary {
   const at = (sec: number) => instantAtServiceSecond(ctx.serviceDate, sec);
   const legs: ItineraryLeg[] = [];
   const keys: string[] = [];
   let t = journey.departAt;
+  let ride = 0;
 
   for (const leg of journey.legs) {
     if (leg.kind === "access") {
@@ -95,10 +100,29 @@ export function toItinerary(
         leg.boardPosition,
         leg.alightPosition + 1,
       );
-      const stops = indices.map((s, i) => ({
-        ...stopRef(network, s),
-        at: at(trip.times[leg.boardPosition + i]!),
-      }));
+      const scheduledBoard = trip.times[leg.boardPosition]!;
+      const scheduledAlight = trip.times[leg.alightPosition]!;
+      const timing = journey.rides?.[ride++] ?? {
+        board: { sec: scheduledBoard, live: false },
+        alight: { sec: scheduledAlight, live: false },
+      };
+      // The stops in between shift by the delay at each end, blended by how
+      // far along the ride they are.
+      const boardDelay = timing.board.sec - scheduledBoard;
+      const alightDelay = timing.alight.sec - scheduledAlight;
+      const span = scheduledAlight - scheduledBoard;
+      const stops = indices.map((s, i) => {
+        const scheduled = trip.times[leg.boardPosition + i]!;
+        const along = span > 0 ? (scheduled - scheduledBoard) / span : 0;
+        return {
+          ...stopRef(network, s),
+          at: at(
+            Math.round(
+              scheduled + boardDelay + (alightDelay - boardDelay) * along,
+            ),
+          ),
+        };
+      });
       const geometry = trip.variantId
         ? (network.variants.get(trip.variantId)?.geometry ?? null)
         : null;
@@ -109,8 +133,9 @@ export function toItinerary(
         headsign: trip.headsign,
         from: stopRef(network, indices[0]!),
         to: stopRef(network, indices.at(-1)!),
-        departAt: at(trip.times[leg.boardPosition]!),
-        arriveAt: at(trip.times[leg.alightPosition]!),
+        departAt: at(timing.board.sec),
+        arriveAt: at(timing.alight.sec),
+        live: timing.board.live,
         stops,
         path: rideGeometry(
           geometry,
@@ -118,7 +143,7 @@ export function toItinerary(
         ),
       };
       legs.push(bus);
-      t = trip.times[leg.alightPosition]!;
+      t = timing.alight.sec;
       keys.push(`${trip.key}@${bus.from.externalId}-${bus.to.externalId}`);
     } else if (leg.kind === "transfer") {
       const from = stopRef(network, leg.from);

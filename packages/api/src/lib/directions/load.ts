@@ -38,6 +38,7 @@ async function loadNetwork(db: Db, serviceDate: string): Promise<Network> {
     db.route.findMany({
       select: {
         id: true,
+        externalId: true,
         code: true,
         color: true,
         name: true,
@@ -91,6 +92,7 @@ async function loadNetwork(db: Db, serviceDate: string): Promise<Network> {
     })),
     lines: routes.map((r) => ({
       routeId: r.id,
+      externalId: r.externalId,
       code: r.code,
       color: r.color,
       name: r.name,

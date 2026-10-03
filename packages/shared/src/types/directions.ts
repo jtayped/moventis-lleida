@@ -39,10 +39,17 @@ export interface BusLeg {
   headsign: string;
   from: DirectionsStop;
   to: DirectionsStop;
-  /** Scheduled, from the timetable. The live prediction is `directions.liveDeparture`. */
+  /** From Moventis's live listing at each stop when {@link live}, else the timetable. */
   departAt: Date;
   arriveAt: Date;
-  /** Every stop ridden through, boarding and alighting stops included, with its scheduled time. */
+  /**
+   * The boarding stop lists this bus with a real-time prediction, and both
+   * times come from it. False means the printed timetable: the bus is beyond
+   * what the stop lists yet, the stop could not be asked, or the plan is for
+   * later than live listings reach.
+   */
+  live: boolean;
+  /** Every stop ridden through, boarding and alighting stops included, with its time. */
   stops: (DirectionsStop & { at: Date })[];
   /** The line's own geometry between the two stops. */
   path: LngLat[];
@@ -70,10 +77,4 @@ export interface DirectionsPlan {
   walkOnly: WalkLeg | null;
   /** Lines that run that day but had no stored timetable, so could not be planned with. */
   missingLines: string[];
-}
-
-export interface LiveDeparture {
-  /** Live prediction (or the published time, when the stop lists it as scheduled). */
-  predictedAt: Date;
-  isRealTime: boolean;
 }

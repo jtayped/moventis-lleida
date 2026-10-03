@@ -74,14 +74,14 @@ const CHANGE_WORTH_S = 5 * 60;
  * few minutes at the stop. Ranked by arrival, then fewer buses, then less
  * walking.
  */
-export function rankJourneys(
+export function rankJourneys<J extends RaptorJourney>(
   network: Network,
-  journeys: RaptorJourney[],
-): RaptorJourney[] {
+  journeys: J[],
+): J[] {
   const unique = [
     ...new Map(journeys.map((j) => [signature(network, j), j])).values(),
   ];
-  const dominated = (j: RaptorJourney) =>
+  const dominated = (j: J) =>
     unique.some(
       (o) =>
         o !== j &&
@@ -93,7 +93,7 @@ export function rankJourneys(
           o.trips < j.trips ||
           journeyWalkMeters(o) < journeyWalkMeters(j)),
     );
-  const changeNotWorthIt = (j: RaptorJourney) =>
+  const changeNotWorthIt = (j: J) =>
     unique.some(
       (o) =>
         o.trips < j.trips &&
@@ -123,30 +123,46 @@ export interface PlanOutput {
   walkOnlyMeters: number | null;
 }
 
-export function planJourneys(network: Network, input: PlanInput): PlanOutput {
+/** "Leave now" windows, in the order they are tried. */
+export const PLAN_WINDOWS_S = [WINDOW_S, WIDE_WINDOW_S] as const;
+
+/** Straight-line distance between the two ends, when walking it is an option. */
+export function walkOnlyMetersFor(input: PlanInput): number | null {
+  const straight = distanceMeters(at(input.from), at(input.to));
+  return straight <= WALK_ONLY_MAX_M ? straight : null;
+}
+
+/** Every timetable journey leaving within `window` of `input.departAt`, unranked. */
+export function searchJourneys(
+  network: Network,
+  input: PlanInput,
+  window: number,
+): RaptorJourney[] {
   const access = nearbyStops(network, input.from);
   const egress = nearbyStops(network, input.to);
-  const straight = distanceMeters(at(input.from), at(input.to));
-  const walkOnlyMeters = straight <= WALK_ONLY_MAX_M ? straight : null;
-  if (access.length === 0 || egress.length === 0)
-    return { journeys: [], walkOnlyMeters };
-
+  if (access.length === 0 || egress.length === 0) return [];
   // A departure inside the window can still lead to a long wait at the stop
   // for a far later bus — the one-bus n1 at 23:02 surfaced in a 19:23 "leave
   // now" list. Valid, and not what the window asked for: options must leave
   // within it.
-  const search = (window: number) =>
-    rangeRaptor(network, {
-      access,
-      egress,
-      earliestDeparture: input.departAt,
-      latestDeparture: input.departAt + window,
-    }).filter((j) => j.departAt <= input.departAt + window);
-  let journeys = search(WINDOW_S);
-  if (journeys.length === 0) journeys = search(WIDE_WINDOW_S);
+  return rangeRaptor(network, {
+    access,
+    egress,
+    earliestDeparture: input.departAt,
+    latestDeparture: input.departAt + window,
+  }).filter((j) => j.departAt <= input.departAt + window);
+}
 
-  return {
-    journeys: rankJourneys(network, journeys).slice(0, MAX_ITINERARIES),
-    walkOnlyMeters,
-  };
+/** The timetable's own answer: the plan when no live listing is asked. */
+export function planJourneys(network: Network, input: PlanInput): PlanOutput {
+  const walkOnlyMeters = walkOnlyMetersFor(input);
+  for (const window of PLAN_WINDOWS_S) {
+    const journeys = searchJourneys(network, input, window);
+    if (journeys.length > 0)
+      return {
+        journeys: rankJourneys(network, journeys).slice(0, MAX_ITINERARIES),
+        walkOnlyMeters,
+      };
+  }
+  return { journeys: [], walkOnlyMeters };
 }

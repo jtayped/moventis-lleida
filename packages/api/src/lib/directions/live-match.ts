@@ -19,8 +19,14 @@
 export const LIVE_EARLY_S = 2 * 60;
 /** ...and this much later. */
 export const LIVE_LATE_S = 20 * 60;
-/** Leaving a live entry unexplained costs as much as this deviation. */
-const UNMATCHED_LIVE_S = 10 * 60;
+/**
+ * Leaving a live entry unexplained costs more than any match it could have
+ * made, so every listed bus that fits a departure is matched to one. At 10
+ * min, dropping was cheaper than a match more than 10 min late: on a Saturday
+ * evening line 2's 20:10 from its terminal, listed at 20:26, was read as gone
+ * and left out of every plan.
+ */
+const UNMATCHED_LIVE_S = LIVE_LATE_S + 10 * 60;
 
 const fits = (scheduled: number, live: number) =>
   live - scheduled >= -LIVE_EARLY_S && live - scheduled <= LIVE_LATE_S;
@@ -75,15 +81,4 @@ export function alignLive(scheduled: number[], live: number[]): number[] {
     else i--;
   }
   return matched;
-}
-
-/** The live entry aligned with `departure` (one of `scheduled`), or −1. */
-export function liveIndexFor(
-  departure: number,
-  scheduled: number[],
-  live: number[],
-): number {
-  const target = scheduled.indexOf(departure);
-  if (target < 0) return -1;
-  return alignLive(scheduled, live).indexOf(target);
 }

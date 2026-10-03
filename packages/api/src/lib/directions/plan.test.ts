@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toItinerary, walkOnlyLeg } from "./itinerary";
-import { alignLive, liveIndexFor } from "./live-match";
+import { alignLive } from "./live-match";
 import { rideGeometry } from "./leg-geometry";
 import {
   ACCESS_RADIUS_M,
@@ -263,15 +263,19 @@ describe("alignLive", () => {
   it("gives a live time to the departure it is nearest, not the first that fits", () => {
     // 10:00 has gone; 10:16 is the 10:15 bus a minute late.
     expect(alignLive([600, 615, 630], [616, 631])).toEqual([1, 2]);
-    expect(liveIndexFor(615, [600, 615, 630], [616, 631])).toBe(0);
   });
 
   it("keeps a late bus on its own departure", () => {
     expect(alignLive([600, 615], [609, 617])).toEqual([0, 1]);
   });
 
+  it("matches a bus running up to 20 min late rather than calling it gone", () => {
+    // Line 2's terminal on a Saturday evening: the 19:50 and 20:10 listed
+    // 13 and 16 min late, the 20:30 on time.
+    expect(alignLive([0, 1200, 2400], [780, 2160, 2424])).toEqual([0, 1, 2]);
+  });
+
   it("never matches a prediction far earlier than the timetable", () => {
     expect(alignLive([600], [400])).toEqual([-1]);
-    expect(liveIndexFor(600, [600], [400])).toBe(-1);
   });
 });

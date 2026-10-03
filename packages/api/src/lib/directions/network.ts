@@ -59,6 +59,8 @@ export interface NetworkStop {
 
 export interface NetworkLine {
   routeId: string;
+  /** `Route.externalId`, the id Moventis's live endpoint is asked with. */
+  externalId: string;
   code: string;
   color: string;
   name: string;

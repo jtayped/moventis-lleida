@@ -1,11 +1,13 @@
 /**
- * Plan a journey from the database, exactly as `directions.plan` does, and
- * print it — for checking the planner against the Moventis "tabla horaria"
+ * Plan a journey exactly as `directions.plan` does, and print it — for
+ * checking the planner against the Moventis "tabla horaria" and live boards
  * by hand, and for seeing what a change to the network builder does to real
- * days. Reads only the stored timetable: no Moventis requests.
+ * days. Leaving within the hour it asks Moventis for the boards of the stops
+ * it uses, like the API (`--timetable` skips that); later than that it reads
+ * only the stored timetable.
  *
  * Usage (from packages/api):
- *   pnpm plan-journey <from> <to> [HH:MM] [YYYY-MM-DD]
+ *   pnpm plan-journey <from> <to> [HH:MM] [YYYY-MM-DD] [--timetable]
  *
  * `from` / `to` are a stop's externalId or `lat,lng`. Time and date default to
  * now in Lleida.
@@ -17,6 +19,7 @@
 import { db } from "@moventis/db";
 import type { DirectionsPoint, Itinerary } from "@moventis/shared";
 import { getNetwork } from "../lib/directions/load";
+import { planLive } from "../lib/directions/live-plan";
 import { planJourneys } from "../lib/directions/plan";
 import { toItinerary, walkOnlyLeg } from "../lib/directions/itinerary";
 import {
@@ -63,7 +66,7 @@ function print(it: Itinerary, n: number) {
       );
     } else {
       console.log(
-        `    ${clock(leg.departAt)}  line ${leg.lineCode} towards "${leg.headsign}" ` +
+        `    ${clock(leg.departAt)}${leg.live ? "*" : " "} line ${leg.lineCode} towards "${leg.headsign}" ` +
           `from ${leg.from.name} (${leg.from.externalId}), ${leg.stops.length - 1} stop(s), ` +
           `off at ${leg.to.name} (${leg.to.externalId}) ${clock(leg.arriveAt)}` +
           `  [path ${leg.path.length} pts]`,
@@ -73,9 +76,13 @@ function print(it: Itinerary, n: number) {
 }
 
 async function main() {
-  const [fromArg, toArg, time, date] = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const timetableOnly = args.includes("--timetable");
+  const [fromArg, toArg, time, date] = args.filter((a) => !a.startsWith("--"));
   if (!fromArg || !toArg) {
-    console.error("usage: pnpm plan-journey <from> <to> [HH:MM] [YYYY-MM-DD]");
+    console.error(
+      "usage: pnpm plan-journey <from> <to> [HH:MM] [YYYY-MM-DD] [--timetable]",
+    );
     process.exit(1);
   }
   const [from, to] = await Promise.all([
@@ -95,11 +102,14 @@ async function main() {
   const network = await getNetwork(db, serviceDate);
   const built = performance.now();
   const departAt = serviceSecondOf(serviceDate, leave);
-  const { journeys, walkOnlyMeters } = planJourneys(network, {
-    from,
-    to,
-    departAt,
-  });
+  const input = { from, to, departAt };
+  const { journeys, walkOnlyMeters } = timetableOnly
+    ? planJourneys(network, input)
+    : await planLive(network, {
+        ...input,
+        serviceDate,
+        now: serviceSecondOf(serviceDate, now),
+      });
   const planned = performance.now();
 
   console.log(
@@ -121,6 +131,7 @@ async function main() {
   }
   if (journeys.length === 0)
     console.log("\nno bus journey in the next 3 hours");
+  else console.log("\n(* = timed from Moventis's live listing)");
   journeys.forEach((j, i) => print(toItinerary(network, j, ctx), i + 1));
   await db.$disconnect();
 }
