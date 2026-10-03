@@ -114,12 +114,14 @@ const LinesButton = ({
  */
 const ContentLinks = () => (
   <nav aria-label="més informació" className="pointer-events-auto">
-    <ul className="bg-card text-muted-foreground flex gap-3 rounded-xl border px-4 py-2 text-xs shadow-lg">
+    {/* Wraps between links, never inside one: "línies i horaris" split over
+        two rows read as two links. */}
+    <ul className="bg-card text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 rounded-xl border px-4 py-2 text-sm shadow-lg">
       {CONTENT_LINKS.map((link) => (
         <li key={link.href}>
           <Link
             href={link.href}
-            className="hover:text-foreground underline-offset-4 hover:underline"
+            className="hover:text-foreground rounded-sm whitespace-nowrap underline-offset-4 hover:underline"
           >
             {link.label}
           </Link>

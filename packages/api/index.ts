@@ -6,10 +6,13 @@ export type {
   LineIndexEntry,
   LinePage,
   LinePageSegment,
+  StopIndexEntry,
+  StopPage,
 } from "./src/routers/content";
 export type {
   DayDepartures,
   DaySummary,
   DayType,
   ServiceDays,
+  StopDepartureGroup,
 } from "./src/lib/timetable-views";

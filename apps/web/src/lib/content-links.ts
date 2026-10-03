@@ -8,6 +8,7 @@
  */
 export const CONTENT_LINKS = [
   { href: "/linies", label: "línies i horaris" },
+  { href: "/parades", label: "parades" },
   { href: "/informacio", label: "informació" },
   { href: "/tarifes", label: "tarifes" },
   { href: "/privadesa", label: "privadesa" },

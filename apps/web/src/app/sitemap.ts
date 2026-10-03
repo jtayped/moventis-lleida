@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/constants/metadata";
+import { stopPath } from "@/lib/stops";
 import { api } from "@/trpc/server";
 
 // Lines come from the database, which the build cannot reach.
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 const STATIC_PAGES: MetadataRoute.Sitemap = [
   { url: SITE_URL, changeFrequency: "daily", priority: 1 },
   { url: `${SITE_URL}/linies`, changeFrequency: "daily", priority: 0.9 },
+  { url: `${SITE_URL}/parades`, changeFrequency: "daily", priority: 0.8 },
   {
     url: `${SITE_URL}/informacio`,
     changeFrequency: "monthly",
@@ -18,14 +20,18 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
 ];
 
 /**
- * Every page Google should index: the fixed pages, then one per live line.
+ * Every page Google should index: the fixed pages, then one per live line and
+ * one per live stop.
  *
  * If the database is down it still lists the fixed pages. A failing sitemap
  * would hide every page from that crawl, not just the lines.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
-    const { lines } = await api.content.lines();
+    const [{ lines }, stops] = await Promise.all([
+      api.content.lines(),
+      api.content.stops(),
+    ]);
     return [
       ...STATIC_PAGES,
       ...lines.map((line) => ({
@@ -33,9 +39,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "daily" as const,
         priority: 0.8,
       })),
+      ...stops.map((stop) => ({
+        url: `${SITE_URL}${stopPath(stop)}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      })),
     ];
   } catch (err) {
-    console.error("sitemap: could not list lines", err);
+    console.error("sitemap: could not list lines and stops", err);
     return STATIC_PAGES;
   }
 }

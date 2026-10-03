@@ -113,7 +113,7 @@ Defined in `packages/api`, consumed by both RSC (via `apps/web/src/trpc/server.t
 - `stops.get` — fetches a single stop + live schedules from Moventis API, keyed by `Stop.externalId` (not the internal cuid) because that id is public in the URL. It also returns `failedRoutes: string[]`, the `code` of every route whose live fetch was unavailable, so a partial outage reads as a short timetable rather than a complete one; when every route fails it throws `INTERNAL_SERVER_ERROR` instead, and `buses.byLine` does the same when every probe fails — an outage must not reach the UI as "no buses are running".
 - `stops.getByExternalIds` — bare stops for the saved-stops list. Database-only and includes soft-deleted stops, unlike every other stop query. `stops.get` would fire one live Moventis request per route on the stop, so resolving N saved ids through it would push ~3N calls through the 5 req/s throttle before the map could draw anything.
 - `directions.plan` — bus itineraries between two points (see Directions), timed from Moventis's live boards: up to 12 requests in the queue's `"batch"` lane, so it answers in a second or a few. It throws `PRECONDITION_FAILED` when the day has no stored timetable rather than returning an empty list, for the same reason `stops.get` throws on a full outage.
-- `content.lines` / `content.line` — the line pages' data (`packages/api/src/routers/content.ts`), from the database only: timetables come through `readStoredTimetable` and `lib/timetable-views.ts`, cached for an hour and keyed by Lleida's date. Nothing here calls Moventis, so a crawler fetching every page never reaches the 5 req/s throttle.
+- `content.lines` / `content.line` / `content.stops` / `content.stop` — the line and stop pages' data (`packages/api/src/routers/content.ts`), from the database only: timetables come through `readStoredTimetable` and `lib/timetable-views.ts`, cached for an hour and keyed by Lleida's date. Nothing here calls Moventis, so a crawler fetching every page never reaches the 5 req/s throttle.
 
 ### Scraper Line Discovery (`apps/scraper`)
 
@@ -274,12 +274,13 @@ Search query is deliberately not in the URL.
 
 ### Content pages (SEO)
 
-`/linies`, `/linies/[code]`, `/informacio`, `/tarifes` and `/privadesa` share the shell in `apps/web/src/components/content/`: a header back to the map, and a footer that links the content pages to each other and says the site is not Moventis'. Six things are easy to get wrong:
+`/linies`, `/linies/[code]`, `/parades`, `/parades/[slug]`, `/informacio`, `/tarifes` and `/privadesa` share the shell in `apps/web/src/components/content/`: a header back to the map, and a footer that links the content pages to each other and says the site is not Moventis'. Six things are easy to get wrong:
 
 - Every page other than `/` builds its metadata with `pageMetadata()` (`apps/web/src/lib/seo.ts`). Next merges metadata one level deep, so a page that sets nothing inherits the root's `canonical: "/"` and og:url, and tells Google it is a copy of the home page.
 - `CONTENT_LINKS` (`apps/web/src/lib/content-links.ts`) is the only list of content pages. The footer, the settings panel and the link row beside the desktop `línies` button all read it. That row is the only `<a>` in `/`'s server HTML; every other way to a line or a stop is a button, which crawlers do not follow. List only pages that exist.
 - Copy is lowercase in the source, proper nouns included. `body.lowercase` only changes what is drawn; crawlers and snippets read the source.
 - Fares are curated in `apps/web/src/content/tarifes.ts` with their sources and a review date, not scraped. The build has no database, so a content page that reads it must render at request time, and `sitemap.ts` with it.
+- A stop's URL is `stopPath()` (`apps/web/src/lib/stops.ts`), `/parades/{externalId}-{slug}`. The page reads only the leading id and 308s any other slug to the current one, so a renamed stop keeps its links; build stop links with `stopPath`, never by hand.
 - `/` and its splash `loading.tsx` live in the `(map)` route group. A `loading.tsx` at the app root wraps every route in Suspense, so every page streams its shell with a 200 before it runs: an unknown line becomes a soft 404 and a redirect a meta refresh. Keep loading screens inside a group.
 - Line colours drawn as graphics (rails, bars, route shapes) go through `lineAccentStyle` (`apps/web/src/lib/contrast.ts`) and `var(--line)`, never the raw colour. Moventis' colours are not chosen for contrast: line 1's yellow is 1.07:1 on the light page and line 9's near-black 1.02:1 on the dark one. The badge keeps the raw colour, since its code is text and already picks a readable ink.
 
