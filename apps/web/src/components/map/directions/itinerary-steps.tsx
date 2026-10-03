@@ -3,8 +3,8 @@
 import { Flag, Footprints } from "lucide-react";
 import type { Itinerary } from "@moventis/shared";
 
+import TimeSourceBadge from "../stop-details/time-source-badge";
 import { LineChip } from "./line-chip";
-import { LiveBadge } from "./live-badge";
 import { clock, distance, towards } from "./format";
 
 /**
@@ -66,7 +66,7 @@ export const ItinerarySteps = ({
                 </span>
                 <span className="font-medium">{leg.from.name}</span>
               </p>
-              <LiveBadge leg={leg} />
+              <TimeSourceBadge isRealTime={leg.live} className="mt-1 text-xs" />
             </div>
             <div className="text-muted-foreground flex items-center gap-2 text-xs">
               <LineChip code={leg.lineCode} color={leg.color} />

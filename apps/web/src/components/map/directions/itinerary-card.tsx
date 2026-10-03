@@ -6,8 +6,8 @@ import type { BusLeg, Itinerary } from "@moventis/shared";
 
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/time";
+import TimeSourceBadge from "../stop-details/time-source-badge";
 import { LineChip } from "./line-chip";
-import { LiveBadge } from "./live-badge";
 import { clock, distance, duration } from "./format";
 
 /**
@@ -68,7 +68,7 @@ export const ItinerarySummary = ({
             {itinerary.transfers === 1 ? "transbord" : "transbords"}
           </span>
         )}
-        {firstBus && <LiveBadge leg={firstBus} />}
+        {firstBus && <TimeSourceBadge isRealTime={firstBus.live} />}
       </div>
     </div>
   );

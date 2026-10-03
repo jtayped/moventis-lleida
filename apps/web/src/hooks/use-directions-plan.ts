@@ -19,8 +19,12 @@ import { api } from "@/trpc/react";
  */
 const LOCATION_REPLAN_M = 150;
 
-/** "Leave now" plans age; a minute is the timetable's own resolution. */
-const NOW_REFRESH_MS = 60_000;
+/**
+ * "Leave now" plans carry live times, which age. Moventis's stop boards are
+ * shared between plans for 20 s on the server, so a shorter interval would
+ * only re-read the same answer.
+ */
+const NOW_REFRESH_MS = 30_000;
 
 const inArea = (p: DirectionsPoint) =>
   p.lat >= RESTRICTED_BOUNDS.south &&
@@ -96,7 +100,7 @@ export function useDirectionsPlan(
     },
     {
       enabled,
-      staleTime: 30_000,
+      staleTime: 20_000,
       refetchInterval: departAt ? false : NOW_REFRESH_MS,
       retry: 1,
     },
