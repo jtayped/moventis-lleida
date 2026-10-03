@@ -1,10 +1,14 @@
+import Link from "next/link";
+import { stopPath } from "@/lib/stops";
+
 /**
  * A route's stops as a line diagram in the line's colour: a rail with a dot per
  * stop, the two ends filled. The same picture the lines panel draws, so the page
  * and the map read as one thing.
  *
  * Draws with `var(--line)`, so it sits inside an element carrying
- * `lineAccentStyle` and `LINE_ACCENT_CLASS`.
+ * `lineAccentStyle` and `LINE_ACCENT_CLASS`. A stop with a name links to its
+ * page; one without is a stop the timetable lists and the stop table does not.
  */
 export const StopDiagram = ({
   stops,
@@ -27,9 +31,18 @@ export const StopDiagram = ({
             aria-hidden
             className={`relative z-10 size-[13px] shrink-0 rounded-full border-[3px] border-(--line) ${end ? "bg-(--line)" : "bg-background"}`}
           />
-          <span className={end ? "font-semibold" : "leading-snug"}>
-            {stop.name ?? `parada ${stop.externalId}`}
-          </span>
+          {stop.name ? (
+            <Link
+              href={stopPath({ externalId: stop.externalId, name: stop.name })}
+              className={`underline-offset-4 hover:underline ${end ? "font-semibold" : "leading-snug"}`}
+            >
+              {stop.name}
+            </Link>
+          ) : (
+            <span className="text-muted-foreground leading-snug">
+              parada {stop.externalId}
+            </span>
+          )}
         </li>
       );
     })}

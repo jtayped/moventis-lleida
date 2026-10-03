@@ -5,31 +5,15 @@ import { ChevronDown, ListOrdered } from "lucide-react";
 import type { DayType, LinePageSegment, ServiceDays } from "@moventis/api";
 import { Disclosure } from "@/components/content/note";
 import { StopDiagram } from "@/components/content/stop-diagram";
+import { TimeChips } from "@/components/content/time-chips";
+import { useLleidaMinutes } from "@/hooks/use-lleida-minutes";
 import { FOCUS_RING } from "@/components/content/styles";
 import {
   DAY_TYPE_LABELS,
   DAY_TYPE_ORDER,
   DAY_TYPE_PHRASES,
-  formatServiceTime,
 } from "@/lib/service-time";
 import { cn } from "@/lib/utils";
-
-/** Parts of the day the times are grouped under, by start minute. */
-const PERIODS = [
-  { label: "matí", until: 12 * 60 },
-  { label: "tarda", until: 20 * 60 },
-  // Open-ended: n1's times past midnight are stored past 1440 and stay here.
-  { label: "nit", until: Infinity },
-] as const;
-
-const byPeriod = (times: number[]) => {
-  let from = 0;
-  return PERIODS.map((period) => {
-    const group = times.filter((t) => t >= from && t < period.until);
-    from = period.until;
-    return { label: period.label, times: group };
-  }).filter((group) => group.times.length > 0);
-};
 
 const endpoints = (segment: LinePageSegment) => ({
   first: segment.stops[0]?.name,
@@ -127,6 +111,7 @@ export const TimetableViewer = ({
   initialDay: DayType;
 }) => {
   const id = useId();
+  const now = useLleidaMinutes();
   const labels = pickerLabels(segments);
   const dayTypes = DAY_TYPE_ORDER.filter((type) => days[type]);
   const [day, setDay] = useState<DayType>(
@@ -296,23 +281,10 @@ export const TimetableViewer = ({
                 className="space-y-4"
               >
                 {times?.length ? (
-                  byPeriod(times).map((group) => (
-                    <div key={group.label} className="space-y-2">
-                      <h4 className="text-muted-foreground text-sm">
-                        {group.label}
-                      </h4>
-                      <ul className="flex flex-wrap gap-1.5">
-                        {group.times.map((t) => (
-                          <li
-                            key={t}
-                            className="bg-muted rounded-md px-2 py-1 text-sm font-medium tabular-nums"
-                          >
-                            {formatServiceTime(t)}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))
+                  <TimeChips
+                    times={times}
+                    now={type === initialDay ? now : null}
+                  />
                 ) : (
                   <p className="bg-muted/50 text-muted-foreground rounded-lg px-4 py-3 text-sm">
                     aquest recorregut no circula {DAY_TYPE_PHRASES[type]}.

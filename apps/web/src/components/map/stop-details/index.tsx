@@ -15,8 +15,11 @@ import {
   ArrowRightLeft,
   TriangleAlert,
   Sparkle,
+  CalendarDays,
+  ChevronRight,
 } from "lucide-react";
-import { isNewStop } from "@/lib/stops";
+import { isNewStop, stopPath } from "@/lib/stops";
+import Link from "next/link";
 import { formatTimeAgo } from "@/lib/time";
 import { Button } from "@/components/ui/button";
 import type { PullCommit, Schedules } from "@moventis/shared";
@@ -537,6 +540,22 @@ const StopDetails = ({
               now={now}
               getDrift={getDrift}
             />
+          )}
+          {/* The whole day's timetable, which this drawer never shows: it
+              lists only the next few buses. A soft-deleted stop has no page. */}
+          {!details.deletedAt && (
+            <Link
+              href={stopPath({ externalId, name: details.name })}
+              className="hover:bg-muted/50 border-border mt-4 mb-2 flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+            >
+              <CalendarDays size={16} aria-hidden className="shrink-0" />
+              <span className="flex-1">horari complet de la parada</span>
+              <ChevronRight
+                size={16}
+                aria-hidden
+                className="text-muted-foreground shrink-0"
+              />
+            </Link>
           )}
         </div>
         <ScrollBar orientation="vertical" />

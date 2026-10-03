@@ -220,3 +220,70 @@ export function lineSummary(
   }
   return summary;
 }
+
+export interface StopRowInput extends TimetableRowInput {
+  /** `Route.code` of the row's line. */
+  lineCode: string;
+}
+
+export interface StopDepartureGroup {
+  lineCode: string;
+  /**
+   * `Stop.externalId` of the last stop of the segments in this group: where
+   * the bus is heading. Equal to the stop itself on a loop's terminal.
+   */
+  destination: string;
+  departures: DayDepartures;
+}
+
+/**
+ * What leaves one stop, per line and destination, per day type.
+ *
+ * Segments that share a line and a last stop are merged: someone at the stop
+ * wants "the next 2 towards the hospital", not one list per Moventis variant
+ * (line 2 runs two loops from the same terminal). Groups come out by line
+ * code, then destination id, so the order is stable.
+ */
+export function stopDepartures(
+  stopId: string,
+  rows: StopRowInput[],
+  days: ServiceDays,
+): StopDepartureGroup[] {
+  const dateType = new Map<string, DayType>();
+  for (const type of DAY_TYPES) {
+    const date = days[type];
+    if (date) dateType.set(date, type);
+  }
+
+  const groups = new Map<string, StopDepartureGroup>();
+  const times = new Map<string, Set<number>>();
+  for (const row of rows) {
+    const type = dateType.get(row.date);
+    if (!type) continue;
+    const departures = departuresAt(row.timetable, stopId);
+    if (departures.length === 0) continue;
+
+    const destination = row.timetable.stops[row.timetable.stops.length - 1]!;
+    const key = `${row.lineCode}/${destination}`;
+    if (!groups.has(key)) {
+      groups.set(key, { lineCode: row.lineCode, destination, departures: {} });
+    }
+    const timesKey = `${key}/${type}`;
+    const set = times.get(timesKey) ?? new Set<number>();
+    departures.forEach((t) => set.add(t));
+    times.set(timesKey, set);
+  }
+
+  for (const [key, group] of groups) {
+    for (const type of DAY_TYPES) {
+      const set = times.get(`${key}/${type}`);
+      if (set) group.departures[type] = [...set].sort((a, b) => a - b);
+    }
+  }
+
+  return [...groups.values()].sort(
+    (a, b) =>
+      a.lineCode.localeCompare(b.lineCode, undefined, { numeric: true }) ||
+      a.destination.localeCompare(b.destination),
+  );
+}

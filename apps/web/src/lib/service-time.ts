@@ -88,3 +88,16 @@ export const todayDayType = (now = new Date()): DayType => {
   if (weekday === "Sun") return "sunday";
   return "weekday";
 };
+
+const lleidaClock = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: TIME_ZONE,
+});
+
+/** Minutes after Lleida's midnight at `now`: the footing timetable times use. */
+export const lleidaMinutes = (now = new Date()): number => {
+  const [hour, minute] = lleidaClock.format(now).split(":").map(Number);
+  return hour! * 60 + minute!;
+};

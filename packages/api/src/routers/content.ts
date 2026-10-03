@@ -1,6 +1,7 @@
 import z from "zod";
 import { db } from "@moventis/db";
 import {
+  distanceMeters,
   readStoredTimetable,
   routePathSchema,
   type RoutePath,
@@ -12,10 +13,12 @@ import {
   lineSegments,
   lineSummary,
   pickServiceDays,
+  stopDepartures,
   type DayType,
   type DaySummary,
   type LineSegment,
   type ServiceDays,
+  type StopDepartureGroup,
   type TimetableRowInput,
 } from "../lib/timetable-views";
 
@@ -228,6 +231,109 @@ const getCachedLinePage = unstable_cache(
   { revalidate: CONTENT_TTL_S },
 );
 
+export interface StopIndexEntry {
+  externalId: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  /** Live lines serving the stop. */
+  lineCodes: string[];
+}
+
+/** Every live stop with its lines: the `/parades` index, nearby stops and the sitemap. */
+const getCachedStopIndex = unstable_cache(
+  async (): Promise<StopIndexEntry[]> => {
+    const stops = await db.stop.findMany({
+      select: {
+        externalId: true,
+        name: true,
+        latitude: true,
+        longitude: true,
+        // The soft-delete extension does not reach included relations.
+        routes: { where: { deletedAt: null }, select: { code: true } },
+      },
+      orderBy: { name: "asc" },
+    });
+    return stops.map(({ routes, ...stop }) => ({
+      ...stop,
+      lineCodes: routes.map((r) => r.code),
+    }));
+  },
+  ["content-stop-index-v1"],
+  { revalidate: CONTENT_TTL_S },
+);
+
+/** How far a "nearby" stop can be, and how many to list. */
+const NEARBY_RADIUS_M = 500;
+const NEARBY_LIMIT = 6;
+
+export interface StopPage {
+  stop: StopIndexEntry;
+  days: ServiceDays;
+  lines: { code: string; name: string; color: string }[];
+  groups: (StopDepartureGroup & { destinationName: string | null })[];
+  nearby: (StopIndexEntry & { distanceM: number })[];
+}
+
+const getCachedStopPage = unstable_cache(
+  async (externalId: string, today: string): Promise<StopPage | null> => {
+    const index = await getCachedStopIndex();
+    const stop = index.find((s) => s.externalId === externalId);
+    if (!stop) return null;
+
+    const days = await getCachedServiceDays(today);
+    const [routes, rows] = await Promise.all([
+      db.route.findMany({
+        where: { code: { in: stop.lineCodes } },
+        select: { code: true, name: true, color: true },
+      }),
+      db.timetable.findMany({
+        where: {
+          date: { in: serviceDates(days) },
+          stops: { has: externalId },
+          route: { deletedAt: null },
+        },
+        select: { ...TIMETABLE_SELECT, route: { select: { code: true } } },
+      }),
+    ]);
+
+    const groups = stopDepartures(
+      externalId,
+      rows.flatMap((row) =>
+        toRowInputs([row]).map((input) => ({
+          ...input,
+          lineCode: row.route.code,
+        })),
+      ),
+      days,
+    );
+    const names = new Map(index.map((s) => [s.externalId, s.name]));
+    const here: [number, number] = [stop.longitude, stop.latitude];
+    const nearby = index
+      .filter((s) => s.externalId !== externalId)
+      .map((s) => ({
+        ...s,
+        distanceM: Math.round(distanceMeters(here, [s.longitude, s.latitude])),
+      }))
+      .filter((s) => s.distanceM <= NEARBY_RADIUS_M)
+      .sort((a, b) => a.distanceM - b.distanceM)
+      .slice(0, NEARBY_LIMIT);
+
+    return {
+      stop,
+      days,
+      lines: routes,
+      groups: groups.map((group) => ({
+        ...group,
+        destinationName: names.get(group.destination) ?? null,
+      })),
+      nearby,
+    };
+  },
+  ["content-stop-page-v1"],
+  { revalidate: CONTENT_TTL_S },
+);
+
 export const contentRouter = createTRPCRouter({
   /** Every live line with its first bus, last bus and frequency per day type. */
   lines: publicProcedure.query(() => getCachedLineIndex(lleidaToday())),
@@ -235,4 +341,10 @@ export const contentRouter = createTRPCRouter({
   line: publicProcedure
     .input(z.object({ code: z.string().max(8) }))
     .query(({ input }) => getCachedLinePage(input.code, lleidaToday())),
+  /** Every live stop, by name, with the lines that serve it. */
+  stops: publicProcedure.query(() => getCachedStopIndex()),
+  /** One stop's timetable page, or null for an unknown or soft-deleted stop. */
+  stop: publicProcedure
+    .input(z.object({ externalId: z.string().regex(/^\d{1,10}$/) }))
+    .query(({ input }) => getCachedStopPage(input.externalId, lleidaToday())),
 });
