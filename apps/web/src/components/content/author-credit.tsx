@@ -35,7 +35,7 @@ export const AuthorCredit = ({ className }: { className?: string }) => (
       rel="noopener noreferrer"
       className={LINK}
     >
-      convidar-me a un cafè
+      fer una donació
     </a>
     .
   </p>

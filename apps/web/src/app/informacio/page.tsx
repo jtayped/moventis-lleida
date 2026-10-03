@@ -164,7 +164,7 @@ const InformacioPage = () => (
       <P>
         el codi és públic a <External href={GITHUB_URL}>github</External>. la
         web no té publicitat. si et fa servei, pots{" "}
-        <External href={KO_FI_URL}>convidar-me a un cafè a ko-fi</External>.
+        <External href={KO_FI_URL}>fer una donació a ko-fi</External>.
       </P>
     </Section>
   </ContentPage>

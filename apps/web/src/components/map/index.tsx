@@ -133,8 +133,8 @@ const KoFiLink = () => (
     href={KO_FI_URL}
     target="_blank"
     rel="noopener noreferrer"
-    aria-label="dona suport al projecte a ko-fi"
-    title="convida'm a un cafè a ko-fi"
+    aria-label="fes una donació al projecte a ko-fi"
+    title="fes una donació a ko-fi"
     className="bg-card dark:bg-card text-muted-foreground hover:text-foreground hover:bg-accent dark:hover:bg-accent pointer-events-auto grid size-10 place-items-center rounded-full border shadow-lg transition-colors"
   >
     <Coffee className="size-4" aria-hidden="true" />
