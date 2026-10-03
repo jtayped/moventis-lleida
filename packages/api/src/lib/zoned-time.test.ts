@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { fromWallClock, toWallClock, utcStartOfLocalDay } from "./zoned-time";
+import {
+  fromWallClock,
+  instantAtServiceSecond,
+  lleidaServiceDate,
+  serviceSecondOf,
+  toWallClock,
+  utcStartOfLocalDay,
+} from "./zoned-time";
 
 describe("toWallClock", () => {
   it("reads an instant as Lleida's clock, not the host's", () => {
@@ -97,5 +104,50 @@ describe("utcStartOfLocalDay", () => {
     expect(
       utcStartOfLocalDay(new Date("2026-07-15T23:30:00Z")).toISOString(),
     ).toBe("2026-07-16T00:00:00.000Z");
+  });
+});
+
+describe("service-day seconds", () => {
+  it("names the Lleida day, which is already tomorrow late in the UTC evening", () => {
+    expect(lleidaServiceDate(new Date("2026-10-03T22:30:00Z"))).toBe(
+      "2026-10-04",
+    );
+  });
+
+  it("reads an instant as wall-clock seconds after the service day's midnight", () => {
+    // 06:45 CEST on 5 Oct.
+    expect(
+      serviceSecondOf("2026-10-05", new Date("2026-10-05T04:45:00Z")),
+    ).toBe(6 * 3600 + 45 * 60);
+    // n1's 05:15 on the Sunday is 29:15 on Saturday's service day.
+    expect(
+      serviceSecondOf("2026-10-10", new Date("2026-10-11T03:15:00Z")),
+    ).toBe(29 * 3600 + 15 * 60);
+    // And 23:30 on Saturday is negative against Sunday's.
+    expect(
+      serviceSecondOf("2026-10-11", new Date("2026-10-10T21:30:00Z")),
+    ).toBe(-30 * 60);
+  });
+
+  it("turns service seconds back into the instant, past midnight and before it", () => {
+    expect(instantAtServiceSecond("2026-10-05", 6 * 3600 + 45 * 60)).toEqual(
+      new Date("2026-10-05T04:45:00Z"),
+    );
+    expect(
+      instantAtServiceSecond("2026-10-10", 29 * 3600 + 15 * 60 + 30),
+    ).toEqual(new Date("2026-10-11T03:15:30Z"));
+    expect(instantAtServiceSecond("2026-10-01", -30 * 60)).toEqual(
+      new Date("2026-09-30T21:30:00Z"),
+    );
+  });
+
+  it("follows the wall clock across the autumn change", () => {
+    // 25 Oct 2026: 03:00 CEST becomes 02:00 CET. 08:00 that day is 07:00Z.
+    expect(instantAtServiceSecond("2026-10-25", 8 * 3600)).toEqual(
+      new Date("2026-10-25T07:00:00Z"),
+    );
+    expect(
+      serviceSecondOf("2026-10-25", new Date("2026-10-25T07:00:00Z")),
+    ).toBe(8 * 3600);
   });
 });

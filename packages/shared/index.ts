@@ -14,3 +14,4 @@ export * from "./src/types/lines";
 export * from "./src/types/schedule";
 export * from "./src/types/route-path";
 export type * from "./src/types/bus-position";
+export type * from "./src/types/directions";
