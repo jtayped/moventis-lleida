@@ -254,8 +254,10 @@ The response is one entry per stop in route order:
 
 What turning it into trips takes:
 
-- Loops reuse trip ids from one lap to the next, so a trip has to be split where its time runs backwards.
+- On a loop, a trip id's entries at the closing stops can belong to another bus. On line 2, id 125 runs `secuencia` 1 to 23 in rising time (06:53 to 07:34), but its entries at 24 to 28 (07:07 to 07:09) are a depot pull-in, and the bus itself carries on as id 181 from 07:36 at `secuencia` 24. So trips are split wherever time runs backwards or a gap exceeds 20 minutes, and the fragments are stitched back together when one starts 0 to 5 minutes after the previous ends (`packages/api/src/lib/directions/network.ts`).
 - A concatenated variant spans several segments, so its trips have to be stitched across one request per segment. This affects lines 6 and 8.
+- Concatenated segments share a stop at the join: segment 1's last stop is segment 2's first stop at the same minute, but under different trip ids, which is why they need stitching.
+- Times past midnight sit on the previous service date's row. n1's Saturday lists run 23:00 to 05:15, so Sunday's network has to take Saturday's trips at 1440 minutes or later, shifted back by a day.
 - `hora` and `IdExpedicion` often disagree in length. In a full local sync, 76 of 248 timetables had at least one such stop, on lines 4, 5 inbound, 7 and others. The main cause is that `hora` lists a minute once even when two trips pass in that same minute, so `IdExpedicion` comes out one longer. Some stops also list the ids of trips that do not stop there: line 7's PLAÇA ESPANYA/SARACIBAR has 78 times and 101 ids, and line 6 segment 3's P.ESPANYA/CATALUNYA has 41 and 51.
 
 It has two ways of saying there is no service. `{}` means the segment does not run that day or does not exist. A single entry of `"S"` placeholders with `COD_PARADA` `"S-S"` means the date is outside the published calendar, as seen for 20260101.
@@ -295,6 +297,10 @@ Facts the project depends on:
 
 - It answers with every line serving the stop, whichever line the URL names. `stops.nextArrivals` relies on that to spend one request per stop, and `schedule-contract.test.ts` pins it.
 - When the line named has no service, or is dormant, it answers a sentinel: `[{"idLinea":"N","desc_linea":"","trayectos":{},"incidencias":null,"selected":0}]`.
+- Not every `real: "S"` entry is live. Past the first few, `"S"` entries are countdowns to timetable times.
+- A list reaches about 1 to 2.5 hours ahead, with about 5 entries per journey.
+- A terminal lists both the departing and the arriving journey.
+- Lines from other cities' networks, such as 107 and 123, can appear in a stop's list.
 - `adaptada` and `incidencias` were `null` in all of about 830 recorded arrivals. `tiempo` and the keys of the object form of `trayectos` are ignored.
 
 ## GetLineas
