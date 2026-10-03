@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import React, { useId, useState } from "react";
 import type { DayType, ServiceDays, StopPage } from "@moventis/api";
 import { LineBadge } from "@/components/content/line-badge";
@@ -41,9 +40,19 @@ export const StopTimetable = ({
   const [day, setDay] = useState<DayType>(
     dayTypes.includes(initialDay) ? initialDay : (dayTypes[0] ?? "weekday"),
   );
+  // Only after a press: a live region filled on mount is read out on load.
+  const [touched, setTouched] = useState(false);
+  const runningOn = (type: DayType) =>
+    groups.filter((g) => g.departures[type]?.length).length;
 
   return (
     <div className="space-y-5">
+      <p className="sr-only" aria-live="polite">
+        {touched &&
+          (runningOn(day) > 0
+            ? `${DAY_TYPE_LABELS[day]}: ${runningOn(day)} ${runningOn(day) === 1 ? "línia i direcció" : "línies i direccions"}`
+            : `cap bus para aquí ${DAY_TYPE_PHRASES[day]}`)}
+      </p>
       <div className="space-y-2">
         <p id={`${id}-days`} className="text-sm font-medium">
           dia
@@ -58,7 +67,10 @@ export const StopTimetable = ({
               key={type}
               type="button"
               aria-pressed={type === day}
-              onClick={() => setDay(type)}
+              onClick={() => {
+                setDay(type);
+                setTouched(true);
+              }}
               className={cn(
                 "min-h-10 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 type === day
@@ -88,17 +100,16 @@ export const StopTimetable = ({
                 className="border-border space-y-3 rounded-xl border p-4"
               >
                 <header className="flex items-center gap-3">
-                  <Link
-                    href={`/linies/${group.lineCode}`}
-                    aria-label={`línia ${group.lineCode}`}
-                    className={cn("rounded-md", FOCUS_RING)}
-                  >
-                    <LineBadge
-                      code={group.lineCode}
-                      color={lines[group.lineCode]?.color ?? "#888888"}
-                    />
-                  </Link>
+                  <LineBadge
+                    code={group.lineCode}
+                    color={lines[group.lineCode]?.color ?? "#888888"}
+                    decorative
+                  />
+                  {/* Names the line too: line 1 and line 20 both loop back
+                      here, and two headings that both say "fa la volta i
+                      torna aquí" are no help to anyone jumping by heading. */}
                   <h3 className="min-w-0 flex-1 text-base leading-snug font-semibold">
+                    <span className="sr-only">línia {group.lineCode}: </span>
                     {group.destination === stopId
                       ? "fa la volta i torna aquí"
                       : `cap a ${group.destinationName ?? "final de línia"}`}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { MapPin, Radio } from "lucide-react";
 import { ContentPage } from "@/components/content/content-page";
-import { LineBadge } from "@/components/content/line-badge";
+import { LineBadge, LineBadges } from "@/components/content/line-badge";
 import { Note } from "@/components/content/note";
 import { StopTimetable } from "@/components/content/stop-timetable";
 import { FOCUS_RING } from "@/components/content/styles";
@@ -71,6 +71,7 @@ const ParadaPage = async ({ params }: Props) => {
   const lines = Object.fromEntries(
     routes.map((r) => [r.code, { color: r.color, name: r.name }]),
   );
+  const colors = Object.fromEntries(routes.map((r) => [r.code, r.color]));
   const serving = [...page.lines].sort(compareByLineCode);
   const dates = describeServiceDays(page.days);
 
@@ -115,7 +116,7 @@ const ParadaPage = async ({ params }: Props) => {
                       FOCUS_RING,
                     )}
                   >
-                    <LineBadge code={line.code} color={line.color} />
+                    <LineBadge code={line.code} color={line.color} decorative />
                     <span className="text-sm font-medium">
                       línia {line.code}
                     </span>
@@ -179,16 +180,7 @@ const ParadaPage = async ({ params }: Props) => {
                       a {distance(near.distanceM)}
                     </span>
                   </span>
-                  <span className="flex shrink-0 flex-wrap justify-end gap-1">
-                    {[...near.lineCodes].sort(compareLineCodes).map((code) => (
-                      <LineBadge
-                        key={code}
-                        code={code}
-                        color={lines[code]?.color ?? "#888888"}
-                        className="size-7 rounded text-xs"
-                      />
-                    ))}
-                  </span>
+                  <LineBadges codes={near.lineCodes} colors={colors} />
                 </Link>
               </li>
             ))}
