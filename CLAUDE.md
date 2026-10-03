@@ -245,6 +245,15 @@ The flow is one-directional. `apps/web/src/app/page.tsx` reads `searchParams` se
 
 Search query is deliberately not in the URL.
 
+### Content pages (SEO)
+
+`/informacio`, `/tarifes` and `/privadesa` share the shell in `apps/web/src/components/content/`: a header back to the map, and a footer that links the content pages to each other and says the site is not Moventis'. Four things are easy to get wrong:
+
+- Every page other than `/` builds its metadata with `pageMetadata()` (`apps/web/src/lib/seo.ts`). Next merges metadata one level deep, so a page that sets nothing inherits the root's `canonical: "/"` and og:url, and tells Google it is a copy of the home page.
+- `CONTENT_LINKS` (`apps/web/src/lib/content-links.ts`) is the only list of content pages. The footer, the settings panel and the link row beside the desktop `línies` button all read it. That row is the only `<a>` in `/`'s server HTML; every other way to a line or a stop is a button, which crawlers do not follow. List only pages that exist.
+- Copy is lowercase in the source, proper nouns included. `body.lowercase` only changes what is drawn; crawlers and snippets read the source.
+- Fares are curated in `apps/web/src/content/tarifes.ts` with their sources and a review date, not scraped. The build has no database, so a content page that reads it must render at request time, and `sitemap.ts` with it.
+
 ### Analytics
 
 Umami, self-hosted at `analytics.joeltaylor.business`. `layout.tsx` renders the script only when both `NEXT_PUBLIC_UMAMI_*` vars are set, with `data-domains` pinned to the production host so local dev and previews never reach it.
