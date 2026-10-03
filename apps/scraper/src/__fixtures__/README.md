@@ -14,4 +14,4 @@ All of them were recorded on 2026-10-03 between 18:36 and 18:38 CEST with one se
 | `trayectos-stub.json`          | `GetTrayectos/717/20261005`   | The `[{"numLinea":"717"}]` stub of a date the line does not run (the feed lists n1 on Saturdays only)                                                     |
 | `incidencias.json`             | `/es/moventis/es/incidencias` | Three of 20 rows: one alert listed twice for two subzones (`nid` 170669), and one whose `TITLE_LINEA` ends in tabs. None concern Lleida                   |
 
-`src/lib/moventis-contract.test.ts` checks these against the schemas, and `src/lib/moventis.live.test.ts` (`pnpm test:live`) checks the live feeds still parse. When the canary fails, re-record the fixture for that feed, update the schema until the contract test passes, and only then look at the code that consumes it.
+`src/lib/moventis-contract.test.ts` checks these against the schemas, and `pnpm test:live` runs `src/lib/moventis.live.test.ts` to check the live feeds still parse. When the canary fails, re-record the fixture for that feed, update the schema until the contract test passes, and only then look at the code that consumes it.
