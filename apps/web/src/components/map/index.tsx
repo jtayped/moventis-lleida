@@ -17,16 +17,8 @@ import SearchPanel from "@/components/map/search-panel";
 import StopDetails from "@/components/map/stop-details";
 import { Panel } from "@/components/map/panel";
 import StopsError from "@/components/map/stops-error";
-import MapNav from "@/components/map/nav";
-import {
-  Coffee,
-  LayoutList,
-  Loader2,
-  LocateFixed,
-  MapPin,
-  Route,
-} from "lucide-react";
-import { track } from "@/lib/analytics";
+import MapNav, { DesktopNav } from "@/components/map/nav";
+import { HandCoins, Loader2, LocateFixed, Route } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { useSettings } from "@/hooks/use-settings";
 import { useIsDesktop } from "@/hooks/use-is-desktop";
@@ -35,9 +27,7 @@ import { useColorByLine } from "@/hooks/use-color-by-line";
 import UserLocationLayer from "@/components/map/user-location-layer";
 import { cn } from "@/lib/utils";
 import { StopEtasProvider } from "@/context/stop-etas";
-import { CONTENT_LINKS } from "@/lib/content-links";
 import { KO_FI_URL } from "@/lib/project-links";
-import Link from "next/link";
 import DirectionsPanel from "@/components/map/directions";
 import DirectionsLayer, {
   MapPointPicker,
@@ -59,8 +49,19 @@ import { useDirectionsPlan } from "@/hooks/use-directions-plan";
  * it. Matching the modifier is what lets `twMerge` drop the variant's class
  * instead. Same fix `SettingsButton` and `SearchInput` need.
  */
-const FLOATING_BUTTON =
-  "bg-card dark:bg-card dark:hover:bg-accent h-12 gap-2.5 rounded-xl px-5 shadow-lg";
+const FLOATING_BUTTON = "bg-card dark:bg-card dark:hover:bg-accent shadow-lg";
+
+/**
+ * The map's actions in the right rail: one 48px square each, icon only, so the
+ * rail is a single column with both edges straight and the same height as the
+ * desktop bar it shares a bottom line with. The name is the `aria-label` and,
+ * for a pointer, the `title`, lowercased in source because a native tooltip is
+ * outside the DOM the body's `lowercase` class reaches.
+ */
+const MAP_ACTION = cn(
+  FLOATING_BUTTON,
+  "pointer-events-auto size-12 rounded-xl [&_svg:not([class*='size-'])]:size-5",
+);
 
 /**
  * The chrome that holds the search field and the line strip, in all three of its
@@ -81,97 +82,22 @@ const TOOLS_PANEL = [
 ].join(" ");
 
 /**
- * The desktop doors to the line and stop pages; below `lg` the bottom nav's
- * línies and parades tabs are. Links, not buttons: they leave the map for a
- * page, and as `<a>` elements a crawler follows them from `/`.
- */
-const PageLinks = ({ className }: { className?: string }) => (
-  <>
-    <Button
-      asChild
-      variant="outline"
-      className={cn(FLOATING_BUTTON, className)}
-    >
-      <Link
-        href="/linies"
-        title="línies i horaris"
-        onClick={() =>
-          track("content page opened", { page: "linies", source: "tools" })
-        }
-      >
-        <LayoutList className="size-5" aria-hidden />
-        <span className="font-medium">línies</span>
-      </Link>
-    </Button>
-    <Button
-      asChild
-      variant="outline"
-      className={cn(FLOATING_BUTTON, className)}
-    >
-      <Link
-        href="/parades"
-        title="totes les parades"
-        onClick={() =>
-          track("content page opened", { page: "parades", source: "tools" })
-        }
-      >
-        <MapPin className="size-5" aria-hidden />
-        <span className="font-medium">parades</span>
-      </Link>
-    </Button>
-  </>
-);
-
-/** The pages `PageLinks` already has a button for, left out of the row beside it. */
-const PAGE_LINK_HREFS: readonly string[] = ["/linies", "/parades"];
-
-/**
- * Plain links to the remaining content pages, beside the desktop línies and
- * parades links. The row is hidden below `lg` but stays in the DOM, and links
- * in the DOM are still followed; phone users reach the same pages from the
- * settings panel.
- *
- * Beside the buttons and not under them: under them, the row takes the
- * column's last slot, which is where Google's logo sits on the map, and the
- * logo must stay visible.
- */
-const ContentLinks = () => (
-  <nav aria-label="més informació" className="pointer-events-auto">
-    {/* Wraps between links, never inside one: "línies i horaris" split over
-        two rows read as two links. */}
-    <ul className="bg-card text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 rounded-xl border px-4 py-2 text-sm shadow-lg">
-      {CONTENT_LINKS.filter((link) => !PAGE_LINK_HREFS.includes(link.href)).map(
-        (link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className="hover:text-foreground rounded-sm whitespace-nowrap underline-offset-4 hover:underline"
-            >
-              {link.label}
-            </Link>
-          </li>
-        ),
-      )}
-    </ul>
-  </nav>
-);
-
-/**
- * The tip jar. 40px against the location button's 48, outlined, muted: the
- * quietest control on the map on purpose, because it is an ask and not a tool.
- * `/informacio` says what it is for.
+ * The tip jar. The same square as the rail's actions, so the column stays
+ * straight, and at the top, furthest from the thumb, because it is an ask and
+ * not a tool. `/informacio` says what it is for.
  */
 const KoFiLink = () => (
-  <a
-    href={KO_FI_URL}
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="fes una donació al projecte a ko-fi"
-    title="fes una donació a ko-fi"
-    className="bg-card dark:bg-card text-muted-foreground hover:text-foreground hover:bg-accent dark:hover:bg-accent pointer-events-auto grid size-10 place-items-center rounded-full border shadow-lg transition-colors"
-  >
-    <Coffee className="size-4" aria-hidden="true" />
-  </a>
+  <Button asChild variant="outline" size="icon" className={MAP_ACTION}>
+    <a
+      href={KO_FI_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="fes una donació al projecte a ko-fi"
+      title="fes una donació a ko-fi"
+    >
+      <HandCoins aria-hidden="true" />
+    </a>
+  </Button>
 );
 
 const BusMap = () => {
@@ -327,8 +253,13 @@ const BusMap = () => {
         search results, its one growing child, that would otherwise run under
         the bar. `--nav-height` is `0px` from `lg`, so this one offset is right
         in both layouts with no breakpoint of its own.
+
+        From `lg` the bottom inset is 32px, not 16: the column's last card sits
+        over the map's bottom-left corner, where Google's logo is (26px tall,
+        and the Maps terms want it visible). The right rail uses the same inset
+        so the two keep one bottom line.
       */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 bottom-[var(--nav-height)] z-10 flex flex-col lg:w-[28rem] lg:gap-3 lg:p-4">
+      <div className="pointer-events-none absolute inset-x-0 top-0 bottom-[var(--nav-height)] z-10 flex flex-col lg:w-[28rem] lg:gap-3 lg:p-4 lg:pb-8">
         {/* Directions bring their own two fields; the stop search above them
             would be a third, asking a different question. */}
         {!directions.isOpen && (
@@ -370,10 +301,7 @@ const BusMap = () => {
           </div>
         )}
 
-        <div className="hidden shrink-0 items-center gap-3 lg:flex">
-          <PageLinks className="pointer-events-auto shrink-0" />
-          <ContentLinks />
-        </div>
+        <DesktopNav className="pointer-events-auto" />
       </div>
 
       <MapComponent
@@ -413,53 +341,52 @@ const BusMap = () => {
         </StopEtasProvider>
       </MapComponent>
 
-      {/* The map's right rail: a column parked in the bottom-right corner,
-          quietest control at the top and the primary action nearest the thumb.
-          A plain flex column with no fixed heights, so a control added later
-          drops in as a sibling. The bottom offset clears the bar below `lg`
-          and collapses to nothing from `lg`, where `--nav-height` is `0px` and
-          there is no bar. */}
+      {/* The map's right rail: one column of 48px squares in the bottom-right
+          corner, quietest control at the top and the primary action nearest
+          the thumb. Same insets as the desktop column, so the two share their
+          lines. The bottom offset clears the bar below `lg` and collapses to
+          nothing from `lg`, where `--nav-height` is `0px` and there is no
+          bar. */}
       <div
         className={cn(
-          "pointer-events-none absolute bottom-[var(--nav-height)] z-10 flex w-full items-end p-4 md:p-6",
+          "pointer-events-none absolute right-0 bottom-[var(--nav-height)] z-10 flex flex-col gap-3 p-4 lg:pb-8",
           directionsFullScreen && "hidden",
         )}
       >
-        <div className="pointer-events-none ml-auto flex flex-col items-end gap-3">
-          <KoFiLink />
-          <Button
-            variant="outline"
-            onClick={requestLocation}
-            title={locateTitle}
-            disabled={status === "unsupported"}
-            className={cn(
-              FLOATING_BUTTON,
-              "pointer-events-auto",
-              status === "active" && "border-blue-500 text-blue-500",
-              status === "error" && "border-destructive text-destructive",
-            )}
-          >
-            {status === "loading" ? (
-              <Loader2 className="size-5 animate-spin" />
-            ) : (
-              <LocateFixed className="size-5" />
-            )}
-            <span className="font-medium">ubicació</span>
-          </Button>
-          {/* The primary action, so the filled one and nearest the thumb. */}
-          <Button
-            onClick={toggleDirections}
-            aria-pressed={directions.isOpen}
-            title="com arribar-hi"
-            className={cn(
-              FLOATING_BUTTON,
-              "pointer-events-auto border-transparent bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
-            )}
-          >
-            <Route className="size-5" />
-            <span className="font-medium">ruta</span>
-          </Button>
-        </div>
+        <KoFiLink />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={requestLocation}
+          aria-label={locateTitle}
+          title={locateTitle}
+          disabled={status === "unsupported"}
+          className={cn(
+            MAP_ACTION,
+            status === "active" && "border-blue-500 text-blue-500",
+            status === "error" && "border-destructive text-destructive",
+          )}
+        >
+          {status === "loading" ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <LocateFixed aria-hidden />
+          )}
+        </Button>
+        {/* The primary action, so the filled one and nearest the thumb. */}
+        <Button
+          size="icon"
+          onClick={toggleDirections}
+          aria-pressed={directions.isOpen}
+          aria-label="com arribar-hi"
+          title="com arribar-hi"
+          className={cn(
+            MAP_ACTION,
+            "border-transparent bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
+          )}
+        >
+          <Route aria-hidden />
+        </Button>
       </div>
 
       <MapNav

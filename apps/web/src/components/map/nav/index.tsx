@@ -1,6 +1,7 @@
 "use client";
 
-import { LayoutList, MapPin, Search, Settings } from "lucide-react";
+import { BusFront, Info, MapPin, Search, Settings, Ticket } from "lucide-react";
+import Link from "next/link";
 
 import { NavTab, NavTabLink } from "@/components/map/nav/nav-tab";
 import { track } from "@/lib/analytics";
@@ -12,7 +13,7 @@ const PAGE_TABS = [
   {
     page: "linies",
     href: "/linies",
-    icon: LayoutList,
+    icon: BusFront,
     label: "línies",
     title: "línies i horaris",
   },
@@ -22,6 +23,28 @@ const PAGE_TABS = [
     icon: MapPin,
     label: "parades",
     title: "totes les parades",
+  },
+] as const;
+
+/**
+ * Pages only the desktop bar links to. The phone's bar spends its other two
+ * slots on cerca and configuració, which desktop has in the column's top card,
+ * and phone users reach these from the settings panel.
+ */
+const INFO_TABS = [
+  {
+    page: "tarifes",
+    href: "/tarifes",
+    icon: Ticket,
+    label: "tarifes",
+    title: "tarifes i títols de transport",
+  },
+  {
+    page: "informacio",
+    href: "/informacio",
+    icon: Info,
+    label: "informació",
+    title: "sobre aquest web",
   },
 ] as const;
 
@@ -111,6 +134,44 @@ export const MapNav = ({ active, onSelect, visible }: MapNavProps) => (
         active={active === tab.panel}
         onClick={() => onSelect(tab.panel)}
       />
+    ))}
+  </nav>
+);
+
+/**
+ * The desktop's bar: the last card in the left column, as wide as the search
+ * card above it and 48px tall like the map's buttons, so it shares their
+ * bottom line. Every entry is a page, so every entry is a link, and these are
+ * the crawlable links out of `/`.
+ *
+ * `hidden lg:flex` for the same reason the phone bar is `lg:hidden`: no
+ * desktop window should paint the wrong bar before hydration settles.
+ */
+export const DesktopNav = ({ className }: { className?: string }) => (
+  <nav
+    aria-label="navegació principal"
+    className={cn(
+      "bg-card hidden h-12 shrink-0 items-stretch overflow-hidden rounded-xl border shadow-lg lg:flex",
+      className,
+    )}
+  >
+    {[...PAGE_TABS, ...INFO_TABS].map((tab) => (
+      <Link
+        key={tab.page}
+        href={tab.href}
+        title={tab.title}
+        onClick={() =>
+          track("content page opened", { page: tab.page, source: "tools" })
+        }
+        className={cn(
+          "flex flex-1 items-center justify-center gap-2 text-sm font-medium",
+          "hover:bg-accent transition-colors",
+          "focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none focus-visible:ring-inset",
+        )}
+      >
+        <tab.icon className="size-4 shrink-0" aria-hidden="true" />
+        {tab.label}
+      </Link>
     ))}
   </nav>
 );

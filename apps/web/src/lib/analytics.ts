@@ -55,11 +55,15 @@ export interface AnalyticsEvents {
    */
   "nav panel opened": { panel: NavPanel; source: NavSource };
   /**
-   * The línies and parades doors, which leave the map for a page. Kept apart
-   * from `nav panel opened` because they open no panel, but sent from the same
-   * two places, so the bar's four tabs can still be compared.
+   * The doors that leave the map for a page. Kept apart from `nav panel
+   * opened` because they open no panel, but sent from the same two places, so
+   * the bar's four tabs can still be compared. `tarifes` and `informacio` are
+   * only in the desktop bar, so they only ever come from `tools`.
    */
-  "content page opened": { page: "linies" | "parades"; source: NavSource };
+  "content page opened": {
+    page: "linies" | "parades" | "tarifes" | "informacio";
+    source: NavSource;
+  };
   /** Which height the stop drawer was dragged to — tells us whether the peek
    *  snap is used at all. */
   "drawer snapped": { snap: "peek" | "mid" | "full" };

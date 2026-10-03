@@ -27,7 +27,8 @@ interface StopDetailsHeaderProps {
 }
 
 /**
- * Directions to this stop. The stop closes as directions open: on a phone the
+ * Directions to this stop, as the same route glyph the map's own directions
+ * button wears, so the two read as one action. The stop closes as directions open: on a phone the
  * sheet would otherwise sit over the panel, and the stop is not lost — it is
  * the destination now. `requestCloseStop` is the same path Escape takes, so it
  * works from the sheet without arming anything first.
@@ -45,16 +46,17 @@ const DirectionsButton = ({
   const { requestCloseStop } = useBusFinder();
   return (
     <Button
-      variant="outline"
-      size="sm"
-      className="mt-2"
+      variant="ghost"
+      size="icon"
+      className="text-muted-foreground hover:text-foreground"
+      aria-label="com arribar-hi"
+      title="com arribar-hi"
       onClick={() => {
         open({ to: { kind: "stop", externalId, name, ...position } }, "stop");
         requestCloseStop();
       }}
     >
-      <Route aria-hidden />
-      com arribar-hi
+      <Route size={20} aria-hidden />
     </Button>
   );
 };
@@ -182,13 +184,13 @@ export const StopDetailsHeader = ({
         </ul>
         <h2 className="mt-2 text-xl font-bold">{name}</h2>
         <LastUpdated timestamp={dataUpdatedAt} />
+      </div>
+      <div className="flex items-center gap-1">
         <DirectionsButton
           externalId={externalId}
           name={name}
           position={position}
         />
-      </div>
-      <div className="flex items-center gap-1">
         <PreferidaToggle externalId={externalId} />
         <Button
           onClick={() => {
