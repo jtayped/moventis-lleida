@@ -31,7 +31,7 @@ const HomePage = async ({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) => {
-  // `routes.getAll` is week-cached, so reading it here to validate `?lines=` is
+  // `routes.getAll` is cached, so reading it here to validate `?lines=` is
   // free on top of the prefetch that seeds the client cache.
   const [params, routes] = await Promise.all([
     searchParams,
