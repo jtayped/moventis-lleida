@@ -3,8 +3,8 @@
 # The public site is not in here. It runs as a Coolify application of its own,
 # `moventis-web`, on the same image, because Coolify rolls an application onto
 # a new container once it is healthy but stops every service of a compose
-# application before starting its replacement. It reaches postgres through the
-# `moventis-postgres` alias below. See docs/deployment.md.
+# application before starting its replacement. It reaches the database as
+# `moventis-postgres`. See docs/deployment.md.
 #
 # It names prebuilt images and must never gain a `build:` key again: GitHub
 # Actions builds and pushes the images (.github/workflows/release.yml) and the
@@ -14,7 +14,12 @@
 # ${TAG} pins a specific image (the commit sha) for a manual rollback; it
 # defaults to `main`, the tag every release moves.
 services:
-  postgres:
+  # Named for this project rather than `postgres`, because the service name is
+  # also its hostname on every network it joins, and the shared `coolify`
+  # network already has a `postgres`: Coolify's own database, which Coolify
+  # finds by that name. Two containers answering to it there would hand
+  # Coolify this database some of the time.
+  moventis-postgres:
     image: postgres:18-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -28,23 +33,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # Also on Coolify's shared `coolify` network, under a name that does not
-    # change between deploys, so a Coolify application outside this file can
-    # reach the database as `moventis-postgres:5432`. Only containers on that
-    # network can, and they still need the password.
+    # Also on Coolify's shared `coolify` network, where `moventis-web`, a
+    # Coolify application outside this file, reaches it as
+    # `moventis-postgres:5432`. Only containers on that network can, and they
+    # still need the password.
     networks:
-      default:
-      coolify:
-        aliases:
-          - moventis-postgres
+      - default
+      - coolify
 
   scraper:
     image: ghcr.io/jtayped/moventis-lleida-scraper:${TAG:-main}
     pull_policy: always
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@moventis-postgres:5432/${POSTGRES_DB}
     depends_on:
-      postgres:
+      moventis-postgres:
         condition: service_healthy
     restart: unless-stopped
 
