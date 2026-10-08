@@ -175,13 +175,47 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+      # Which of the two Coolify resources this push needs. Deploying the
+      # compose app (postgres and the scraper) recreates every container in
+      # it, postgres included, so the site's queries fail for the seconds the
+      # database takes to come back. It only runs when something it holds
+      # changed: the scraper, the shared packages (the scraper applies the
+      # Prisma schema as it starts), the lockfile or the compose file itself.
+      - id: changes
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            compose:
+              - 'apps/scraper/**'
+              - 'packages/**'
+              - 'docker-compose.yml'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.nvmrc'
+              - '.github/scripts/deploy-coolify.mjs'
+              - '.github/workflows/release.yml'
       # Coolify pulls the tags itself; this tells it a new one exists, then
       # waits for the deployment to finish and the site to answer. An accepted
-      # webhook is not a successful deploy.
-      - name: Deploy and wait for health
+      # webhook is not a successful deploy. The compose app goes first: a
+      # schema change has to be in the database before web code that reads
+      # it starts serving.
+      - name: Deploy postgres and the scraper
+        if: github.event_name != 'push' || steps.changes.outputs.compose == 'true'
         run: node .github/scripts/deploy-coolify.mjs
         env:
           COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_HEALTH_URL: ${{ vars.COOLIFY_HEALTH_URL }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          ROLLBACK: ${{ github.event_name == 'workflow_dispatch' && inputs.image_tag != '' }}
+      # `moventis-web` rolls: Coolify starts the new container beside the old
+      # one and swaps them once its health check passes, so the site stays up.
+      - name: Deploy web
+        run: node .github/scripts/deploy-coolify.mjs
+        env:
+          COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           COOLIFY_HEALTH_URL: ${{ vars.COOLIFY_HEALTH_URL }}
           IMAGE_TAG: ${{ inputs.image_tag }}

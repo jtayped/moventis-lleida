@@ -1,7 +1,13 @@
-# Production compose, deployed by Coolify.
+# Production compose, deployed by Coolify: the database and the scraper.
+#
+# The public site is not in here. It runs as a Coolify application of its own,
+# `moventis-web`, on the same image, because Coolify rolls an application onto
+# a new container once it is healthy but stops every service of a compose
+# application before starting its replacement. It reaches postgres through the
+# `moventis-postgres` alias below. See docs/deployment.md.
 #
 # It names prebuilt images and must never gain a `build:` key again: GitHub
-# Actions builds and pushes both images (.github/workflows/release.yml) and the
+# Actions builds and pushes the images (.github/workflows/release.yml) and the
 # VPS only pulls. Adding `build:` back here silently moves a Next compile onto a
 # shared host — see docs/decisions/0001-build-in-ci-deploy-images.md.
 #
@@ -31,27 +37,6 @@ services:
       coolify:
         aliases:
           - moventis-postgres
-
-  web:
-    image: ghcr.io/jtayped/moventis-lleida-web:${TAG:-main}
-    pull_policy: always
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      # The NEXT_PUBLIC_* values the browser actually uses were inlined into
-      # the bundle when the image was built in CI, from GitHub repository
-      # variables. These runtime copies reach server code only; changing one
-      # here does nothing to the page a visitor loads. Changing what the
-      # browser sees means changing the repository variable and rebuilding.
-      NEXT_PUBLIC_MAPS_API_KEY: ${NEXT_PUBLIC_MAPS_API_KEY}
-      NEXT_PUBLIC_MAPS_MAP_ID: ${NEXT_PUBLIC_MAPS_MAP_ID}
-      NEXT_PUBLIC_UMAMI_SCRIPT_URL: ${NEXT_PUBLIC_UMAMI_SCRIPT_URL:-}
-      NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
-    ports:
-      - "${WEB_PORT:-3000}:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
 
   scraper:
     image: ghcr.io/jtayped/moventis-lleida-scraper:${TAG:-main}
