@@ -22,6 +22,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    # Also on Coolify's shared `coolify` network, under a name that does not
+    # change between deploys, so a Coolify application outside this file can
+    # reach the database as `moventis-postgres:5432`. Only containers on that
+    # network can, and they still need the password.
+    networks:
+      default:
+      coolify:
+        aliases:
+          - moventis-postgres
 
   web:
     image: ghcr.io/jtayped/moventis-lleida-web:${TAG:-main}
@@ -56,3 +65,7 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  coolify:
+    external: true

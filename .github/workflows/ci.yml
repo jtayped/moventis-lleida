@@ -1,16 +1,21 @@
 name: ci
 
+# Pull requests, and nothing on main. `release` calls this workflow for a
+# push only when no pull request already passed on that exact tree, which a
+# merge of an up-to-date branch always has. `passed` below is what records it.
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# A new push to a pull request cancels its older run. A call from `release`
+# gets a group of its own, so it never waits behind or cancels anything.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   TURBO_TELEMETRY_DISABLED: 1
@@ -58,8 +63,9 @@ jobs:
   # the Prisma engine download only exist here.
   #
   # `push: false` — nothing is published from a pull request. The `release`
-  # workflow rebuilds on the same `type=gha` cache scopes once this run passes
-  # on main, so the layers are already warm and it pushes what they produce.
+  # workflow builds again on the same `type=gha` cache scopes once the merge
+  # lands. It reads what earlier builds on main cached, not this run's
+  # layers: GitHub does not let main read a pull request's cache.
   docker:
     runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}
     strategy:
@@ -86,3 +92,28 @@ jobs:
           build-args: ${{ matrix.build-args }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  # Records the tree this run verified, as an artifact named after it. On a
+  # push to main, `release` looks that name up and goes straight to the image
+  # builds when it finds one, so a merge does not run the whole suite a
+  # second time over files it has already checked. The tree is the pull
+  # request's merge commit, which is byte for byte what a merge of an
+  # up-to-date branch puts on main.
+  passed:
+    needs: [check, build, docker]
+    if: github.event_name == 'pull_request'
+    runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}
+    steps:
+      - id: tree
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const { data } = await github.rest.git.getCommit({ ...context.repo, commit_sha: context.sha });
+            return data.tree.sha;
+      - run: echo "$GITHUB_SHA" > "$RUNNER_TEMP/verified-commit"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-passed-${{ steps.tree.outputs.result }}
+          path: ${{ runner.temp }}/verified-commit
+          retention-days: 30
