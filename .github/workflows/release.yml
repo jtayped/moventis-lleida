@@ -3,18 +3,17 @@ name: release
 # Builds both images and hands Coolify a tag to pull. Nothing is built on the
 # VPS any more (docs/decisions/0001-build-in-ci-deploy-images.md).
 #
-# An image is never published from code that has not been verified, so this
-# starts from `ci` finishing rather than from the push itself. `workflow_run`
-# does not check the conclusion or the branch for you — the `if` on every job
-# below does.
+# An image is never published from code that has not been verified. A push to
+# main whose tree already passed `ci` on its pull request goes straight to the
+# builds; any other tree (a direct push, or a merge onto a main that moved
+# after the pull request's last run) runs ci.yml in full first.
 #
 # `workflow_dispatch` serves two purposes: with `image_tag` empty it rebuilds
-# the default branch and deploys; with a tag it skips the builds and rolls
+# the chosen ref and deploys; with a tag it skips the builds and rolls
 # Coolify back to that already-published image.
 on:
-  workflow_run:
-    workflows: [ci]
-    types: [completed]
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       image_tag:
@@ -22,6 +21,10 @@ on:
         required: false
         default: ""
         type: string
+      run_ci:
+        description: When rebuilding, run the whole ci suite first, even if this tree already passed it.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -31,20 +34,70 @@ permissions:
 # publish their own sha, and cancelling the first would leave `:main` pointing
 # at an image whose deploy never ran.
 concurrency:
-  group: release-${{ github.event.workflow_run.head_sha || github.sha }}
+  group: release-${{ github.sha }}
   cancel-in-progress: false
 
+env:
+  # build-push-action otherwise uploads a build record artifact for every
+  # image, which nothing reads.
+  DOCKER_BUILD_RECORD_UPLOAD: false
+
 jobs:
+  # Whether a pull request already passed ci.yml on this exact tree. A merge
+  # of an up-to-date branch always has, because ci.yml's `passed` job uploads
+  # an artifact named after the tree of the pull request's merge commit, and
+  # that tree is byte for byte what the merge puts on main. Skipped on a
+  # rollback, which builds nothing.
+  tree:
+    if: github.event_name == 'push' || inputs.image_tag == ''
+    runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      verified: ${{ steps.lookup.outputs.verified }}
+    steps:
+      - id: lookup
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: commit } = await github.rest.git.getCommit({ owner, repo, commit_sha: context.sha });
+            const { data } = await github.rest.actions.listArtifactsForRepo({
+              owner, repo, name: `ci-passed-${commit.tree.sha}`, per_page: 100,
+            });
+            // Only a run from this repository counts. A pull request from a
+            // fork runs its own copy of ci.yml and could upload any name.
+            const repositoryId = Number(process.env.GITHUB_REPOSITORY_ID);
+            const passed = data.artifacts.find(
+              (artifact) => !artifact.expired && artifact.workflow_run?.head_repository_id === repositoryId,
+            );
+            core.setOutput('verified', String(Boolean(passed)));
+            await core.summary
+              .addRaw(passed
+                ? `Tree ${commit.tree.sha} passed CI in run ${passed.workflow_run.id}; CI is skipped.`
+                : `No CI run passed on tree ${commit.tree.sha}; CI runs before the builds.`)
+              .write();
+
+  ci:
+    needs: tree
+    if: needs.tree.outputs.verified != 'true' || inputs.run_ci == true
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   build-web:
     runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}
+    needs: [tree, ci]
+    # `ci` is skipped when the tree already passed, and a skipped need would
+    # otherwise skip this job too.
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.image_tag == '') ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+      !cancelled() && needs.tree.result == 'success' &&
+      contains(fromJSON('["success","skipped"]'), needs.ci.result)
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - uses: docker/setup-buildx-action@v4
       - uses: docker/login-action@v4
         with:
@@ -57,10 +110,10 @@ jobs:
           file: apps/web/Dockerfile
           push: true
           tags: |
-            ghcr.io/jtayped/moventis-lleida-web:${{ github.event.workflow_run.head_sha || github.sha }}
+            ghcr.io/jtayped/moventis-lleida-web:${{ github.sha }}
             ghcr.io/jtayped/moventis-lleida-web:main
-          # Same scope as ci.yml's `docker (web)` job, so a pull request build
-          # and the release build of the same commit share layers.
+          # Same scope as ci.yml's `docker (web)` job, so a pull request's
+          # build reads the layers this one caches on main.
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
           # Next inlines these into the browser bundle at build time, and
@@ -78,14 +131,14 @@ jobs:
 
   build-scraper:
     runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}
+    needs: [tree, ci]
     if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.image_tag == '') ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+      !cancelled() && needs.tree.result == 'success' &&
+      contains(fromJSON('["success","skipped"]'), needs.ci.result)
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - uses: docker/setup-buildx-action@v4
       - uses: docker/login-action@v4
         with:
@@ -98,39 +151,71 @@ jobs:
           file: apps/scraper/Dockerfile
           push: true
           tags: |
-            ghcr.io/jtayped/moventis-lleida-scraper:${{ github.event.workflow_run.head_sha || github.sha }}
+            ghcr.io/jtayped/moventis-lleida-scraper:${{ github.sha }}
             ghcr.io/jtayped/moventis-lleida-scraper:main
           cache-from: type=gha,scope=scraper
           cache-to: type=gha,mode=max,scope=scraper
 
   deploy:
     # Both images, or Coolify pulls a tag that does not exist yet. `always()`
-    # because a rollback dispatch skips the two builds on purpose; the result
-    # tests still refuse a build that actually failed.
-    needs: [build-web, build-scraper]
-    if: >-
-      always() && !cancelled() &&
-      !contains(needs.*.result, 'failure') &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.head_branch == 'main'))
+    # because a rollback dispatch skips `tree`, `ci` and the two builds on
+    # purpose; the result test still refuses a build or a CI run that
+    # actually failed. `tree` and `ci` are needed here for that reason: a
+    # failed CI leaves the builds skipped, not failed, and this job would
+    # otherwise redeploy the previous `:main`.
+    needs: [tree, ci, build-web, build-scraper]
+    if: always() && !cancelled() && !contains(needs.*.result, 'failure')
     runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+      # Which of the two Coolify resources this push needs. Deploying the
+      # compose app (postgres and the scraper) recreates every container in
+      # it, postgres included, so the site's queries fail for the seconds the
+      # database takes to come back. It only runs when something it holds
+      # changed: the scraper, the shared packages (the scraper applies the
+      # Prisma schema as it starts), the lockfile or the compose file itself.
+      - id: changes
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            compose:
+              - 'apps/scraper/**'
+              - 'packages/**'
+              - 'docker-compose.yml'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.nvmrc'
+              - '.github/scripts/deploy-coolify.mjs'
+              - '.github/workflows/release.yml'
       # Coolify pulls the tags itself; this tells it a new one exists, then
       # waits for the deployment to finish and the site to answer. An accepted
-      # webhook is not a successful deploy.
-      - name: Deploy and wait for health
+      # webhook is not a successful deploy. The compose app goes first: a
+      # schema change has to be in the database before web code that reads
+      # it starts serving.
+      - name: Deploy postgres and the scraper
+        if: github.event_name != 'push' || steps.changes.outputs.compose == 'true'
         run: node .github/scripts/deploy-coolify.mjs
         env:
           COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_HEALTH_URL: ${{ vars.COOLIFY_HEALTH_URL }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          ROLLBACK: ${{ github.event_name == 'workflow_dispatch' && inputs.image_tag != '' }}
+      # `moventis-web` rolls: Coolify starts the new container beside the old
+      # one and swaps them once its health check passes, so the site stays up.
+      - name: Deploy web
+        run: node .github/scripts/deploy-coolify.mjs
+        env:
+          COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           COOLIFY_HEALTH_URL: ${{ vars.COOLIFY_HEALTH_URL }}
           IMAGE_TAG: ${{ inputs.image_tag }}
