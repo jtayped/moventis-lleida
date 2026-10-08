@@ -1,6 +1,6 @@
 # deployment
 
-Production is one Coolify application, `moventis-lleida`, on the personal VPS. It runs `docker-compose.yml` from the root of this repository: three services, `postgres`, `web` and `scraper`. The `web` service is published at `https://moventis-lleida.joeltaylor.business`; the other two have no public address.
+Production is one Coolify application, `moventis-lleida`, on the personal VPS. It runs `docker-compose.yml` from the root of this repository: three services, `postgres`, `web` and `scraper`. The `web` service is published at `https://moventis-lleida.joeltaylor.business`; the other two have no public address. `postgres` is also on Coolify's shared `coolify` network as `moventis-postgres`, a name that survives redeploys, so an application outside the compose file can reach it.
 
 Coolify does not build anything. GitHub Actions builds both images, pushes them to GHCR, and then tells Coolify to pull:
 
@@ -15,9 +15,9 @@ Both carry two tags: the full commit sha, which is immutable and is the rollback
 
 A merge to `main`, in four steps:
 
-1. `ci` runs on the push to `main` (lint, typecheck, tests, the Next build, both Docker builds with `push: false`).
-2. `release` (`.github/workflows/release.yml`) starts from that run finishing — `on: workflow_run` — and does nothing unless it concluded `success` on `main`. `workflow_run` checks neither of those itself, so each job tests them.
-3. `build-web` and `build-scraper` build from the exact `head_sha` of that CI run and push `:<sha>` and `:main`. They reuse CI's `type=gha` cache scopes (`web`, `scraper`), so the layers the pull request already built are warm.
+1. `ci` runs on the pull request (lint, typecheck, tests, the Next build, both Docker builds with `push: false`). When it passes, its `passed` job uploads an artifact named `ci-passed-<tree sha>` for the pull request's merge commit.
+2. `release` (`.github/workflows/release.yml`) runs on the push to `main`. Its `tree` job looks that artifact up for the pushed commit's tree. A merge of an up-to-date branch puts exactly that tree on `main`, finds it, and skips `ci`. A direct push, or a merge onto a `main` that moved after the pull request's last run, finds nothing, and `release` calls `ci.yml` in full first. Nothing builds unless one of the two passed.
+3. `build-web` and `build-scraper` build the pushed commit and push `:<sha>` and `:main`. They use CI's `type=gha` cache scopes (`web`, `scraper`). GitHub lets a pull request read what `main` cached but not the other way round, so a release reads what the previous release left.
 4. `deploy` runs `.github/scripts/deploy-coolify.mjs`: POST the Coolify deploy webhook, poll `GET /api/v1/deployments/<uuid>` until `finished`, then poll the public health URL. An accepted webhook is not treated as a successful deploy, and a container that never becomes healthy fails the workflow.
 
 The old GitHub → Coolify push webhook is gone. Nothing outside this workflow deploys, and a commit that does not build cannot reach the host at all.
@@ -26,7 +26,7 @@ Nothing is filtered by path: a docs-only merge still rebuilds and redeploys. Tha
 
 ## manual deploy
 
-Actions → **release** → **Run workflow**, with `image_tag` left empty. It rebuilds both images from the chosen ref and deploys them. Use it after changing a repository variable — the bundle only picks up a new `NEXT_PUBLIC_*` value when the image is rebuilt.
+Actions → **release** → **Run workflow**, with `image_tag` left empty. It rebuilds both images from the chosen ref and deploys them, running `ci` first if that tree never passed it, or always with `run_ci` ticked. Use it after changing a repository variable — the bundle only picks up a new `NEXT_PUBLIC_*` value when the image is rebuilt.
 
 ## rollback
 
