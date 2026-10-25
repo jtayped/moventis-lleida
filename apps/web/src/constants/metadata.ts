@@ -1,5 +1,6 @@
-import type { Lang } from "@moventis/shared";
+import { localePath, type Lang } from "@moventis/shared";
 import type { Metadata, Viewport } from "next";
+import { languageAlternates } from "@/i18n/alternates";
 import { siteCopy } from "@/i18n/copy/site";
 import { AUTHOR_NAME, PORTFOLIO_URL } from "@/lib/project-links";
 
@@ -40,7 +41,8 @@ export const rootMetadata = (lang: Lang): Metadata => {
     },
 
     alternates: {
-      canonical: "/",
+      canonical: localePath(lang, "/"),
+      languages: languageAlternates("/"),
     },
 
     icons: {
@@ -66,7 +68,7 @@ export const rootMetadata = (lang: Lang): Metadata => {
 
       description: t.shareDescription,
 
-      url: SITE_URL,
+      url: localePath(lang, "/"),
 
       siteName: t.siteName,
 

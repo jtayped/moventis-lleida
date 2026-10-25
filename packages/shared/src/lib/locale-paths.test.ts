@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { localePath, routePublicPath } from "./locale-paths";
+import { catalanPathOf, localePath, routePublicPath } from "./locale-paths";
 
 const BOTH = ["ca", "es"] as const;
 
@@ -85,5 +85,20 @@ describe("routePublicPath", () => {
         lang: "es",
       });
     }
+  });
+});
+
+describe("catalanPathOf", () => {
+  it("finds the catalan page behind a public path", () => {
+    expect(catalanPathOf("/", BOTH)).toBe("/");
+    expect(catalanPathOf("/linies/20", BOTH)).toBe("/linies/20");
+    expect(catalanPathOf("/es", BOTH)).toBe("/");
+    expect(catalanPathOf("/es/lineas/20", BOTH)).toBe("/linies/20");
+    expect(catalanPathOf("/es/paradas/1-x", BOTH)).toBe("/parades/1-x");
+  });
+
+  it("follows the redirects a public path would take", () => {
+    expect(catalanPathOf("/ca/linies", BOTH)).toBe("/linies");
+    expect(catalanPathOf("/es/linies/20", BOTH)).toBe("/linies/20");
   });
 });

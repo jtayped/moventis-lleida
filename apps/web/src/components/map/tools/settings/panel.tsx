@@ -13,7 +13,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { LangSwitch } from "@/components/lang-switch";
 import { Label } from "@/components/ui/label";
 import { MAX_PREDICTED_LINES } from "@/lib/live-buses";
 import { Switch } from "@/components/ui/switch";
@@ -222,6 +223,12 @@ const SettingsPanel = () => {
               );
             })}
           </div>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium">{t.language.title}</span>
+          <LangSwitch
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          />
         </div>
       </Section>
 

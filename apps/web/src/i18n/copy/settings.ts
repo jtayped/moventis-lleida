@@ -24,6 +24,9 @@ const ca = {
     title: "aparença",
     theme: "tema",
   },
+  language: {
+    title: "idioma",
+  },
   privacy: {
     title: "privadesa i dades",
     storage: "emmagatzematge local:",
@@ -47,7 +50,52 @@ const ca = {
 
 export type SettingsCopy = typeof ca;
 
-// Filled in by the Spanish translation; Catalan until then so nothing renders blank.
-const es: SettingsCopy = ca;
+const es: SettingsCopy = {
+  title: "ajustes",
+  description: "estas preferencias se guardan solo en este dispositivo.",
+  themes: { light: "claro", dark: "oscuro", system: "sistema" },
+  experimental: {
+    title: "funciones experimentales",
+    busPosition: "posición estimada del bus",
+    badge: "experimental",
+    busPositionHelp: (maxLines: number) =>
+      `deduce entre qué dos paradas está cada bus a partir de las horas de llegada que publica moventis, que no da ni su posición ni el gps. aún se está ajustando y puede fallar. solo para las ${maxLines} últimas líneas que marques.`,
+  },
+  schedules: {
+    title: "horarios",
+    stopEtas: "próximo bus en el mapa",
+    stopEtasHelp:
+      "al acercar el mapa, muestra junto a cada parada cuánto falta para el próximo bus. consulta los horarios de las paradas que ves, así que gasta datos.",
+    drift: "adelanto y retraso de los buses",
+    driftHelp:
+      "muestra cuántos minutos se ha adelantado o retrasado cada bus respecto a la primera hora que te hemos mostrado. verde quiere decir antes, rojo después.",
+  },
+  appearance: {
+    title: "apariencia",
+    theme: "tema",
+  },
+  language: {
+    title: "idioma",
+  },
+  privacy: {
+    title: "privacidad y datos",
+    storage: "almacenamiento local:",
+    enabled: "activado",
+    disabled: "desactivado",
+    storageHelp:
+      "las paradas favoritas se guardan en el navegador, solo en este dispositivo. no usamos cookies de seguimiento. contamos visitas de forma anónima con una herramienta propia, y puedes desactivarlo en los ajustes.",
+    analytics: "analítica anónima",
+    analyticsHelp:
+      "contamos visitas y acciones con una herramienta propia (umami), sin cookies ni identificadores. sirve para saber qué líneas y paradas se consultan más.",
+    clearSaved: "borrar las paradas favoritas",
+    savedCount: (n: number) =>
+      n === 1 ? "1 parada guardada" : `${n} paradas guardadas`,
+    clear: "borrar",
+  },
+  more: {
+    title: "más información",
+    pagesLabel: "páginas de información",
+  },
+};
 
 export const settingsCopy: Record<Lang, SettingsCopy> = { ca, es };

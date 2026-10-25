@@ -277,7 +277,7 @@ Selection is shareable: `/?lines=1,4&stop=10211`. `lines` is a comma-separated l
 
 `InitialStopFocus` centres the map on the `?stop=` stop once and renders its pin when no selected line already does — without it a bare `?stop=` link opens the drawer over city-wide bounds with nothing on the map behind it.
 
-The flow is one-directional. `apps/web/src/app/(map)/page.tsx` reads `searchParams` server-side and seeds `BusFinderProvider` (no `useSearchParams`, so no Suspense boundary and no hydration flash); unknown line codes are filtered out against `routes.getAll`, while an unknown `stop` is left to `stops.get` and surfaces as the drawer's error state. `useUrlSelection` (`apps/web/src/hooks/use-url-selection.ts`) then only ever _writes_, via `window.history.replaceState` — `router.replace` would re-run the server render on every badge tap, and `replaceState` keeps toggles out of the history stack. Nothing reads the URL after mount, so back/forward does not restore a previous selection.
+The flow is one-directional. `apps/web/src/app/[lang]/(map)/page.tsx` reads `searchParams` server-side and seeds `BusFinderProvider` (no `useSearchParams`, so no Suspense boundary and no hydration flash); unknown line codes are filtered out against `routes.getAll`, while an unknown `stop` is left to `stops.get` and surfaces as the drawer's error state. `useUrlSelection` (`apps/web/src/hooks/use-url-selection.ts`) then only ever _writes_, via `window.history.replaceState` — `router.replace` would re-run the server render on every badge tap, and `replaceState` keeps toggles out of the history stack. Nothing reads the URL after mount, so back/forward does not restore a previous selection.
 
 Search query is deliberately not in the URL.
 
@@ -290,10 +290,22 @@ Search query is deliberately not in the URL.
 - `CONTENT_LINKS` (`apps/web/src/lib/content-links.ts`) is the list of content pages the footer and the settings panel read. The map links pages from its bars instead (`components/map/nav/index.tsx`): the phone's bottom bar has línies and parades, and the desktop bar at the bottom of the column has those plus tarifes and informació. Those are the only `<a>` elements in `/`'s server HTML, since everything else on the map is a button and crawlers do not follow buttons. Both bars stay in the DOM at every width (one is `display: none`), which crawlers still follow. `/privadesa` is not on the map; it is linked from `/informacio`, the cookie banner, the settings panel and the sitemap. List only pages that exist.
 - The map's floating controls share one grid: the right rail is 48px icon-only squares (ko-fi, ubicació, ruta), named by `aria-label` and `title`, and from `lg` the rail and the desktop bar share a 32px bottom inset, which is what keeps Google's logo in the map's bottom-left corner uncovered.
 - Copy is lowercase in the source, proper nouns included. `body.lowercase` only changes what is drawn; crawlers and snippets read the source.
-- Fares are curated in `apps/web/src/content/tarifes.ts` with their sources and a review date, not scraped. The build has no database, so a content page that reads it must render at request time, and `sitemap.ts` with it.
+- Fares are curated in `apps/web/src/i18n/copy/fares.ts` with their sources and a review date, not scraped. The build has no database, so a content page that reads it must render at request time, and `sitemap.ts` with it.
 - A stop's URL is `stopPath()` (`apps/web/src/lib/stops.ts`), `/parades/{externalId}-{slug}`. The page reads only the leading id and 308s any other slug to the current one, so a renamed stop keeps its links; build stop links with `stopPath`, never by hand.
 - `/` and its splash `loading.tsx` live in the `(map)` route group. A `loading.tsx` at the app root wraps every route in Suspense, so every page streams its shell with a 200 before it runs: an unknown line becomes a soft 404 and a redirect a meta refresh. Keep loading screens inside a group.
 - Line colours drawn as graphics (rails, bars, route shapes) go through `lineAccentStyle` (`apps/web/src/lib/contrast.ts`) and `var(--line)`, never the raw colour. Moventis' colours are not chosen for contrast: line 1's yellow is 1.07:1 on the light page and line 9's near-black 1.02:1 on the dark one. The badge keeps the raw colour, since its code is text and already picks a readable ink.
+
+### Languages
+
+The site is in Catalan and Spanish. Catalan URLs have no prefix (`/linies/20`); Spanish ones sit under `/es` with Spanish segment names (`/es/lineas/20`). Every page lives once, under `apps/web/src/app/[lang]/` with the Catalan segment names, and `apps/web/src/middleware.ts` rewrites public URLs onto it. A typed `/ca/...` 308s to the unprefixed URL and `/es/linies/...` to `/es/lineas/...`, so each page has one address per language.
+
+`packages/shared/src/lib/locale-paths.ts` is the only place that knows the segment map. The middleware reads it through `routePublicPath`, links through `localePath`, and the language switch through `catalanPathOf`, so they cannot disagree. A new content page whose name differs in Spanish needs one line there.
+
+- **Write every internal href as the Catalan path**, and render it with `Link` from `@/i18n/link`, never `next/link`; it resolves the path for the current language. Server code that needs a URL string (canonicals, json-ld, redirects) calls `localePath(lang, path)` itself. A hardcoded `/linies` href silently sends Spanish readers to the Catalan page.
+- **Copy lives in `apps/web/src/i18n/copy/`**, one module per area, each exporting `{ ca, es }` with `es` typed off `ca`, so a missing Spanish string is a type error. Server components index it with `lang` from `params` (`asLang`), client components with `useLang()`. Prose pages keep one component per language next to the page (`content.ca.tsx`, `content.es.tsx`) rather than a key per sentence. Both languages are lowercase in source, like everything else.
+- `PUBLISHED_LANGS` (`apps/web/src/i18n/langs.ts`) is what is live. A language not in it has no URLs: its prefix is treated as an unknown Catalan path and 404s.
+- `pageMetadata` emits hreflang for every published language plus `x-default` (Catalan), and `sitemap.ts` lists each page once per language with the same alternates. Google pairs translations only when both sides name each other, so never give one language a page the other lacks.
+- `app/global-error.tsx` replaces the root layout, so it has no language; it stays Catalan.
 
 ### Analytics
 

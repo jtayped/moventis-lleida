@@ -1,6 +1,7 @@
 import { localePath, type Lang } from "@moventis/shared";
 import type { Metadata } from "next";
 import { rootMetadata, SITE_URL } from "@/constants/metadata";
+import { languageAlternates } from "@/i18n/alternates";
 import { siteCopy } from "@/i18n/copy/site";
 
 interface PageMetadataInput {
@@ -36,7 +37,7 @@ export function pageMetadata({
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical: url, languages: languageAlternates(path) },
     openGraph: {
       ...root.openGraph,
       title: fullTitle,

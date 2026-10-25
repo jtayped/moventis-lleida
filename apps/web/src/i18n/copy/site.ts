@@ -29,7 +29,31 @@ const ca = {
 
 export type SiteCopy = typeof ca;
 
-// Filled in by the Spanish translation; Catalan until then so nothing renders blank.
-const es: SiteCopy = ca;
+const es: SiteCopy = {
+  siteName: "bus urbano lleida",
+  titleSuffix: " | bus lleida",
+  alternateName: "horarios bus lleida",
+  homeTitle: "moventis lleida en tiempo real: mapa del bus urbano",
+  description:
+    "¿dónde está tu bus? los autobuses urbanos de lleida en tiempo real sobre un mapa, con las próximas llegadas a cada parada y los horarios de todas las líneas. web no oficial, con los datos públicos de moventis.",
+  keywords: [
+    "bus lleida",
+    "autobuses lleida",
+    "horarios bus",
+    "moventis",
+    "moventis lleida tiempo real",
+    "bus en tiempo real",
+    "paradas lleida",
+    "líneas bus lleida",
+  ],
+  appleWebAppTitle: "horarios bus urbano lleida | tiempo real",
+  shareTitle: "horarios bus urbano lleida",
+  shareDescription:
+    "consulta los horarios del autobús urbano de lleida en tiempo real.",
+  shareImageAlt: "imagen de la aplicación de horarios de bus de lleida",
+  ogLocale: "es_ES",
+  webAppDescription:
+    "mapa en tiempo real de los autobuses urbanos de lleida, con las próximas llegadas a cada parada.",
+};
 
 export const siteCopy: Record<Lang, SiteCopy> = { ca, es };

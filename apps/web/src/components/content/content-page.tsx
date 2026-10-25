@@ -1,5 +1,6 @@
 import { BusFront, Database, Info, Map as MapIcon, MapPin } from "lucide-react";
 import Image from "next/image";
+import { LangSwitch } from "@/components/lang-switch";
 import { Link } from "@/i18n/link";
 import type { Lang } from "@moventis/shared";
 import React from "react";
@@ -119,6 +120,14 @@ export const ContentPage = ({
                   </Link>
                 </li>
               ))}
+              <li>
+                <LangSwitch
+                  className={cn(
+                    "text-muted-foreground hover:bg-muted hover:text-foreground flex min-h-10 items-center rounded-lg px-2 text-sm transition-colors sm:px-3",
+                    FOCUS_RING,
+                  )}
+                />
+              </li>
             </ul>
           </nav>
         </div>
