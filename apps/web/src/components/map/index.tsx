@@ -33,6 +33,7 @@ import DirectionsLayer, {
   MapPointPicker,
 } from "@/components/map/directions/directions-layer";
 import { useDirections } from "@/context/directions";
+import { DIRECTIONS_ENABLED } from "@/lib/features";
 import { useDirectionsPlan } from "@/hooks/use-directions-plan";
 import { useLang } from "@/i18n/lang-context";
 import { mapCopy } from "@/i18n/copy/map";
@@ -231,20 +232,21 @@ const BusMap = () => {
   );
 
   /** The desktop column's one content slot, and the order it resolves in. */
-  const desktopSlot = directions.isOpen ? (
-    <DirectionsPanel
-      variant="panel"
-      plan={plan}
-      locationStatus={status}
-      requestLocation={watchLocation}
-    />
-  ) : nav.isOpen("search") ? (
-    <SearchPanel variant="panel" onClose={nav.close} />
-  ) : selectedStopId ? (
-    <Panel aria-label={t.arrivalTimes} className="h-full">
-      <StopDetails externalId={selectedStopId} variant="panel" />
-    </Panel>
-  ) : null;
+  const desktopSlot =
+    DIRECTIONS_ENABLED && directions.isOpen ? (
+      <DirectionsPanel
+        variant="panel"
+        plan={plan}
+        locationStatus={status}
+        requestLocation={watchLocation}
+      />
+    ) : nav.isOpen("search") ? (
+      <SearchPanel variant="panel" onClose={nav.close} />
+    ) : selectedStopId ? (
+      <Panel aria-label={t.arrivalTimes} className="h-full">
+        <StopDetails externalId={selectedStopId} variant="panel" />
+      </Panel>
+    ) : null;
 
   return (
     <div className="relative">
@@ -342,8 +344,12 @@ const BusMap = () => {
             shouldPan={shouldPan}
             onPanned={onPanned}
           />
-          <DirectionsLayer plan={plan} isDesktop={isDesktop} />
-          <MapPointPicker />
+          {DIRECTIONS_ENABLED && (
+            <>
+              <DirectionsLayer plan={plan} isDesktop={isDesktop} />
+              <MapPointPicker />
+            </>
+          )}
         </StopEtasProvider>
       </MapComponent>
 
@@ -380,19 +386,21 @@ const BusMap = () => {
           )}
         </Button>
         {/* The primary action, so the filled one and nearest the thumb. */}
-        <Button
-          size="icon"
-          onClick={toggleDirections}
-          aria-pressed={directions.isOpen}
-          aria-label={t.directions}
-          title={t.directions}
-          className={cn(
-            MAP_ACTION,
-            "border-transparent bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
-          )}
-        >
-          <Route aria-hidden />
-        </Button>
+        {DIRECTIONS_ENABLED && (
+          <Button
+            size="icon"
+            onClick={toggleDirections}
+            aria-pressed={directions.isOpen}
+            aria-label={t.directions}
+            title={t.directions}
+            className={cn(
+              MAP_ACTION,
+              "border-transparent bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
+            )}
+          >
+            <Route aria-hidden />
+          </Button>
+        )}
       </div>
 
       <MapNav
@@ -401,7 +409,7 @@ const BusMap = () => {
         visible={nav.barVisible && !directionsFullScreen}
       />
 
-      {directionsFullScreen && (
+      {DIRECTIONS_ENABLED && directionsFullScreen && (
         <DirectionsPanel
           variant="overlay"
           plan={plan}
