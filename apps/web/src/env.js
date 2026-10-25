@@ -42,6 +42,8 @@ export const env = createEnv({
     // without them (a preview, a fork, a local dev box) still succeeds.
     NEXT_PUBLIC_UMAMI_SCRIPT_URL: z.string().url().optional(),
     NEXT_PUBLIC_UMAMI_WEBSITE_ID: z.string().optional(),
+    // Anything but "true" leaves the journey planner out of the page.
+    NEXT_PUBLIC_DIRECTIONS_ENABLED: z.enum(["true", "false"]).optional(),
   },
 
   /**
@@ -55,6 +57,7 @@ export const env = createEnv({
     NEXT_PUBLIC_MAPS_MAP_ID: process.env.NEXT_PUBLIC_MAPS_MAP_ID,
     NEXT_PUBLIC_UMAMI_SCRIPT_URL: process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL,
     NEXT_PUBLIC_UMAMI_WEBSITE_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
+    NEXT_PUBLIC_DIRECTIONS_ENABLED: process.env.NEXT_PUBLIC_DIRECTIONS_ENABLED,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

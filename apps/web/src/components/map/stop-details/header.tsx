@@ -10,6 +10,7 @@ import PreferidaToggle from "@/components/map/stop-details/preferida-toggle";
 import { track } from "@/lib/analytics";
 import { useBusFinder } from "@/context/buses";
 import { useDirections } from "@/context/directions";
+import { DIRECTIONS_ENABLED } from "@/lib/features";
 import { DrawerClose } from "@/components/ui/drawer";
 import type { StopDetailsVariant } from "@/components/map/stop-details/shell";
 import { useLang } from "@/i18n/lang-context";
@@ -188,11 +189,13 @@ export const StopDetailsHeader = ({
         <LastUpdated timestamp={dataUpdatedAt} />
       </div>
       <div className="flex items-center gap-1">
-        <DirectionsButton
-          externalId={externalId}
-          name={name}
-          position={position}
-        />
+        {DIRECTIONS_ENABLED && (
+          <DirectionsButton
+            externalId={externalId}
+            name={name}
+            position={position}
+          />
+        )}
         <PreferidaToggle externalId={externalId} />
         <Button
           onClick={() => {

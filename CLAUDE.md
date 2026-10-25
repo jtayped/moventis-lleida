@@ -74,12 +74,17 @@ NEXT_PUBLIC_MAPS_API_KEY=""   # Google Maps JavaScript API key
 NEXT_PUBLIC_MAPS_MAP_ID=""    # Google Cloud Map ID (required for AdvancedMarker); needs both a light and dark style associated with it in Map Management — see Theming below
 NEXT_PUBLIC_UMAMI_SCRIPT_URL="" # self-hosted Umami tracker; optional — see Analytics below
 NEXT_PUBLIC_UMAMI_WEBSITE_ID="" # optional; both unset means no tracker is rendered at all
+NEXT_PUBLIC_DIRECTIONS_ENABLED="" # optional; only "true" shows the journey planner; see journey planner flag below
 ANDROID_HOME=                 # Android SDK path (Expo only)
 ```
 
 Turbo 2 does not load dotenv files, so `apps/web/src/env.js` reads `../../.env` itself (server-side only) and validates it via `@t3-oss/env-nextjs`; the scraper uses `tsx --env-file`. A new variable the web build needs also has to be listed under `build.env` in `turbo.json`, or Turbo's cache will not see it change.
 
-The `.env` above is for local development. In production the four `NEXT_PUBLIC_*` values are **GitHub repository variables**, read by the `release` workflow and inlined into the browser bundle at image build time; the copies on the Coolify application are inert for the bundle, so changing one there does nothing a visitor sees. A new `NEXT_PUBLIC_*` variable therefore needs three edits: `turbo.json`'s `build.env`, the `build-args` of `build-web` in `release.yml`, and a repository variable.
+The `.env` above is for local development. In production the `NEXT_PUBLIC_*` values are **GitHub repository variables**, read by the `release` workflow and inlined into the browser bundle at image build time; the copies on the Coolify application are inert for the bundle, so changing one there does nothing a visitor sees. A new `NEXT_PUBLIC_*` variable therefore needs four edits: `turbo.json`'s `build.env`, an `ARG`/`ENV` pair in `apps/web/Dockerfile`, the `build-args` of `build-web` in `release.yml`, and a repository variable.
+
+### Journey planner flag
+
+`NEXT_PUBLIC_DIRECTIONS_ENABLED` is read through `DIRECTIONS_ENABLED` (`apps/web/src/lib/features.ts`) and is off unless it is exactly `"true"`. Off, the map has no "ruta" button, no directions panel, layer or point picker, and the stop drawer has no directions button, so the browser makes no `directions.*` requests; `DirectionsProvider` stays mounted but is inert, and the server-side router is untouched. Production keeps it off by leaving the `NEXT_PUBLIC_DIRECTIONS_ENABLED` GitHub repository variable unset; it is inlined at image build time like the other `NEXT_PUBLIC_*` values.
 
 ### Theming
 

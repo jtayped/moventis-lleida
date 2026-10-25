@@ -128,6 +128,7 @@ jobs:
             NEXT_PUBLIC_MAPS_MAP_ID=${{ vars.NEXT_PUBLIC_MAPS_MAP_ID }}
             NEXT_PUBLIC_UMAMI_SCRIPT_URL=${{ vars.NEXT_PUBLIC_UMAMI_SCRIPT_URL }}
             NEXT_PUBLIC_UMAMI_WEBSITE_ID=${{ vars.NEXT_PUBLIC_UMAMI_WEBSITE_ID }}
+            NEXT_PUBLIC_DIRECTIONS_ENABLED=${{ vars.NEXT_PUBLIC_DIRECTIONS_ENABLED }}
 
   build-scraper:
     runs-on: ${{ vars.CI_RUNNER_PIN || 'ubuntu-latest' }}

@@ -9,6 +9,7 @@ import {
 
 import { useDirections, type DirectionsPlace } from "@/context/directions";
 import { track } from "@/lib/analytics";
+import { DIRECTIONS_ENABLED } from "@/lib/features";
 import { api } from "@/trpc/react";
 
 /**
@@ -91,7 +92,12 @@ export function useDirectionsPlan(
   )
     blocker = "same-place";
 
-  const enabled = isOpen && blocker === null && !!fromPoint && !!toPoint;
+  const enabled =
+    DIRECTIONS_ENABLED &&
+    isOpen &&
+    blocker === null &&
+    !!fromPoint &&
+    !!toPoint;
   const query = api.directions.plan.useQuery(
     {
       from: fromPoint ?? { lat: 0, lng: 0 },
