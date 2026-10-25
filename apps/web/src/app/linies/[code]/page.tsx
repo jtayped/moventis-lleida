@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Clock, MapPin } from "lucide-react";
-import type { LinePage } from "@moventis/api";
+import type { DaySummary, LinePage } from "@moventis/api";
 import { ContentPage } from "@/components/content/content-page";
 import { LineBadge } from "@/components/content/line-badge";
 import { Note } from "@/components/content/note";
@@ -14,8 +14,10 @@ import { pageMetadata } from "@/lib/seo";
 import {
   DAY_TYPE_LABELS,
   DAY_TYPE_ORDER,
+  DAY_TYPE_PHRASES,
   describeServiceDays,
   formatServiceTime,
+  joinCatalan,
   lineDisplayName,
   todayDayType,
 } from "@/lib/service-time";
@@ -47,7 +49,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? ` els dies feiners surt de ${formatServiceTime(weekday.first)} a ${formatServiceTime(weekday.last)}${weekday.headway ? `, cada ${weekday.headway} min` : ""}.`
     : "";
   return pageMetadata({
-    title: `línia ${line.code} ${name}: horaris i parades`,
+    // "bus 20 lleida" is how people search for a line, not "línia 20".
+    title: `bus ${line.code} lleida (${name}): horaris, recorregut i parades`,
     description: `horaris de la línia ${line.code} (${name}) del bus urbà de lleida.${when} horari complet per dies i totes les parades del recorregut.`,
     path: `/linies/${line.code}`,
   });
@@ -100,6 +103,96 @@ const DayCards = ({ line }: { line: LinePage }) => (
     })}
   </ul>
 );
+
+/**
+ * One phrase per day type the timetable covers, e.g. "els dies feiners a les
+ * 07:00 i els diumenges no circula". `pick` returns null for a day the line
+ * runs but the fact does not apply to (a frequency it has no single value for);
+ * `idle: false` leaves out the days it does not run at all.
+ */
+const perDay = (
+  line: LinePage,
+  pick: (day: DaySummary) => string | null,
+  { idle = true }: { idle?: boolean } = {},
+): string =>
+  joinCatalan(
+    DAY_TYPE_ORDER.filter((type) => line.days[type]).flatMap((type) => {
+      const day = line.summary[type];
+      if (!day) return idle ? [`${DAY_TYPE_PHRASES[type]} no circula`] : [];
+      const fact = pick(day);
+      return fact ? [`${DAY_TYPE_PHRASES[type]} ${fact}`] : [];
+    }),
+  );
+
+/**
+ * The questions people type into a search box about a line, answered from the
+ * timetable. Phrased the way they are searched ("bus 20"), because that is
+ * what the page has to match.
+ */
+const LineFaq = ({ line }: { line: LinePage }) => {
+  const bus = `el bus ${line.code}`;
+  const principal =
+    line.segments.find((s) => s.isPrincipal) ?? line.segments[0];
+  const from = principal?.stops[0]?.name;
+  const to = principal?.stops[principal.stops.length - 1]?.name;
+  const stopCount = new Set(
+    line.segments.flatMap((s) => s.stops.map((stop) => stop.externalId)),
+  ).size;
+  const sunday = line.summary.sunday;
+
+  const faqs = [
+    {
+      q: `a quina hora passa el primer bus ${line.code}?`,
+      a: perDay(line, (day) => `a les ${formatServiceTime(day.first)}`),
+    },
+    {
+      q: `a quina hora passa l'últim bus ${line.code}?`,
+      a: perDay(line, (day) => `a les ${formatServiceTime(day.last)}`),
+    },
+    {
+      q: `cada quant passa ${bus}?`,
+      // The two answers above already say which days it does not run.
+      a: perDay(
+        line,
+        (day) => (day.headway ? `cada ${day.headway} min` : null),
+        { idle: false },
+      ),
+    },
+    line.days.sunday && {
+      q: `${bus} circula els diumenges i festius?`,
+      a: sunday
+        ? `sí, de ${formatServiceTime(sunday.first)} a ${formatServiceTime(sunday.last)}.`
+        : "no, els diumenges i festius no circula.",
+    },
+    stopCount > 0 && {
+      q: `per quines parades passa ${bus}?`,
+      a:
+        from && to && from !== to
+          ? `per ${stopCount} parades, de ${from} a ${to}.`
+          : from
+            ? `per ${stopCount} parades, en un recorregut circular des de ${from}.`
+            : `per ${stopCount} parades.`,
+    },
+  ].filter((faq): faq is { q: string; a: string } => !!faq && !!faq.a);
+
+  if (faqs.length === 0) return null;
+  return (
+    <section id="preguntes" className="mt-12 scroll-mt-6 space-y-4">
+      <h2 className="text-xl font-semibold">preguntes freqüents</h2>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {faqs.map(({ q, a }) => (
+          <li key={q} className="bg-muted/60 rounded-xl p-4">
+            <h3 className="text-sm font-semibold">{q}</h3>
+            <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+              {/* The phrases end without a full stop; the sentence needs one. */}
+              {a.endsWith(".") ? a : `${a}.`}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+};
 
 const LiniaPage = async ({ params }: Props) => {
   const line = await loadLine(params);
@@ -156,6 +249,8 @@ const LiniaPage = async ({ params }: Props) => {
             />
           )}
         </section>
+
+        <LineFaq line={line} />
 
         {dates && (
           <Note title="d'on surten aquestes hores">

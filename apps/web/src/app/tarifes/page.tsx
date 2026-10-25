@@ -14,31 +14,36 @@ import {
   type Fare,
 } from "@/content/tarifes";
 import { pageMetadata } from "@/lib/seo";
+import { slugify } from "@/lib/stops";
 
 export const metadata: Metadata = pageMetadata({
-  title: "tarifes del bus urbà de lleida",
+  title: "tarifes del bus urbà de lleida: bitllet, t-jove, t-mes i t-nostra",
   description:
     "quant costa el bus a lleida: bitllet senzill, t-estudiant, t-nostra, t-temps i les targetes integrades de l'atm (t-10, t-mes, t-jove, t-16), amb les fonts oficials.",
   path: "/tarifes",
 });
 
+/**
+ * Each fare under its own heading, with an anchor: card names ("t-jove",
+ * "t-nostra") are what people search for, and a heading is what a search
+ * engine matches a query against and can link to.
+ */
 const FareList = ({ fares }: { fares: Fare[] }) => (
-  // dt and dd sit directly in each row's div, the one wrapper a <dl> allows;
-  // nested one level deeper, screen readers lost which price is which fare's.
-  <dl className="border-border divide-border divide-y rounded-xl border">
+  <ul className="border-border divide-border divide-y rounded-xl border">
     {fares.map((fare) => (
-      <div
+      <li
         key={fare.name}
-        className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 p-4"
+        id={slugify(fare.name)}
+        className="grid scroll-mt-6 grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 p-4"
       >
-        <dt className="text-sm font-semibold">{fare.name}</dt>
-        <dd className="text-sm font-semibold tabular-nums">{fare.price}</dd>
-        <dd className="text-muted-foreground col-span-2 text-sm leading-relaxed">
+        <h3 className="text-sm font-semibold">{fare.name}</h3>
+        <p className="text-sm font-semibold tabular-nums">{fare.price}</p>
+        <p className="text-muted-foreground col-span-2 text-sm leading-relaxed">
           {fare.detail}
-        </dd>
-      </div>
+        </p>
+      </li>
     ))}
-  </dl>
+  </ul>
 );
 
 const TarifesPage = () => (

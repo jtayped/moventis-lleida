@@ -1,4 +1,6 @@
 import BusMap from "@/components/map";
+import { JsonLd } from "@/components/seo/json-ld";
+import { SITE_NAME, SITE_URL } from "@/constants/metadata";
 import { BusFinderProvider } from "@/context/buses";
 import { DirectionsProvider } from "@/context/directions";
 import { api, HydrateClient } from "@/trpc/server";
@@ -27,6 +29,24 @@ const parseLines = (raw: string | null, validCodes: Set<string>) => {
   return codes;
 };
 
+/**
+ * What the map is, for search engines: the page has almost no text of its own,
+ * so this is the one place that says it is an app and that it costs nothing.
+ */
+const WEB_APPLICATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: SITE_NAME,
+  url: SITE_URL,
+  inLanguage: "ca",
+  applicationCategory: "TravelApplication",
+  operatingSystem: "any",
+  browserRequirements: "requires javascript",
+  description:
+    "mapa en temps real dels autobusos urbans de lleida, amb les properes arribades a cada parada.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+};
+
 const HomePage = async ({
   searchParams,
 }: {
@@ -51,6 +71,12 @@ const HomePage = async ({
 
   return (
     <HydrateClient>
+      <JsonLd data={WEB_APPLICATION_JSON_LD} />
+      {/* The map has no visible title; this one names the page for screen
+          readers and for search engines, which weigh the h1. */}
+      <h1 className="sr-only">
+        moventis lleida en temps real: mapa del bus urbà
+      </h1>
       {/* Outside the bus finder: the phone's stop sheet is rendered by that
           provider, and its "com arribar-hi" has to reach this. */}
       <DirectionsProvider>
