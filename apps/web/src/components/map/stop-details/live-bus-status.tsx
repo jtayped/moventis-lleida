@@ -1,6 +1,8 @@
 import { Layers, Loader2, MapPinOff, Radar } from "lucide-react";
 
 import { MAX_PREDICTED_LINES } from "@/lib/live-buses";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
 
 export type LiveBusStatusValue =
   "idle" | "loading" | "done" | "error" | "skipped";
@@ -33,6 +35,7 @@ export default function LiveBusStatus({
    */
   approximateCount?: number;
 }) {
+  const t = stopDetailsCopy[useLang()].liveBus;
   if (status === "idle") return null;
 
   const base =
@@ -43,7 +46,7 @@ export default function LiveBusStatus({
     return (
       <div className={muted} aria-live="polite">
         <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin" />
-        <span>situant els autobusos al mapa…</span>
+        <span>{t.loading}</span>
       </div>
     );
   }
@@ -56,10 +59,9 @@ export default function LiveBusStatus({
       <div className={muted}>
         <Layers size={16} className="mt-0.5 shrink-0" />
         <span>
-          no situem els autobusos d&apos;aquesta parada al mapa.
+          {t.skipped}
           <span className="block text-xs opacity-80">
-            només ho fem per a les {MAX_PREDICTED_LINES} últimes línies que has
-            marcat — desmarca&apos;n alguna per incloure aquesta.
+            {t.skippedHint(MAX_PREDICTED_LINES)}
           </span>
         </span>
       </div>
@@ -71,10 +73,8 @@ export default function LiveBusStatus({
       <div className={muted}>
         <MapPinOff size={16} className="mt-0.5 shrink-0" />
         <span>
-          no podem situar els autobusos al mapa ara mateix.
-          <span className="block text-xs opacity-80">
-            les hores d&apos;arribada d&apos;aquí sota segueixen funcionant.
-          </span>
+          {t.error}
+          <span className="block text-xs opacity-80">{t.errorHint}</span>
         </span>
       </div>
     );
@@ -86,10 +86,8 @@ export default function LiveBusStatus({
       <div className={muted}>
         <Radar size={16} className="mt-0.5 shrink-0" />
         <span>
-          cap bus d&apos;aquesta línia té una hora en temps real ara mateix.
-          <span className="block text-xs opacity-80">
-            per això no en podem situar cap al mapa.
-          </span>
+          {t.none}
+          <span className="block text-xs opacity-80">{t.noneHint}</span>
         </span>
       </div>
     );
@@ -105,23 +103,14 @@ export default function LiveBusStatus({
         <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
       </span>
       <span>
-        <span className="font-medium">
-          {count === 1
-            ? "1 autobús situat al mapa"
-            : `${count} autobusos situats al mapa`}
-        </span>
+        <span className="font-medium">{t.count(count)}</span>
         {/* Said every time, not only when a position is a loose one: *all* of
             them are deduced. "en directe al mapa" read as a vehicle reporting
             its coordinates, which is not something Moventis publishes. */}
-        <span className="block text-xs opacity-80">
-          deduïm el tram de les hores d&apos;arribada; moventis no en publica la
-          posició.
-        </span>
+        <span className="block text-xs opacity-80">{t.deduced}</span>
         {approximateCount > 0 && (
           <span className="block text-xs opacity-80">
-            {approximateCount === 1
-              ? "1 amb el tram aproximat"
-              : `${approximateCount} amb el tram aproximat`}
+            {t.approximate(approximateCount)}
           </span>
         )}
       </span>

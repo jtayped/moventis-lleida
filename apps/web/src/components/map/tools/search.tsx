@@ -7,6 +7,8 @@ import {
 import { Search } from "lucide-react";
 import { useBusFinder } from "@/context/buses";
 import { Spinner } from "@/components/ui/spinner";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 /**
  * `inputRef` is how the bottom nav's `Cerca` tab reaches this field: the tab and
@@ -19,6 +21,7 @@ const SearchInput = ({
 }: {
   inputRef?: React.Ref<HTMLInputElement>;
 }) => {
+  const t = mapCopy[useLang()].search;
   const {
     stops,
     searchQuery,
@@ -40,8 +43,8 @@ const SearchInput = ({
     <InputGroup className="bg-card dark:bg-card">
       <InputGroupInput
         ref={inputRef}
-        placeholder="busca la teva parada"
-        aria-label="busca la teva parada"
+        placeholder={t.placeholder}
+        aria-label={t.placeholder}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
@@ -51,18 +54,18 @@ const SearchInput = ({
       <InputGroupAddon align="inline-end">
         {isLoadingStops ? (
           <>
-            carregant
+            {t.loading}
             <Spinner />
           </>
         ) : stopsError ? (
           // Zero results used to render nothing at all — identical to an idle
           // field, so a failed search looked like a search for something that
           // doesn't exist.
-          <span className="text-destructive">error</span>
+          <span className="text-destructive">{t.error}</span>
         ) : stops.length > 0 ? (
-          `${stops.length} parades`
+          t.count(stops.length)
         ) : (
-          hasSearched && "cap parada"
+          hasSearched && t.none
         )}
       </InputGroupAddon>
     </InputGroup>

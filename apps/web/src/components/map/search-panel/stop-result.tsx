@@ -6,6 +6,8 @@ import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getContrastTextColor } from "@/lib/contrast";
 import type { StopWithLines } from "@moventis/api";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 interface StopResultProps {
   stop: StopWithLines;
@@ -32,46 +34,49 @@ const UNKNOWN_LINE_COLOR = "#71717a";
  * list and the pins disagree about what matched.
  */
 export const StopResult = React.memo(
-  ({ stop, colorByLine, saved, onSelect }: StopResultProps) => (
-    <li>
-      <button
-        type="button"
-        onClick={() => onSelect(stop.externalId)}
-        className="hover:bg-accent focus-visible:ring-ring/50 flex w-full flex-col items-start gap-1.5 rounded-lg px-3 py-2.5 text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
-      >
-        <span className="flex w-full items-center gap-2">
-          <span className="min-w-0 flex-1 text-sm font-medium">
-            {stop.name}
+  ({ stop, colorByLine, saved, onSelect }: StopResultProps) => {
+    const t = mapCopy[useLang()].searchPanel;
+    return (
+      <li>
+        <button
+          type="button"
+          onClick={() => onSelect(stop.externalId)}
+          className="hover:bg-accent focus-visible:ring-ring/50 flex w-full flex-col items-start gap-1.5 rounded-lg px-3 py-2.5 text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
+        >
+          <span className="flex w-full items-center gap-2">
+            <span className="min-w-0 flex-1 text-sm font-medium">
+              {stop.name}
+            </span>
+            {saved && (
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-amber-400 text-zinc-900">
+                <Star size={12} className="fill-current" aria-hidden="true" />
+                <span className="sr-only">{t.saved}</span>
+              </span>
+            )}
           </span>
-          {saved && (
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-amber-400 text-zinc-900">
-              <Star size={12} className="fill-current" aria-hidden="true" />
-              <span className="sr-only">preferida</span>
+          {stop.lineCodes.length > 0 && (
+            <span className="flex flex-wrap gap-1">
+              {stop.lineCodes.map((code) => {
+                const color = colorByLine.get(code) ?? UNKNOWN_LINE_COLOR;
+                return (
+                  <Badge
+                    key={code}
+                    className="size-5 justify-center rounded-sm p-0 text-[11px] font-semibold"
+                    style={{
+                      backgroundColor: color,
+                      color: getContrastTextColor(color),
+                    }}
+                    aria-label={t.line(code)}
+                  >
+                    {code}
+                  </Badge>
+                );
+              })}
             </span>
           )}
-        </span>
-        {stop.lineCodes.length > 0 && (
-          <span className="flex flex-wrap gap-1">
-            {stop.lineCodes.map((code) => {
-              const color = colorByLine.get(code) ?? UNKNOWN_LINE_COLOR;
-              return (
-                <Badge
-                  key={code}
-                  className="size-5 justify-center rounded-sm p-0 text-[11px] font-semibold"
-                  style={{
-                    backgroundColor: color,
-                    color: getContrastTextColor(color),
-                  }}
-                  aria-label={`línia ${code}`}
-                >
-                  {code}
-                </Badge>
-              );
-            })}
-          </span>
-        )}
-      </button>
-    </li>
-  ),
+        </button>
+      </li>
+    );
+  },
 );
 StopResult.displayName = "StopResult";

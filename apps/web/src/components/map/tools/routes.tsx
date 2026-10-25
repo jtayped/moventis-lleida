@@ -4,6 +4,8 @@ import { Plus, Check, Star } from "lucide-react";
 import { useBusFinder } from "@/context/buses";
 import { ScrollArea, ScrollBar } from "../../ui/scroll-area";
 import { getContrastTextColor } from "@/lib/contrast";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 const codeOrder = (code: string) => {
   const n = parseInt(code, 10);
@@ -39,9 +41,8 @@ const Divider = () => (
  */
 const PreferidesBadge = () => {
   const { showPreferides, togglePreferides } = useBusFinder();
-  const label = showPreferides
-    ? "amaga les parades preferides"
-    : "mostra les parades preferides";
+  const t = mapCopy[useLang()].routes;
+  const label = showPreferides ? t.hideSaved : t.showSaved;
 
   return (
     // A real `button` via `asChild`, not the bare `span` the line badges settle for.
@@ -71,6 +72,7 @@ const PreferidesBadge = () => {
 };
 
 const BusRoutes = () => {
+  const t = mapCopy[useLang()].routes;
   const {
     routes,
     isRouteSelected,
@@ -112,9 +114,7 @@ const BusRoutes = () => {
   // the accessibility tree, and with nothing to announce their selected state.
   const renderBadge = (r: (typeof routes)[number], isActive: boolean) => {
     const isSelected = isRouteSelected(r.code);
-    const label = `${isSelected ? "amaga" : "mostra"} les parades de la línia ${r.code}${
-      isActive ? "" : " (fora d'horari avui)"
-    }`;
+    const label = t.toggleLine(isSelected, r.code, isActive);
     return (
       <li key={r.id}>
         <Badge
@@ -128,7 +128,7 @@ const BusRoutes = () => {
             onClick={() => toggleRoute(r.code)}
             aria-pressed={isSelected}
             aria-label={label}
-            title={!isActive ? "fora d'horari avui" : undefined}
+            title={!isActive ? t.offHours : undefined}
           >
             {isSelected ? <Check /> : <Plus />}
             <span
@@ -151,7 +151,7 @@ const BusRoutes = () => {
     <>
       <div className="relative">
         <ScrollArea className="pb-3">
-          <ol className="flex gap-1" aria-label="línies">
+          <ol className="flex gap-1" aria-label={t.list}>
             {/* Leftmost and outside the code sort — it has no code to sort by, and
                 it is the one entry here that belongs to the person, not the network. */}
             {preferidesCount > 0 && (
@@ -183,7 +183,7 @@ const BusRoutes = () => {
         !searchQuery &&
         !(showPreferides && preferidesCount > 0) && (
           <p className="text-foreground md:text-muted-foreground mt-1 text-xs">
-            Selecciona una línia per veure les parades al mapa
+            {t.selectHint}
           </p>
         )}
     </>

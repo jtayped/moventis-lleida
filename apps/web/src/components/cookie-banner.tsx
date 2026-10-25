@@ -5,6 +5,8 @@ import { Link } from "@/i18n/link";
 import { Button } from "@/components/ui/button";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 /**
  * Anchored above the map's own bottom row (`h-12` buttons inside `p-4`, `md:p-6`)
@@ -37,6 +39,7 @@ const ANCHOR =
  */
 const CookieBanner = () => {
   const { status, hydrated, accept, decline } = useCookieConsent();
+  const t = mapCopy[useLang()];
 
   // Nothing at all until localStorage has been read: rendering the notice first
   // and pulling it away a tick later is worse than showing it a tick late.
@@ -48,7 +51,7 @@ const CookieBanner = () => {
 
   return (
     <section
-      aria-label="preferències de privadesa"
+      aria-label={t.cookieBanner.label}
       className={cn(
         ANCHOR,
         "bg-card text-card-foreground inset-x-4 flex gap-3 rounded-xl border p-4 shadow-lg md:right-auto md:left-6 md:w-sm lg:right-6 lg:left-auto",
@@ -65,33 +68,26 @@ const CookieBanner = () => {
 
       <div className="min-w-0 space-y-3">
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Aquest lloc guarda al teu navegador les parades que marquis com a
-          preferides, només en aquest dispositiu. No fem servir cookies de
-          seguiment. Comptem visites de forma anònima amb una eina pròpia, i
-          pots desactivar-ho a la configuració.
+          {t.cookieBanner.text}
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            onClick={accept}
-            aria-label="accepta l'ús de l'emmagatzematge local per a les preferides"
-          >
-            d&apos;acord
+          <Button size="sm" onClick={accept} aria-label={t.consent.acceptLabel}>
+            {t.consent.accept}
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={decline}
-            aria-label="rebutja l'ús de l'emmagatzematge local per a les preferides"
+            aria-label={t.consent.declineLabel}
           >
-            rebutja
+            {t.consent.decline}
           </Button>
           <Link
             href="/privadesa"
             className="text-muted-foreground hover:text-foreground ml-auto text-xs underline underline-offset-4 transition-colors"
           >
-            més informació
+            {t.consent.more}
           </Link>
         </div>
       </div>

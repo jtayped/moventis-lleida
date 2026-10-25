@@ -5,6 +5,8 @@ import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import { Bus } from "lucide-react";
 import type { BusPosition } from "@moventis/shared";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy, type MapCopy } from "@/i18n/copy/map";
 
 interface BusMarkersRendererProps {
   positions: BusPosition[];
@@ -20,14 +22,13 @@ const FALLBACK_COLOR = "#059669"; // emerald-600
  * not promise more than that. "high" is an adjacent-stop bracket; the wider
  * ones say so.
  */
-function titleFor(pos: BusPosition): string {
-  const line = `Bus línia ${pos.lineCode}`;
-  if (pos.confidence === "high")
-    return `${line} — entre dues parades consecutives`;
-  const span = `entre parades (${pos.spanStops} trams)`;
+function titleFor(pos: BusPosition, t: MapCopy["busMarker"]): string {
+  const line = t.line(pos.lineCode);
+  if (pos.confidence === "high") return `${line} — ${t.consecutive}`;
+  const span = t.span(pos.spanStops);
   return pos.confidence === "medium"
-    ? `${line} — ${span}, posició estimada`
-    : `${line} — ${span}, posició poc precisa`;
+    ? `${line} — ${span}, ${t.estimated}`
+    : `${line} — ${span}, ${t.imprecise}`;
 }
 
 /**
@@ -40,6 +41,7 @@ function titleFor(pos: BusPosition): string {
  */
 const BusMarkersRenderer = React.memo(
   ({ positions, colorByLine }: BusMarkersRendererProps) => {
+    const t = mapCopy[useLang()].busMarker;
     return (
       <>
         {positions.map((pos, i) => {
@@ -49,7 +51,7 @@ const BusMarkersRenderer = React.memo(
             <AdvancedMarker
               key={`${pos.lineCode}-${pos.journeyName}-${pos.segment.fromStopId}-${pos.segment.toStopId}-${pos.etaSeconds}-${i}`}
               position={{ lat: pos.lat, lng: pos.lng }}
-              title={titleFor(pos)}
+              title={titleFor(pos, t)}
               zIndex={20}
             >
               <div

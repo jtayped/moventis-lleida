@@ -23,15 +23,17 @@ import { useSettings, type ThemeSetting } from "@/hooks/use-settings";
 import { track } from "@/lib/analytics";
 import { AuthorCard } from "@/components/content/author-card";
 import { SiteLinks } from "@/components/content/site-links";
+import { useLang } from "@/i18n/lang-context";
+import { settingsCopy } from "@/i18n/copy/settings";
+import { mapCopy } from "@/i18n/copy/map";
 
 const THEME_OPTIONS: {
   value: ThemeSetting;
-  label: string;
   icon: LucideIcon;
 }[] = [
-  { value: "light", label: "clar", icon: Sun },
-  { value: "dark", label: "fosc", icon: Moon },
-  { value: "system", label: "sistema", icon: Monitor },
+  { value: "light", icon: Sun },
+  { value: "dark", icon: Moon },
+  { value: "system", icon: Monitor },
 ];
 
 /**
@@ -77,6 +79,9 @@ const SettingsPanel = () => {
     setTheme,
   } = useSettings();
   const { status: consent, accept, decline } = useCookieConsent();
+  const lang = useLang();
+  const t = settingsCopy[lang];
+  const consentCopy = mapCopy[lang].consent;
   const { preferidesCount, clearPreferides } = useBusFinder();
 
   // Every handler here reports before it writes. It has to for the analytics
@@ -131,21 +136,18 @@ const SettingsPanel = () => {
 
   return (
     <div className="space-y-6">
-      <Section title="funcions experimentals" icon={FlaskConical}>
+      <Section title={t.experimental.title} icon={FlaskConical}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1">
             <Label htmlFor="live-bus-prediction" className="flex-wrap">
-              posició estimada del bus
-              <Badge variant="secondary">experimental</Badge>
+              {t.experimental.busPosition}
+              <Badge variant="secondary">{t.experimental.badge}</Badge>
             </Label>
             <p
               id="live-bus-prediction-help"
               className="text-muted-foreground text-xs leading-relaxed"
             >
-              dedueix entre quines dues parades és cada bus a partir de les
-              hores d&apos;arribada que publica moventis, que no en dona ni la
-              posició ni el gps. encara s&apos;està ajustant i pot fallar. només
-              per a les {MAX_PREDICTED_LINES} últimes línies que marquis.
+              {t.experimental.busPositionHelp(MAX_PREDICTED_LINES)}
             </p>
           </div>
           <Switch
@@ -158,17 +160,15 @@ const SettingsPanel = () => {
         </div>
       </Section>
 
-      <Section title="horaris" icon={Clock}>
+      <Section title={t.schedules.title} icon={Clock}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1">
-            <Label htmlFor="stop-etas">pròxim bus al mapa</Label>
+            <Label htmlFor="stop-etas">{t.schedules.stopEtas}</Label>
             <p
               id="stop-etas-help"
               className="text-muted-foreground text-xs leading-relaxed"
             >
-              en apropar el mapa, mostra al costat de cada parada quant falta
-              per al pròxim bus. consulta els horaris de les parades que veus,
-              així que gasta dades.
+              {t.schedules.stopEtasHelp}
             </p>
           </div>
           <Switch
@@ -182,14 +182,12 @@ const SettingsPanel = () => {
 
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1">
-            <Label htmlFor="arrival-drift">avanç i retard dels busos</Label>
+            <Label htmlFor="arrival-drift">{t.schedules.drift}</Label>
             <p
               id="arrival-drift-help"
               className="text-muted-foreground text-xs leading-relaxed"
             >
-              mostra quants minuts s&apos;ha avançat o endarrerit cada bus
-              respecte a la primera hora que t&apos;hem mostrat. verd vol dir
-              abans, vermell després.
+              {t.schedules.driftHelp}
             </p>
           </div>
           <Switch
@@ -202,11 +200,11 @@ const SettingsPanel = () => {
         </div>
       </Section>
 
-      <Section title="aparença" icon={Palette}>
+      <Section title={t.appearance.title} icon={Palette}>
         <div className="space-y-2">
-          <span className="text-sm font-medium">tema</span>
+          <span className="text-sm font-medium">{t.appearance.theme}</span>
           <div className="flex gap-2">
-            {THEME_OPTIONS.map(({ value, label, icon: Icon }) => {
+            {THEME_OPTIONS.map(({ value, icon: Icon }) => {
               const isActive = settings.theme === value;
               return (
                 <Button
@@ -219,7 +217,7 @@ const SettingsPanel = () => {
                   className="flex-1 gap-1.5"
                 >
                   <Icon />
-                  {label}
+                  {t.themes[value]}
                 </Button>
               );
             })}
@@ -227,60 +225,55 @@ const SettingsPanel = () => {
         </div>
       </Section>
 
-      <Section title="privadesa i dades" icon={ShieldCheck}>
+      <Section title={t.privacy.title} icon={ShieldCheck}>
         <div className="space-y-4">
           <div className="space-y-2">
             <p className="text-sm font-medium">
-              emmagatzematge local:{" "}
+              {t.privacy.storage}{" "}
               <span
                 className={
                   storageEnabled ? "text-foreground" : "text-muted-foreground"
                 }
               >
-                {storageEnabled ? "activat" : "desactivat"}
+                {storageEnabled ? t.privacy.enabled : t.privacy.disabled}
               </span>
             </p>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              les parades preferides es guarden al navegador, només en aquest
-              dispositiu. no fem servir cookies de seguiment. comptem visites de
-              forma anònima amb una eina pròpia, i pots desactivar-ho a la
-              configuració.
+              {t.privacy.storageHelp}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
                 onClick={accept}
-                aria-label="accepta l'ús de l'emmagatzematge local per a les preferides"
+                aria-label={consentCopy.acceptLabel}
               >
-                d&apos;acord
+                {consentCopy.accept}
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={decline}
-                aria-label="rebutja l'ús de l'emmagatzematge local per a les preferides"
+                aria-label={consentCopy.declineLabel}
               >
-                rebutja
+                {consentCopy.decline}
               </Button>
               <Link
                 href="/privadesa"
                 className="text-muted-foreground hover:text-foreground ml-auto text-xs underline underline-offset-4 transition-colors"
               >
-                més informació
+                {consentCopy.more}
               </Link>
             </div>
           </div>
 
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-1">
-              <Label htmlFor="analytics">analítica anònima</Label>
+              <Label htmlFor="analytics">{t.privacy.analytics}</Label>
               <p
                 id="analytics-help"
                 className="text-muted-foreground text-xs leading-relaxed"
               >
-                Comptem visites i accions amb una eina pròpia (umami), sense
-                cookies ni identificadors. serveix per saber quines línies i
-                parades es consulten més.
+                {t.privacy.analyticsHelp}
               </p>
             </div>
             <Switch
@@ -294,13 +287,9 @@ const SettingsPanel = () => {
 
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0 space-y-1">
-              <p className="text-sm font-medium">
-                esborra les parades preferides
-              </p>
+              <p className="text-sm font-medium">{t.privacy.clearSaved}</p>
               <p className="text-muted-foreground text-xs">
-                {preferidesCount === 1
-                  ? "1 parada desada"
-                  : `${preferidesCount} parades desades`}
+                {t.privacy.savedCount(preferidesCount)}
               </p>
             </div>
             <Button
@@ -308,10 +297,10 @@ const SettingsPanel = () => {
               variant="outline"
               onClick={clearPreferides}
               disabled={preferidesCount === 0}
-              aria-label="esborra les parades preferides"
+              aria-label={t.privacy.clearSaved}
               className="text-destructive hover:text-destructive"
             >
-              esborra
+              {t.privacy.clear}
             </Button>
           </div>
         </div>
@@ -320,8 +309,8 @@ const SettingsPanel = () => {
       {/* Every content page, on any screen. The map's bars link only some:
           línies and parades on a phone, plus tarifes and informació on
           desktop. Privadesa is reached from here and the footer. */}
-      <Section title="més informació" icon={Info}>
-        <SiteLinks label="pàgines d'informació" className="-mx-2" />
+      <Section title={t.more.title} icon={Info}>
+        <SiteLinks label={t.more.pagesLabel} className="-mx-2" />
         <AuthorCard compact />
       </Section>
     </div>

@@ -34,6 +34,8 @@ import DirectionsLayer, {
 } from "@/components/map/directions/directions-layer";
 import { useDirections } from "@/context/directions";
 import { useDirectionsPlan } from "@/hooks/use-directions-plan";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 /**
  * `outline`'s dark-mode background is a translucent overlay (`dark:bg-input/30`,
@@ -86,19 +88,22 @@ const TOOLS_PANEL = [
  * straight, and at the top, furthest from the thumb, because it is an ask and
  * not a tool. `/informacio` says what it is for.
  */
-const KoFiLink = () => (
-  <Button asChild variant="outline" size="icon" className={MAP_ACTION}>
-    <a
-      href={KO_FI_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="fes una donació al projecte a ko-fi"
-      title="fes una donació a ko-fi"
-    >
-      <HeartHandshake aria-hidden="true" />
-    </a>
-  </Button>
-);
+const KoFiLink = () => {
+  const t = mapCopy[useLang()].shell;
+  return (
+    <Button asChild variant="outline" size="icon" className={MAP_ACTION}>
+      <a
+        href={KO_FI_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t.kofiLabel}
+        title={t.kofiTitle}
+      >
+        <HeartHandshake aria-hidden="true" />
+      </a>
+    </Button>
+  );
+};
 
 const BusMap = () => {
   const {
@@ -111,6 +116,7 @@ const BusMap = () => {
     debouncedSearchQuery,
     requestCloseStop,
   } = useBusFinder();
+  const t = mapCopy[useLang()].shell;
   const { resolvedTheme } = useSettings();
   const isDesktop = useIsDesktop();
   const nav = useNavPanel();
@@ -134,10 +140,10 @@ const BusMap = () => {
 
   const locateTitle =
     status === "error"
-      ? "no s'ha pogut obtenir la ubicació"
+      ? t.locateError
       : status === "unsupported"
-        ? "el navegador no suporta la geolocalització"
-        : "la meva ubicació";
+        ? t.locateUnsupported
+        : t.locate;
 
   // Picking a stop is a request to see that stop, and from `lg` the line
   // browser and the search results sit in the only place it can be shown.
@@ -235,7 +241,7 @@ const BusMap = () => {
   ) : nav.isOpen("search") ? (
     <SearchPanel variant="panel" onClose={nav.close} />
   ) : selectedStopId ? (
-    <Panel aria-label="hores d'arribada" className="h-full">
+    <Panel aria-label={t.arrivalTimes} className="h-full">
       <StopDetails externalId={selectedStopId} variant="panel" />
     </Panel>
   ) : null;
@@ -378,8 +384,8 @@ const BusMap = () => {
           size="icon"
           onClick={toggleDirections}
           aria-pressed={directions.isOpen}
-          aria-label="com arribar-hi"
-          title="com arribar-hi"
+          aria-label={t.directions}
+          title={t.directions}
           className={cn(
             MAP_ACTION,
             "border-transparent bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",

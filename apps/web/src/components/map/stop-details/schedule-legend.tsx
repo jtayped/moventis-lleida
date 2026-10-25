@@ -1,4 +1,6 @@
 import TimeSourceBadge from "./time-source-badge";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
 
 /**
  * One-line key for the two kinds of arrival time.
@@ -15,19 +17,20 @@ import TimeSourceBadge from "./time-source-badge";
  * consulted at a bus stop in a hurry.
  */
 export default function ScheduleLegend() {
+  const t = stopDetailsCopy[useLang()].legend;
   return (
     <dl className="text-muted-foreground mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[10px]">
       <div className="flex items-center gap-1.5">
         <dt>
           <TimeSourceBadge isRealTime className="text-[10px]" />
         </dt>
-        <dd>hora estimada amb el bus ja en ruta</dd>
+        <dd>{t.live}</dd>
       </div>
       <div className="flex items-center gap-1.5">
         <dt>
           <TimeSourceBadge isRealTime={false} className="text-[10px]" />
         </dt>
-        <dd>hora prevista a l&apos;horari oficial</dd>
+        <dd>{t.timetable}</dd>
       </div>
     </dl>
   );

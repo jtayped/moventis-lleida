@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { getContrastTextColor } from "@/lib/contrast";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/i18n/lang-context";
+import { directionsCopy } from "@/i18n/copy/directions";
 
 /** A line's number on its own colour, the one place line colours appear in this panel. */
 export const LineChip = ({
@@ -11,15 +13,18 @@ export const LineChip = ({
   code: string;
   color: string;
   className?: string;
-}) => (
-  <Badge
-    className={cn(
-      "h-6 min-w-6 justify-center rounded-md px-1.5 text-xs font-semibold",
-      className,
-    )}
-    style={{ backgroundColor: color, color: getContrastTextColor(color) }}
-    aria-label={`línia ${code}`}
-  >
-    {code}
-  </Badge>
-);
+}) => {
+  const t = directionsCopy[useLang()];
+  return (
+    <Badge
+      className={cn(
+        "h-6 min-w-6 justify-center rounded-md px-1.5 text-xs font-semibold",
+        className,
+      )}
+      style={{ backgroundColor: color, color: getContrastTextColor(color) }}
+      aria-label={t.line(code)}
+    >
+      {code}
+    </Badge>
+  );
+};

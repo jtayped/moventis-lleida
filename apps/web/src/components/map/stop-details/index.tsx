@@ -30,6 +30,9 @@ import {
   StopDetailsShell,
   type StopDetailsVariant,
 } from "@/components/map/stop-details/shell";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
+import { mapCopy } from "@/i18n/copy/map";
 
 const ScheduleGroup = ({
   lines,
@@ -72,10 +75,9 @@ const SrLabels = ({
   name?: string;
   variant: StopDetailsVariant;
 }) => {
-  const title = name ?? "parada";
-  const description = name
-    ? `hores d'arribada per la parada ${name}`
-    : "hores d'arribada";
+  const t = stopDetailsCopy[useLang()];
+  const title = name ?? t.srTitle;
+  const description = t.srDescription(name);
 
   if (variant === "panel") {
     return (
@@ -108,19 +110,15 @@ const StaleNotice = ({
   isFetching: boolean;
   refetch: () => void;
 }) => {
-  const ago = formatTimeAgo(dataUpdatedAt);
+  const lang = useLang();
+  const t = stopDetailsCopy[lang];
+  const ago = formatTimeAgo(dataUpdatedAt, lang);
 
   return (
     <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
       <TriangleAlert size={14} className="shrink-0" />
       <span className="min-w-0 flex-1">
-        no s&apos;ha pogut actualitzar.{" "}
-        {!ago
-          ? "les hores poden estar desfasades"
-          : ago === "ara"
-            ? "les hores són d'ara mateix"
-            : `les hores són de ${ago}`}
-        .
+        {t.stale(ago, ago === mapCopy[lang].time.agoNow)}
       </span>
       <Button
         onClick={() => refetch()}
@@ -129,17 +127,11 @@ const StaleNotice = ({
         disabled={isFetching}
         className="h-7 shrink-0 px-2 text-xs underline underline-offset-2"
       >
-        torna-ho a provar
+        {t.retry}
       </Button>
     </div>
   );
 };
-
-/** "4", "4 i 7", "4, 7 i 9" — a list a person would read aloud. */
-const joinLines = (codes: string[]) =>
-  codes.length <= 1
-    ? (codes[0] ?? "")
-    : `${codes.slice(0, -1).join(", ")} i ${codes[codes.length - 1]}`;
 
 /**
  * Some of the stop's lines answered and some did not. The timetable below is
@@ -155,25 +147,26 @@ const PartialNotice = ({
   failedRoutes: string[];
   isFetching: boolean;
   refetch: () => void;
-}) => (
-  <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-    <TriangleAlert size={14} className="shrink-0" />
-    <span className="min-w-0 flex-1">
-      no s&apos;han pogut carregar les hores de{" "}
-      {failedRoutes.length === 1 ? "la línia" : "les línies"}{" "}
-      {joinLines(failedRoutes)}
-    </span>
-    <Button
-      onClick={() => refetch()}
-      variant="ghost"
-      size="sm"
-      disabled={isFetching}
-      className="h-7 shrink-0 px-2 text-xs underline underline-offset-2"
-    >
-      torna-ho a provar
-    </Button>
-  </div>
-);
+}) => {
+  const t = stopDetailsCopy[useLang()];
+  return (
+    <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+      <TriangleAlert size={14} className="shrink-0" />
+      <span className="min-w-0 flex-1">
+        {t.partial(failedRoutes, t.joinLines(failedRoutes))}
+      </span>
+      <Button
+        onClick={() => refetch()}
+        variant="ghost"
+        size="sm"
+        disabled={isFetching}
+        className="h-7 shrink-0 px-2 text-xs underline underline-offset-2"
+      >
+        {t.retry}
+      </Button>
+    </div>
+  );
+};
 
 const StopDetails = ({
   externalId,
@@ -192,6 +185,7 @@ const StopDetails = ({
     stepDrawerSnap,
   } = useBusFinder();
   const { settings } = useSettings();
+  const t = stopDetailsCopy[useLang()];
 
   // Pulling down past the top of the timetable drops the sheet a snap; pulling
   // up past the bottom grows it. The scroller is a Radix viewport, so the
@@ -447,12 +441,10 @@ const StopDetails = ({
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
           <TriangleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
-            aquesta parada ja no es troba en servei. pot ser temporal per obres
-            o canvis de ruta.
+            {t.deleted}
             {/* Answers the question a dead pin on your own map raises: why is
                 this still here, and how do I get rid of it? */}
-            {isPreferida(externalId) &&
-              " la tens a preferides, i per això segueix al mapa — treu-la amb l'estrella de dalt."}
+            {isPreferida(externalId) && t.deletedSaved}
           </span>
         </div>
       )}
@@ -461,7 +453,7 @@ const StopDetails = ({
       {isNewStop(details.createdAt) && (
         <div className="text-muted-foreground border-border bg-muted/40 mt-3 flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm">
           <Sparkle size={16} className="mt-0.5 shrink-0 fill-current" />
-          <span>aquesta parada s&apos;ha afegit a la xarxa fa poc.</span>
+          <span>{t.newStop}</span>
         </div>
       )}
 
@@ -484,7 +476,7 @@ const StopDetails = ({
             <div className="text-muted-foreground py-8 text-center">
               {hadTimes ? (
                 <>
-                  <p>totes les hores han passat — actualitza.</p>
+                  <p>{t.allPassed}</p>
                   <Button
                     onClick={() => refetch()}
                     variant="outline"
@@ -492,11 +484,11 @@ const StopDetails = ({
                     disabled={isFetching}
                     className="mt-3"
                   >
-                    actualitza
+                    {t.refresh}
                   </Button>
                 </>
               ) : (
-                <p>no hi ha horaris disponibles per a aquesta parada.</p>
+                <p>{t.noSchedules}</p>
               )}
             </div>
           ) : showSections ? (
@@ -505,7 +497,7 @@ const StopDetails = ({
                 <div className="py-2">
                   <div className="my-4 mb-2 flex items-center gap-2 px-1">
                     <CheckCheck className="h-5 w-5" />
-                    <h3 className="text-lg font-bold">línies seleccionades</h3>
+                    <h3 className="text-lg font-bold">{t.selectedLines}</h3>
                   </div>
                   <ScheduleGroup
                     lines={selectedLines}
@@ -522,7 +514,7 @@ const StopDetails = ({
                   )}
                   <div className="my-4 mb-2 flex items-center gap-2 px-1">
                     <ArrowRightLeft className="h-5 w-5" />
-                    <h3 className="text-lg font-bold">correspondències</h3>
+                    <h3 className="text-lg font-bold">{t.transfers}</h3>
                   </div>
                   <ScheduleGroup
                     lines={otherLines}
@@ -549,7 +541,7 @@ const StopDetails = ({
               className="hover:bg-muted/50 border-border mt-4 mb-2 flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
             >
               <CalendarDays size={16} aria-hidden className="shrink-0" />
-              <span className="flex-1">horari complet de la parada</span>
+              <span className="flex-1">{t.fullTimetable}</span>
               <ChevronRight
                 size={16}
                 aria-hidden

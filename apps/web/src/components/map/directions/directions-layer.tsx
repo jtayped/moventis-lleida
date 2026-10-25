@@ -13,6 +13,8 @@ import type { DirectionsPlanState } from "@/hooks/use-directions-plan";
 import { PANEL_WIDTH_PX } from "@/hooks/use-is-desktop";
 import { useSettings } from "@/hooks/use-settings";
 import { track } from "@/lib/analytics";
+import { useLang } from "@/i18n/lang-context";
+import { directionsCopy } from "@/i18n/copy/directions";
 
 /** Share of a phone's height the itinerary card can take (`max-h-[45vh]`). */
 const PHONE_CARD_SHARE = 0.45;
@@ -146,22 +148,25 @@ const EndMarker = ({
 }: {
   point: DirectionsPoint;
   kind: "from" | "to";
-}) => (
-  <AdvancedMarker
-    position={point}
-    zIndex={40}
-    title={kind === "from" ? "origen" : "destinació"}
-  >
-    {kind === "from" ? (
-      <div className="size-4 rounded-full border-[3px] border-zinc-900 bg-white shadow-md dark:border-white dark:bg-zinc-900" />
-    ) : (
-      <div className="flex flex-col items-center">
-        <div className="bg-destructive size-5 rounded-full border-[3px] border-white shadow-md" />
-        <div className="bg-destructive -mt-0.5 h-2 w-0.5" />
-      </div>
-    )}
-  </AdvancedMarker>
-);
+}) => {
+  const t = directionsCopy[useLang()];
+  return (
+    <AdvancedMarker
+      position={point}
+      zIndex={40}
+      title={kind === "from" ? t.from : t.to}
+    >
+      {kind === "from" ? (
+        <div className="size-4 rounded-full border-[3px] border-zinc-900 bg-white shadow-md dark:border-white dark:bg-zinc-900" />
+      ) : (
+        <div className="flex flex-col items-center">
+          <div className="bg-destructive size-5 rounded-full border-[3px] border-white shadow-md" />
+          <div className="bg-destructive -mt-0.5 h-2 w-0.5" />
+        </div>
+      )}
+    </AdvancedMarker>
+  );
+};
 
 /** Where each bus leg is boarded and left, in the line's colour. */
 function stopMarkers(leg: ItineraryLeg, i: number) {

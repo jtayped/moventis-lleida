@@ -1,3 +1,6 @@
+import type { Lang } from "@moventis/shared";
+import { mapCopy } from "@/i18n/copy/map";
+
 /**
  * Formats seconds into a relative time string (e.g., "Now", "12 min", "1h 30m").
  *
@@ -11,9 +14,11 @@
  */
 export const formatRelativeTime = (
   seconds: number,
+  lang: Lang,
   { compact = false }: { compact?: boolean } = {},
 ): string => {
-  if (seconds < 30) return compact ? "ara" : "arribant";
+  const t = mapCopy[lang].time;
+  if (seconds < 30) return compact ? t.nowCompact : t.arriving;
   const totalMinutes = Math.round(seconds / 60);
 
   if (totalMinutes < 60) {
@@ -31,9 +36,12 @@ export const formatRelativeTime = (
 /**
  * Formats a Date object into an absolute time string (e.g., "03:38").
  */
-export const formatAbsoluteTime = (date: Date | null): string | null => {
+export const formatAbsoluteTime = (
+  date: Date | null,
+  lang: Lang,
+): string | null => {
   if (!date) return null;
-  return date.toLocaleTimeString("ca", {
+  return date.toLocaleTimeString(lang, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -43,13 +51,14 @@ export const formatAbsoluteTime = (date: Date | null): string | null => {
 /**
  * Formats the last updated timestamp into a readable "ago" string.
  */
-export const formatTimeAgo = (timestamp: number | null): string => {
+export const formatTimeAgo = (timestamp: number | null, lang: Lang): string => {
+  const t = mapCopy[lang].time;
   if (!timestamp) return "";
   const now = Date.now();
   const secondsAgo = Math.round((now - timestamp) / 1000);
 
-  if (secondsAgo < 10) return "ara";
-  if (secondsAgo < 60) return `fa ${secondsAgo}s`;
+  if (secondsAgo < 10) return t.agoNow;
+  if (secondsAgo < 60) return t.agoSeconds(secondsAgo);
   const minutesAgo = Math.floor(secondsAgo / 60);
-  return `fa ${minutesAgo}m`;
+  return t.agoMinutes(minutesAgo);
 };

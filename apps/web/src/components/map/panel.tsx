@@ -4,6 +4,8 @@ import * as React from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 /**
  * A surface in the desktop left column: a card floating on live map tiles.
@@ -45,30 +47,33 @@ export const PanelHeader = ({
   className,
   children,
   onClose,
-  closeLabel = "tanca",
+  closeLabel,
   ...props
 }: React.ComponentProps<"div"> & {
   onClose?: () => void;
   closeLabel?: string;
-}) => (
-  <div
-    className={cn(
-      "flex shrink-0 flex-row items-center gap-2 px-4 py-3",
-      className,
-    )}
-    {...props}
-  >
-    {children}
-    {onClose && (
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onClose}
-        aria-label={closeLabel}
-        className="-mr-1 ml-auto shrink-0"
-      >
-        <X />
-      </Button>
-    )}
-  </div>
-);
+}) => {
+  const t = mapCopy[useLang()];
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 flex-row items-center gap-2 px-4 py-3",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+      {onClose && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          aria-label={closeLabel ?? t.panel.close}
+          className="-mr-1 ml-auto shrink-0"
+        >
+          <X />
+        </Button>
+      )}
+    </div>
+  );
+};

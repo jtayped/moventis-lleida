@@ -5,6 +5,8 @@ import CountdownTimer from "../../ui/countdown";
 import TimeSourceBadge from "./time-source-badge";
 import { formatRelativeTime, formatAbsoluteTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
 
 interface ScheduledTime {
   arrivalTime: Date;
@@ -44,18 +46,22 @@ const DriftChip = ({
   drift: ArrivalDrift;
   isNext: boolean;
 }) => {
+  const lang = useLang();
+  const t = stopDetailsCopy[lang].arrival;
   const minutes = driftMinutes(drift.deltaMs);
   if (minutes === 0) return null;
 
   const later = minutes > 0;
   const magnitude = Math.abs(minutes);
-  const baseline = formatAbsoluteTime(new Date(drift.baselineMs));
+  const baseline = formatAbsoluteTime(new Date(drift.baselineMs), lang);
   // Without this the reading is "late against a prediction", which is not what
   // a timetable baseline means.
-  const against = drift.baselineIsRealTime ? "" : " segons l'horari";
-  const label = `${magnitude} ${magnitude === 1 ? "minut" : "minuts"} ${
-    later ? "més tard" : "abans"
-  } del previst (${baseline})${against}`;
+  const label = t.driftLabel(
+    magnitude,
+    later,
+    baseline,
+    drift.baselineIsRealTime,
+  );
 
   return (
     <span
@@ -69,8 +75,7 @@ const DriftChip = ({
           : "text-emerald-600 dark:text-emerald-400",
       )}
     >
-      {later ? "▲ +" : "▼ −"}
-      {magnitude} min{isNext ? (later ? " tard" : " aviat") : ""}
+      {t.driftChip(magnitude, later, isNext)}
     </span>
   );
 };
@@ -81,6 +86,8 @@ export const ArrivalTimeCard = ({
   now,
   drift,
 }: ArrivalTimeCardProps) => {
+  const lang = useLang();
+  const t = stopDetailsCopy[lang].arrival;
   const diffInSeconds = Math.round(
     (journey.arrivalTime.getTime() - now) / 1000,
   );
@@ -114,13 +121,13 @@ export const ArrivalTimeCard = ({
         {isNext ? (
           <CountdownTimer targetDate={journey.arrivalTime} />
         ) : (
-          formatRelativeTime(diffInSeconds)
+          formatRelativeTime(diffInSeconds, lang)
         )}
         {journey.accessible && (
           <Accessibility
             size={12}
             className="ml-1"
-            aria-label="Vehicle accessible"
+            aria-label={t.accessible}
             role="img"
           />
         )}
@@ -136,7 +143,7 @@ export const ArrivalTimeCard = ({
       >
         <TimeSourceBadge isRealTime={journey.isRealTime} iconOnly />
         <span className="font-mono">
-          {formatAbsoluteTime(journey.arrivalTime)}
+          {formatAbsoluteTime(journey.arrivalTime, lang)}
         </span>
       </span>
       {/* Nothing reserved when there is no chip: the cards sit in an `auto-fill`

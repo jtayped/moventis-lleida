@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { formatRelativeTime } from "@/lib/time";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 /**
  * A component that displays a live countdown for an arriving bus.
@@ -12,6 +14,7 @@ const CountdownTimer = ({
   /** Short forms for tight spaces — see `formatRelativeTime`. */
   compact?: boolean;
 }) => {
+  const lang = useLang();
   const [secondsRemaining, setSecondsRemaining] = useState(
     Math.round((targetDate.getTime() - Date.now()) / 1000),
   );
@@ -34,13 +37,13 @@ const CountdownTimer = ({
     return () => clearInterval(interval);
   }, [secondsRemaining <= 0]);
 
-  if (secondsRemaining < 30) return <>Ara</>;
+  if (secondsRemaining < 30) return <>{mapCopy[lang].time.countdownNow}</>;
   if (secondsRemaining < 60 * 10) {
     const m = Math.floor(secondsRemaining / 60);
     const s = secondsRemaining % 60;
     return <>{`${m}:${s.toString().padStart(2, "0")}`}</>;
   }
-  return <>{formatRelativeTime(secondsRemaining, { compact })}</>;
+  return <>{formatRelativeTime(secondsRemaining, lang, { compact })}</>;
 };
 
 export default CountdownTimer;

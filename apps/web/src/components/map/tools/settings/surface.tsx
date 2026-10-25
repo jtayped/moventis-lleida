@@ -17,10 +17,8 @@ import {
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SettingsPanel from "./panel";
-
-const TITLE = "configuració";
-const DESCRIPTION =
-  "Aquestes preferències es guarden només en aquest dispositiu.";
+import { useLang } from "@/i18n/lang-context";
+import { settingsCopy } from "@/i18n/copy/settings";
 
 interface SettingsSurfaceProps {
   open: boolean;
@@ -55,13 +53,14 @@ export const SettingsSurface = ({
   onOpenChange,
 }: SettingsSurfaceProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const t = settingsCopy[useLang()];
 
   return isDesktop ? (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right">
         <SheetHeader>
-          <SheetTitle>{TITLE}</SheetTitle>
-          <SheetDescription>{DESCRIPTION}</SheetDescription>
+          <SheetTitle>{t.title}</SheetTitle>
+          <SheetDescription>{t.description}</SheetDescription>
         </SheetHeader>
         {/* The sheet is full height, so the settings scroll inside it and the
             title stays put — the whole point of an edge panel over the dialog
@@ -75,8 +74,8 @@ export const SettingsSurface = ({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>{TITLE}</DrawerTitle>
-          <DrawerDescription>{DESCRIPTION}</DrawerDescription>
+          <DrawerTitle>{t.title}</DrawerTitle>
+          <DrawerDescription>{t.description}</DrawerDescription>
         </DrawerHeader>
         {/* `pb-8` rather than `pb-4`: the last row sits right on the home
             indicator otherwise. */}

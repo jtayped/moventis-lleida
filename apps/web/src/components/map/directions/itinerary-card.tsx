@@ -9,6 +9,8 @@ import { formatRelativeTime } from "@/lib/time";
 import TimeSourceBadge from "../stop-details/time-source-badge";
 import { LineChip } from "./line-chip";
 import { clock, distance, duration } from "./format";
+import { useLang } from "@/i18n/lang-context";
+import { directionsCopy } from "@/i18n/copy/directions";
 
 /**
  * The itinerary at a glance: when to leave and arrive, how long, and the
@@ -22,19 +24,21 @@ export const ItinerarySummary = ({
   itinerary: Itinerary;
   now: number;
 }) => {
+  const lang = useLang();
+  const t = directionsCopy[lang].card;
   const firstBus = itinerary.legs.find((l): l is BusLeg => l.kind === "bus");
   const leaveIn = (itinerary.departAt.getTime() - now) / 1000;
   return (
     <div className="w-full space-y-1.5">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-base font-semibold tabular-nums">
-          {clock(itinerary.departAt)} – {clock(itinerary.arriveAt)}
+          {clock(itinerary.departAt, lang)} – {clock(itinerary.arriveAt, lang)}
         </span>
         <span className="text-sm font-semibold tabular-nums">
           {duration(itinerary.durationS)}
         </span>
       </div>
-      <ol className="flex flex-wrap items-center gap-1" aria-label="trajecte">
+      <ol className="flex flex-wrap items-center gap-1" aria-label={t.route}>
         {itinerary.legs.map((leg, i) => (
           <li key={i} className="flex items-center gap-1">
             {i > 0 && (
@@ -45,7 +49,7 @@ export const ItinerarySummary = ({
             )}
             {leg.kind === "walk" ? (
               <span className="text-muted-foreground flex items-center">
-                <Footprints className="size-4" aria-label="a peu" />
+                <Footprints className="size-4" aria-label={t.walk} />
               </span>
             ) : (
               <LineChip code={leg.lineCode} color={leg.color} />
@@ -56,17 +60,14 @@ export const ItinerarySummary = ({
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
         <span className="tabular-nums">
           {leaveIn <= 30
-            ? "surt ara"
-            : `surt d'aquí a ${formatRelativeTime(leaveIn)}`}
+            ? t.leaveNow
+            : t.leavesIn(formatRelativeTime(leaveIn, lang))}
         </span>
         {itinerary.walkMeters > 0 && (
-          <span>{distance(itinerary.walkMeters)} a peu</span>
+          <span>{t.walking(distance(itinerary.walkMeters))}</span>
         )}
         {itinerary.transfers > 0 && (
-          <span>
-            {itinerary.transfers}{" "}
-            {itinerary.transfers === 1 ? "transbord" : "transbords"}
-          </span>
+          <span>{t.transfers(itinerary.transfers)}</span>
         )}
         {firstBus && <TimeSourceBadge isRealTime={firstBus.live} />}
       </div>

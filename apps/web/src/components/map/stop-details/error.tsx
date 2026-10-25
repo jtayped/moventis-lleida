@@ -4,6 +4,8 @@ import {
   StopDetailsShell,
   type StopDetailsVariant,
 } from "@/components/map/stop-details/shell";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
 
 interface StopDetailsErrorProps {
   externalId: string;
@@ -16,6 +18,7 @@ export const StopDetailsError = ({
   refetch,
   variant,
 }: StopDetailsErrorProps) => {
+  const t = stopDetailsCopy[useLang()].error;
   return (
     <StopDetailsShell variant={variant}>
       {/*
@@ -28,15 +31,13 @@ export const StopDetailsError = ({
         <PreferidaToggle externalId={externalId} />
       </div>
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <h3 className="text-destructive font-semibold">
-          hi ha hagut un problema carregant els busos :(
-        </h3>
+        <h3 className="text-destructive font-semibold">{t.title}</h3>
         <Button
           onClick={() => refetch()}
           variant="destructive"
           className="mt-4"
         >
-          torna a intentar-ho
+          {t.retry}
         </Button>
       </div>
     </StopDetailsShell>
