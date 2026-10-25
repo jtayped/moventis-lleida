@@ -1,18 +1,28 @@
 import type { Metadata } from "next";
 import { ContentPage } from "@/components/content/content-page";
 import { External, List, P, Section } from "@/components/content/prose";
+import { asLang, langStaticParams, type LangParams } from "@/i18n/langs";
 import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = pageMetadata({
-  title: "privadesa",
-  description:
-    "què desa aquest lloc al teu navegador, què no en surt mai, i com pots canviar-ho.",
-  path: "/privadesa",
-});
+export const generateStaticParams = langStaticParams;
 
-const PrivadesaPage = () => {
+export async function generateMetadata({
+  params,
+}: LangParams): Promise<Metadata> {
+  return pageMetadata({
+    title: "privadesa",
+    description:
+      "què desa aquest lloc al teu navegador, què no en surt mai, i com pots canviar-ho.",
+    path: "/privadesa",
+    lang: asLang((await params).lang),
+  });
+}
+
+const PrivadesaPage = async ({ params }: LangParams) => {
+  const lang = asLang((await params).lang);
   return (
     <ContentPage
+      lang={lang}
       title="privadesa"
       updated="última actualització: setembre del 2026"
     >

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 import { ContentPage } from "@/components/content/content-page";
 import { LineBadge } from "@/components/content/line-badge";
 import { Note } from "@/components/content/note";
@@ -7,6 +7,7 @@ import { RouteShape } from "@/components/content/route-shape";
 import { ServiceSpan } from "@/components/content/service-span";
 import { LINE_ACCENT_CLASS, lineAccentStyle } from "@/lib/contrast";
 import { compareByLineCode } from "@/lib/lines";
+import { asLang, type LangParams } from "@/i18n/langs";
 import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { describeServiceDays, lineDisplayName } from "@/lib/service-time";
@@ -15,20 +16,27 @@ import { api } from "@/trpc/server";
 // Lines and timetables come from the database, which the build cannot reach.
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = pageMetadata({
-  title: "línies i horaris del bus urbà de lleida",
-  description:
-    "totes les línies del bus urbà de lleida, amb el primer i l'últim bus, cada quant passen i l'horari complet de cada recorregut.",
-  path: "/linies",
-});
+export async function generateMetadata({
+  params,
+}: LangParams): Promise<Metadata> {
+  return pageMetadata({
+    title: "línies i horaris del bus urbà de lleida",
+    description:
+      "totes les línies del bus urbà de lleida, amb el primer i l'últim bus, cada quant passen i l'horari complet de cada recorregut.",
+    path: "/linies",
+    lang: asLang((await params).lang),
+  });
+}
 
-const LiniesPage = async () => {
+const LiniesPage = async ({ params }: LangParams) => {
+  const lang = asLang((await params).lang);
   const { days, lines } = await api.content.lines();
   const sorted = [...lines].sort(compareByLineCode);
   const dates = describeServiceDays(days);
 
   return (
     <ContentPage
+      lang={lang}
       section="/linies"
       title="línies i horaris del bus urbà de lleida"
       wide

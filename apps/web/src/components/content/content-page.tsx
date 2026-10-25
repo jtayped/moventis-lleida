@@ -1,6 +1,7 @@
 import { BusFront, Database, Info, Map as MapIcon, MapPin } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
+import type { Lang } from "@moventis/shared";
 import React from "react";
 import { AuthorCard } from "@/components/content/author-card";
 import { SiteLinks } from "@/components/content/site-links";
@@ -35,8 +36,10 @@ export const ContentPage = ({
   section,
   wide = false,
   credit = true,
+  lang,
   children,
 }: {
+  lang: Lang;
   title: string;
   /** Shown under the title, e.g. "revisat el 3 d'octubre del 2026". */
   updated?: string;
@@ -121,7 +124,7 @@ export const ContentPage = ({
       <main className={cn("mx-auto w-full flex-1 px-4 py-10 md:py-16", column)}>
         {breadcrumbs && breadcrumbs.length > 0 && (
           <>
-            <JsonLd data={breadcrumbJsonLd(breadcrumbs, title)} />
+            <JsonLd data={breadcrumbJsonLd(lang, breadcrumbs, title)} />
             <nav aria-label="ruta de navegació" className="mb-3">
               <ol className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm">
                 {breadcrumbs.map((crumb) => (

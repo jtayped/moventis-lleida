@@ -1,7 +1,7 @@
 "use client";
 
 import { BusFront, Info, MapPin, Search, Settings, Ticket } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 
 import { NavTab, NavTabLink } from "@/components/map/nav/nav-tab";
 import { track } from "@/lib/analytics";

@@ -1,7 +1,7 @@
 "use client";
 
 import { Star } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 import { Button } from "@/components/ui/button";
 import { useCookieConsent } from "@/hooks/use-cookie-consent";
 import { cn } from "@/lib/utils";
