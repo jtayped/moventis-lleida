@@ -13,15 +13,23 @@ import {
   URBAN_SOURCE,
   type Fare,
 } from "@/content/tarifes";
+import { asLang, langStaticParams, type LangParams } from "@/i18n/langs";
 import { pageMetadata } from "@/lib/seo";
 import { slugify } from "@/lib/stops";
 
-export const metadata: Metadata = pageMetadata({
-  title: "tarifes del bus urbà de lleida: bitllet, t-jove, t-mes i t-nostra",
-  description:
-    "quant costa el bus a lleida: bitllet senzill, t-estudiant, t-nostra, t-temps i les targetes integrades de l'atm (t-10, t-mes, t-jove, t-16), amb les fonts oficials.",
-  path: "/tarifes",
-});
+export const generateStaticParams = langStaticParams;
+
+export async function generateMetadata({
+  params,
+}: LangParams): Promise<Metadata> {
+  return pageMetadata({
+    title: "tarifes del bus urbà de lleida: bitllet, t-jove, t-mes i t-nostra",
+    description:
+      "quant costa el bus a lleida: bitllet senzill, t-estudiant, t-nostra, t-temps i les targetes integrades de l'atm (t-10, t-mes, t-jove, t-16), amb les fonts oficials.",
+    path: "/tarifes",
+    lang: asLang((await params).lang),
+  });
+}
 
 /**
  * Each fare under its own heading, with an anchor: card names ("t-jove",
@@ -46,8 +54,9 @@ const FareList = ({ fares }: { fares: Fare[] }) => (
   </ul>
 );
 
-const TarifesPage = () => (
+const TarifesPage = async ({ params }: LangParams) => (
   <ContentPage
+    lang={asLang((await params).lang)}
     title="tarifes del bus urbà de lleida"
     updated={`revisat el ${REVIEWED_ON}`}
   >

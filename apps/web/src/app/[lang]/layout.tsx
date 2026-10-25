@@ -16,6 +16,8 @@ import {
   PORTFOLIO_URL,
 } from "@/lib/project-links";
 import { env } from "@/env";
+import { asLang } from "@/i18n/langs";
+import { LangProvider } from "@/i18n/lang-context";
 import RootProviders from "./providers";
 
 export const metadata: Metadata = ROOT_METADATA;
@@ -67,9 +69,14 @@ const WEBSITE_JSON_LD = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  params,
+}: Readonly<{
+  children: React.ReactNode;
+  params: Promise<{ lang: string }>;
+}>) {
+  const lang = asLang((await params).lang);
   const umamiScriptUrl = env.NEXT_PUBLIC_UMAMI_SCRIPT_URL;
   const umamiWebsiteId = env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
 
@@ -77,13 +84,15 @@ export default function RootLayout({
     // suppressHydrationWarning: the script above may add `class="dark"` to this
     // element before React hydrates, which would otherwise flag as a mismatch
     // against the class-less server render. Scoped to this one element only.
-    <html lang="ca" className={`${geist.variable}`} suppressHydrationWarning>
+    <html lang={lang} className={`${geist.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <JsonLd data={WEBSITE_JSON_LD} />
       </head>
       <body className="lowercase">
-        <RootProviders>{children}</RootProviders>
+        <LangProvider value={lang}>
+          <RootProviders>{children}</RootProviders>
+        </LangProvider>
         {/* Both env vars or no tracker at all: they're optional (a fork, a
             preview, a build with no analytics host), and half a configuration
             would load a script that can't attribute anything it sends. The

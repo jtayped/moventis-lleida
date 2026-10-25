@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 import { useEffect } from "react";
 
 const ErrorScreen = ({

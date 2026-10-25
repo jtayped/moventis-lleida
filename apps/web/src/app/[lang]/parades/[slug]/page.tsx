@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { MapPin, Radio } from "lucide-react";
 import { ContentPage } from "@/components/content/content-page";
@@ -10,6 +10,8 @@ import { FOCUS_RING } from "@/components/content/styles";
 import { JsonLd } from "@/components/seo/json-ld";
 import { SITE_URL } from "@/constants/metadata";
 import { compareByLineCode, compareLineCodes } from "@/lib/lines";
+import { localePath } from "@moventis/shared";
+import { asLang } from "@/i18n/langs";
 import { pageMetadata } from "@/lib/seo";
 import {
   describeServiceDays,
@@ -24,7 +26,7 @@ import { api } from "@/trpc/server";
 export const dynamic = "force-dynamic";
 
 interface Props {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ lang: string; slug: string }>;
 }
 
 /**
@@ -32,14 +34,17 @@ interface Props {
  * is read; a URL with an old or missing name redirects to the current one.
  */
 const loadStop = async (params: Props["params"]) => {
-  const { slug } = await params;
+  const { slug, lang: segment } = await params;
+  const lang = asLang(segment);
   const externalId = /^(\d+)(?:-|$)/.exec(slug)?.[1];
   if (!externalId) notFound();
   const page = await api.content.stop({ externalId });
   if (!page) notFound();
   const canonical = stopPath(page.stop);
-  if (canonical !== `/parades/${slug}`) permanentRedirect(canonical);
-  return page;
+  if (canonical !== `/parades/${slug}`) {
+    permanentRedirect(localePath(lang, canonical));
+  }
+  return { ...page, lang };
 };
 
 const lineList = (codes: string[]) => {
@@ -50,7 +55,7 @@ const lineList = (codes: string[]) => {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { stop } = await loadStop(params);
+  const { stop, lang } = await loadStop(params);
   const lines = stop.lineCodes.length > 0 ? lineList(stop.lineCodes) : null;
   const codes = [...stop.lineCodes].sort(compareLineCodes);
   // The line numbers are what tells this stop's result apart from moventis'.
@@ -64,6 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       lines ? `, on para ${lines}` : ""
     }. pròxims busos, parades properes i temps real al mapa.`,
     path: stopPath(stop),
+    lang,
   });
 }
 
@@ -72,6 +78,7 @@ const distance = (metres: number) =>
 
 const ParadaPage = async ({ params }: Props) => {
   const page = await loadStop(params);
+  const { lang } = page;
   const { stop } = page;
   const routes = await api.routes.getAll();
   const lines = Object.fromEntries(
@@ -83,6 +90,7 @@ const ParadaPage = async ({ params }: Props) => {
 
   return (
     <ContentPage
+      lang={lang}
       section="/parades"
       title={stop.name}
       leading={
@@ -97,7 +105,7 @@ const ParadaPage = async ({ params }: Props) => {
           "@context": "https://schema.org",
           "@type": "BusStop",
           name: stop.name,
-          url: `${SITE_URL}${stopPath(stop)}`,
+          url: `${SITE_URL}${localePath(lang, stopPath(stop))}`,
           geo: {
             "@type": "GeoCoordinates",
             latitude: stop.latitude,

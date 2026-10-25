@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Clock, MapPin } from "lucide-react";
 import type { DaySummary, LinePage } from "@moventis/api";
@@ -10,6 +10,8 @@ import { RouteShape } from "@/components/content/route-shape";
 import { FOCUS_RING } from "@/components/content/styles";
 import { TimetableViewer } from "@/components/content/timetable-viewer";
 import { LINE_ACCENT_CLASS, lineAccentStyle } from "@/lib/contrast";
+import { localePath } from "@moventis/shared";
+import { asLang } from "@/i18n/langs";
 import { pageMetadata } from "@/lib/seo";
 import {
   DAY_TYPE_LABELS,
@@ -28,21 +30,24 @@ import { api } from "@/trpc/server";
 export const dynamic = "force-dynamic";
 
 interface Props {
-  params: Promise<{ code: string }>;
+  params: Promise<{ lang: string; code: string }>;
 }
 
 const loadLine = async (params: Props["params"]) => {
-  const { code } = await params;
+  const { code, lang: segment } = await params;
+  const lang = asLang(segment);
   const normalised = code.toLowerCase();
   // `/linies/N1` is someone typing the code as it is painted on the bus.
-  if (normalised !== code) permanentRedirect(`/linies/${normalised}`);
+  if (normalised !== code) {
+    permanentRedirect(localePath(lang, `/linies/${normalised}`));
+  }
   const line = await api.content.line({ code: normalised });
   if (!line) notFound();
-  return line;
+  return { line, lang };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const line = await loadLine(params);
+  const { line, lang } = await loadLine(params);
   const name = lineDisplayName(line.code, line.name);
   const weekday = line.summary.weekday;
   const when = weekday
@@ -53,6 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `bus ${line.code} lleida (${name}): horaris, recorregut i parades`,
     description: `horaris de la línia ${line.code} (${name}) del bus urbà de lleida.${when} horari complet per dies i totes les parades del recorregut.`,
     path: `/linies/${line.code}`,
+    lang,
   });
 }
 
@@ -195,12 +201,13 @@ const LineFaq = ({ line }: { line: LinePage }) => {
 };
 
 const LiniaPage = async ({ params }: Props) => {
-  const line = await loadLine(params);
+  const { line, lang } = await loadLine(params);
   const name = lineDisplayName(line.code, line.name);
   const dates = describeServiceDays(line.days);
 
   return (
     <ContentPage
+      lang={lang}
       section="/linies"
       title={`línia ${line.code}: ${name}`}
       leading={<LineBadge code={line.code} color={line.color} decorative />}

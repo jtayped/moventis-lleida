@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 import { ContentPage } from "@/components/content/content-page";
 import { External, List, P, Section } from "@/components/content/prose";
 import { Heart, Mail, RefreshCw, Shield } from "lucide-react";
@@ -8,6 +8,7 @@ import { FOCUS_RING } from "@/components/content/styles";
 import { LineBadge } from "@/components/content/line-badge";
 import { compareByLineCode } from "@/lib/lines";
 import { cn } from "@/lib/utils";
+import { asLang, type LangParams } from "@/i18n/langs";
 import { pageMetadata } from "@/lib/seo";
 import {
   DAY_TYPE_LABELS,
@@ -20,12 +21,17 @@ import { api } from "@/trpc/server";
 // The last-bus table comes from the database, which the build cannot reach.
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = pageMetadata({
-  title: "informació del bus urbà de lleida",
-  description:
-    "com funciona el bus urbà de lleida (autobusos de lleida, grup moventis): a quina hora passa l'últim bus, si hi ha bus els diumenges i festius, el bus nocturn n1, temps real, contacte i objectes perduts.",
-  path: "/informacio",
-});
+export async function generateMetadata({
+  params,
+}: LangParams): Promise<Metadata> {
+  return pageMetadata({
+    title: "informació del bus urbà de lleida",
+    description:
+      "com funciona el bus urbà de lleida (autobusos de lleida, grup moventis): a quina hora passa l'últim bus, si hi ha bus els diumenges i festius, el bus nocturn n1, temps real, contacte i objectes perduts.",
+    path: "/informacio",
+    lang: asLang((await params).lang),
+  });
+}
 
 /** Last time the facts on this page were checked against their sources. */
 const REVIEWED_ON = "3 d'octubre del 2026";
@@ -132,11 +138,13 @@ const noSundayClause = (index: LineIndex) => {
   return `, i ${joinCatalan(codes)} no ${codes.length === 1 ? "circula" : "circulen"}`;
 };
 
-const InformacioPage = async () => {
+const InformacioPage = async ({ params }: LangParams) => {
+  const lang = asLang((await params).lang);
   const index = await api.content.lines();
   const noSunday = index.days.sunday ? noSundayClause(index) : "";
   return (
     <ContentPage
+      lang={lang}
       credit={false}
       title="el bus urbà de lleida"
       updated={`revisat el ${REVIEWED_ON}`}

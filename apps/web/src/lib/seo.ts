@@ -1,3 +1,4 @@
+import { localePath, type Lang } from "@moventis/shared";
 import type { Metadata } from "next";
 import { ROOT_METADATA, SITE_URL, TITLE_SUFFIX } from "@/constants/metadata";
 
@@ -5,8 +6,12 @@ interface PageMetadataInput {
   /** The page's own title. The root template appends the site suffix. */
   title: string;
   description: string;
-  /** Absolute path, e.g. `/tarifes`. Resolved against `metadataBase`. */
+  /**
+   * The page's Catalan path, e.g. `/tarifes`; `lang` turns it into the public
+   * one. Resolved against `metadataBase`.
+   */
   path: string;
+  lang: Lang;
 }
 
 /**
@@ -22,17 +27,19 @@ export function pageMetadata({
   title,
   description,
   path,
+  lang,
 }: PageMetadataInput): Metadata {
   const fullTitle = `${title}${TITLE_SUFFIX}`;
+  const url = localePath(lang, path);
   return {
     title,
     description,
-    alternates: { canonical: path },
+    alternates: { canonical: url },
     openGraph: {
       ...ROOT_METADATA.openGraph,
       title: fullTitle,
       description,
-      url: path,
+      url,
     },
     twitter: {
       ...ROOT_METADATA.twitter,
@@ -44,7 +51,7 @@ export function pageMetadata({
 
 export interface Breadcrumb {
   label: string;
-  /** Absolute path, e.g. `/linies`. */
+  /** The ancestor's Catalan path, e.g. `/linies`. */
   href: string;
 }
 
@@ -52,11 +59,15 @@ export interface Breadcrumb {
  * A schema.org `BreadcrumbList` for `ancestors` followed by the current page.
  * The current page goes without a URL, which Google reads as "this page".
  */
-export function breadcrumbJsonLd(ancestors: Breadcrumb[], current: string) {
+export function breadcrumbJsonLd(
+  lang: Lang,
+  ancestors: Breadcrumb[],
+  current: string,
+) {
   const items = [
     ...ancestors.map((crumb) => ({
       name: crumb.label,
-      item: `${SITE_URL}${crumb.href}`,
+      item: `${SITE_URL}${localePath(lang, crumb.href)}`,
     })),
     { name: current },
   ];

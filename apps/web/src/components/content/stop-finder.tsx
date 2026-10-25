@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 import { Search } from "lucide-react";
 import React, { useDeferredValue, useId, useState } from "react";
 import type { StopIndexEntry } from "@moventis/api";

@@ -1,5 +1,5 @@
 import { Map as MapIcon } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 import { FOCUS_RING } from "@/components/content/styles";
 import { CONTENT_LINKS } from "@/lib/content-links";
 import { cn } from "@/lib/utils";

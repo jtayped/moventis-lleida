@@ -19,7 +19,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { isNewStop, stopPath } from "@/lib/stops";
-import Link from "next/link";
+import { Link } from "@/i18n/link";
 import { formatTimeAgo } from "@/lib/time";
 import { Button } from "@/components/ui/button";
 import type { PullCommit, Schedules } from "@moventis/shared";
