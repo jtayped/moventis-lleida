@@ -4,6 +4,8 @@ import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBusFinder } from "@/context/buses";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
 
 /**
  * Saves or unsaves this stop. A star rather than the badge the line strip uses:
@@ -22,11 +24,8 @@ const PreferidaToggle = ({ externalId }: { externalId: string }) => {
   const { isPreferida, togglePreferida, preferidesDisabled } = useBusFinder();
   const saved = isPreferida(externalId);
 
-  const label = preferidesDisabled
-    ? "Preferides desactivades: has rebutjat desar dades en aquest dispositiu"
-    : saved
-      ? "Treu de preferides"
-      : "Afegeix a preferides";
+  const t = stopDetailsCopy[useLang()].preferida;
+  const label = preferidesDisabled ? t.disabled : saved ? t.remove : t.add;
 
   return (
     // The tooltip hangs on the wrapper rather than on the button, because the one

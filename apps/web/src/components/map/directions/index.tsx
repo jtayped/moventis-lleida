@@ -28,6 +28,8 @@ import { clock, distance, duration, placeLabel } from "./format";
 import { ItineraryCard, ItinerarySummary } from "./itinerary-card";
 import { ItinerarySteps } from "./itinerary-steps";
 import { PlacePicker } from "./place-picker";
+import { useLang } from "@/i18n/lang-context";
+import { directionsCopy } from "@/i18n/copy/directions";
 
 export type DirectionsVariant = "panel" | "overlay";
 
@@ -58,14 +60,16 @@ const FieldButton = ({
   place: DirectionsPlace | null;
   onEdit: () => void;
 }) => {
-  const label = placeLabel(place);
+  const lang = useLang();
+  const t = directionsCopy[lang];
+  const label = placeLabel(place, lang);
   const Icon = field === "from" ? Circle : MapPin;
   return (
     <button
       type="button"
       onClick={onEdit}
       className="hover:bg-accent focus-visible:ring-ring/50 border-border flex h-11 w-full items-center gap-3 rounded-lg border px-3 text-left text-sm transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
-      aria-label={`${field === "from" ? "origen" : "destinació"}: ${label ?? "per triar"}`}
+      aria-label={t.fieldLabel(field, label)}
     >
       <Icon
         className={cn(
@@ -80,7 +84,7 @@ const FieldButton = ({
           label ? "font-medium" : "text-muted-foreground",
         )}
       >
-        {label ?? (field === "from" ? "tria l'origen" : "on vols anar?")}
+        {label ?? t.fieldEmpty(field)}
       </span>
     </button>
   );
@@ -89,6 +93,7 @@ const FieldButton = ({
 /** "Leave now" or a clock time; a time already past today means tomorrow. */
 const DepartureControl = () => {
   const { departAt, setDepartAt } = useDirections();
+  const t = directionsCopy[useLang()];
   const [custom, setCustom] = useState(departAt !== null);
 
   const toInput = (d: Date) =>
@@ -112,7 +117,7 @@ const DepartureControl = () => {
       {custom ? (
         <>
           <label className="flex items-center gap-2">
-            <span>surt a les</span>
+            <span>{t.leavesAt}</span>
             <input
               type="time"
               className="border-border bg-background h-8 rounded-md border px-2 tabular-nums"
@@ -120,7 +125,9 @@ const DepartureControl = () => {
               onChange={(e) => onTime(e.target.value)}
             />
           </label>
-          {tomorrow && <span className="text-muted-foreground">demà</span>}
+          {tomorrow && (
+            <span className="text-muted-foreground">{t.tomorrow}</span>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -130,12 +137,12 @@ const DepartureControl = () => {
               setDepartAt(null);
             }}
           >
-            surt ara
+            {t.leaveNow}
           </Button>
         </>
       ) : (
         <>
-          <span>surt ara</span>
+          <span>{t.leaveNow}</span>
           <Button
             variant="ghost"
             size="sm"
@@ -147,7 +154,7 @@ const DepartureControl = () => {
               setDepartAt(at);
             }}
           >
-            canvia l&apos;hora
+            {t.changeTime}
           </Button>
         </>
       )}
@@ -172,20 +179,27 @@ const Message = ({
   </p>
 );
 
-const WalkOnlyCard = ({ leg }: { leg: WalkLeg }) => (
-  <li className="border-border flex items-center gap-3 rounded-xl border px-4 py-3">
-    <Footprints className="text-muted-foreground size-5 shrink-0" aria-hidden />
-    <div className="min-w-0 flex-1 text-sm">
-      <p className="font-medium">a peu, {distance(leg.meters)}</p>
-      <p className="text-muted-foreground text-xs tabular-nums">
-        {clock(leg.startAt)} – {clock(leg.endAt)}
-      </p>
-    </div>
-    <span className="text-sm font-semibold tabular-nums">
-      {duration((leg.endAt.getTime() - leg.startAt.getTime()) / 1000)}
-    </span>
-  </li>
-);
+const WalkOnlyCard = ({ leg }: { leg: WalkLeg }) => {
+  const lang = useLang();
+  const t = directionsCopy[lang];
+  return (
+    <li className="border-border flex items-center gap-3 rounded-xl border px-4 py-3">
+      <Footprints
+        className="text-muted-foreground size-5 shrink-0"
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1 text-sm">
+        <p className="font-medium">{t.walkOnly(distance(leg.meters))}</p>
+        <p className="text-muted-foreground text-xs tabular-nums">
+          {clock(leg.startAt, lang)} – {clock(leg.endAt, lang)}
+        </p>
+      </div>
+      <span className="text-sm font-semibold tabular-nums">
+        {duration((leg.endAt.getTime() - leg.startAt.getTime()) / 1000)}
+      </span>
+    </li>
+  );
+};
 
 /**
  * The directions destination: two places, a departure time, and the options
@@ -200,6 +214,8 @@ export const DirectionsPanel = ({
   requestLocation,
 }: DirectionsPanelProps) => {
   const d = useDirections();
+  const lang = useLang();
+  const t = directionsCopy[lang];
   const now = useNow();
   // Opening with no destination (the map's button) goes straight to choosing
   // one: an empty form with nothing focused is a step nobody wants to take.
@@ -224,7 +240,7 @@ export const DirectionsPanel = ({
 
   const itineraries = plan.query?.data?.itineraries ?? [];
   const selected = itineraries.find((i) => i.id === d.selectedId) ?? null;
-  const destinationLabel = placeLabel(d.to) ?? "destinació";
+  const destinationLabel = placeLabel(d.to, lang) ?? t.to;
 
   const onSelect = (id: string) => {
     if (d.selectedId === id && variant === "panel") {
@@ -245,13 +261,13 @@ export const DirectionsPanel = ({
             variant="ghost"
             size="icon"
             onClick={() => d.select(null)}
-            aria-label="torna a les opcions"
+            aria-label={t.backToOptions}
           >
             <ArrowLeft />
           </Button>
           <div className="min-w-0 flex-1 text-sm leading-tight">
             <p className="text-muted-foreground truncate">
-              {placeLabel(d.from)}
+              {placeLabel(d.from, lang)}
             </p>
             <p className="truncate font-medium">{destinationLabel}</p>
           </div>
@@ -259,13 +275,13 @@ export const DirectionsPanel = ({
             variant="ghost"
             size="icon"
             onClick={d.close}
-            aria-label="tanca les indicacions"
+            aria-label={t.close}
           >
             <X />
           </Button>
         </div>
         <section
-          aria-label="itinerari"
+          aria-label={t.itinerary}
           className="bg-card pointer-events-auto max-h-[45vh] overflow-y-auto rounded-t-2xl border-t pb-[env(safe-area-inset-bottom)] shadow-lg"
         >
           <div className="bg-muted mx-auto mt-2 h-1 w-10 rounded-full" />
@@ -285,12 +301,9 @@ export const DirectionsPanel = ({
   const pickingHint = d.picking && (
     <div className="flex items-center gap-3 px-4 py-3 text-sm">
       <MapPin className="size-4 shrink-0 text-blue-600" aria-hidden />
-      <span className="min-w-0 flex-1">
-        toca el mapa o una parada per triar{" "}
-        {d.picking === "from" ? "l'origen" : "la destinació"}
-      </span>
+      <span className="min-w-0 flex-1">{t.pickHint(d.picking)}</span>
       <Button variant="ghost" size="sm" onClick={d.stopPicking}>
-        cancel·la
+        {t.cancel}
       </Button>
     </div>
   );
@@ -318,35 +331,31 @@ export const DirectionsPanel = ({
   ) : d.picking ? (
     pickingHint
   ) : plan.blocker === "incomplete" ? (
-    <Message>tria d&apos;on surts i on vas</Message>
+    <Message>{t.incomplete}</Message>
   ) : plan.blocker === "locating" ? (
     <Message>
       <span className="inline-flex items-center gap-2">
-        <Spinner /> buscant la teva ubicació
+        <Spinner /> {t.locating}
       </span>
     </Message>
   ) : plan.blocker === "no-location" ? (
-    <Message tone="error">
-      no podem saber on ets. tria l&apos;origen al mapa o per parada
-    </Message>
+    <Message tone="error">{t.noLocation}</Message>
   ) : plan.blocker === "out-of-area" ? (
-    <Message>
-      ets fora de lleida. tria l&apos;origen al mapa o per parada
-    </Message>
+    <Message>{t.outOfArea}</Message>
   ) : plan.blocker === "same-place" ? (
-    <Message>l&apos;origen i la destinació són el mateix lloc</Message>
+    <Message>{t.samePlace}</Message>
   ) : !query || query.isLoading ? (
     <Message>
       <span className="inline-flex items-center gap-2">
-        <Spinner /> calculant la ruta
+        <Spinner /> {t.calculating}
       </span>
     </Message>
   ) : plannedError ? (
     <div className="px-4 py-3 text-sm">
       <p className="text-destructive">
         {plannedError.data?.code === "PRECONDITION_FAILED"
-          ? "encara no tenim l'horari d'aquest dia"
-          : "no s'ha pogut calcular la ruta"}
+          ? t.noTimetable
+          : t.planFailed}
       </p>
       <Button
         variant="outline"
@@ -354,19 +363,17 @@ export const DirectionsPanel = ({
         className="mt-2"
         onClick={() => void query.refetch()}
       >
-        torna-ho a provar
+        {t.retry}
       </Button>
     </div>
   ) : (
     <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
       {query.data && query.data.missingLines.length > 0 && (
         <p className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-          sense horari per a{" "}
-          {query.data.missingLines.length === 1 ? "la línia" : "les línies"}{" "}
-          {query.data.missingLines.join(", ")}: no s&apos;han tingut en compte
+          {t.missingLines(query.data.missingLines)}
         </p>
       )}
-      <ul className="space-y-2" aria-label="opcions">
+      <ul className="space-y-2" aria-label={t.options}>
         {query.data?.walkOnly && <WalkOnlyCard leg={query.data.walkOnly} />}
         {itineraries.map((it) => (
           <ItineraryCard
@@ -386,18 +393,15 @@ export const DirectionsPanel = ({
         ))}
       </ul>
       {itineraries.length === 0 && (
-        <Message>
-          cap combinació en bus en les properes tres hores
-          {query.data?.walkOnly ? ", però hi pots anar a peu" : ""}
-        </Message>
+        <Message>{t.noCombination(!!query.data?.walkOnly)}</Message>
       )}
     </div>
   );
 
   const content = (
     <>
-      <PanelHeader onClose={d.close} closeLabel="tanca les indicacions">
-        <span className="font-semibold">com arribar-hi</span>
+      <PanelHeader onClose={d.close} closeLabel={t.close}>
+        <span className="font-semibold">{t.title}</span>
       </PanelHeader>
       <div className="flex shrink-0 gap-2 px-4 pb-3">
         <div className="min-w-0 flex-1 space-y-2">
@@ -420,7 +424,7 @@ export const DirectionsPanel = ({
             setEditing(null);
             d.swap();
           }}
-          aria-label="intercanvia origen i destinació"
+          aria-label={t.swap}
         >
           <ArrowDownUp />
         </Button>
@@ -436,7 +440,7 @@ export const DirectionsPanel = ({
 
   if (variant === "panel") {
     return (
-      <Panel aria-label="com arribar-hi" className="h-full">
+      <Panel aria-label={t.title} className="h-full">
         {content}
       </Panel>
     );
@@ -444,7 +448,7 @@ export const DirectionsPanel = ({
 
   return (
     <section
-      aria-label="com arribar-hi"
+      aria-label={t.title}
       className="bg-background fixed inset-0 z-[70] flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
     >
       {content}

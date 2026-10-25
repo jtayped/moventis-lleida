@@ -1,6 +1,8 @@
 "use client";
 import { useEffect } from "react";
 import { AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 interface Props {
   position: GeolocationCoordinates | null;
@@ -10,6 +12,7 @@ interface Props {
 
 const UserLocationLayer = ({ position, shouldPan, onPanned }: Props) => {
   const map = useMap();
+  const t = mapCopy[useLang()];
 
   useEffect(() => {
     if (!map || !position || !shouldPan) return;
@@ -23,7 +26,7 @@ const UserLocationLayer = ({ position, shouldPan, onPanned }: Props) => {
   return (
     <AdvancedMarker
       position={{ lat: position.latitude, lng: position.longitude }}
-      title="La teva ubicació"
+      title={t.shell.userLocation}
       zIndex={20}
     >
       <div className="relative flex items-center justify-center">

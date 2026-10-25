@@ -6,6 +6,8 @@ import { useBusFinder } from "@/context/buses";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getContrastTextColor } from "@/lib/contrast";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
 
 type Variants = RouterOutputs["routes"]["getVariantStops"];
 
@@ -85,6 +87,7 @@ function NavSide({
   lines: string;
   onSelect: (externalId: string) => void;
 }) {
+  const t = stopDetailsCopy[useLang()].navigation;
   if (!stop) return <span className="flex-1" aria-hidden />;
 
   const isPrev = direction === "prev";
@@ -96,9 +99,7 @@ function NavSide({
       type="button"
       onClick={() => onSelect(stop.externalId)}
       title={stop.name}
-      aria-label={`${lines}, parada ${isPrev ? "anterior" : "següent"}: ${
-        stop.name
-      }`}
+      aria-label={t.neighbour(lines, isPrev, stop.name)}
       className={cn(
         "group hover:bg-accent focus-visible:ring-ring/50 flex h-9 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-2 transition-colors outline-none focus-visible:ring-[3px]",
         isPrev ? "justify-start" : "justify-end",
@@ -129,13 +130,13 @@ function CorridorRow({
   onSelect: (externalId: string) => void;
 }) {
   const { routes } = useBusFinder();
+  const t = stopDetailsCopy[useLang()].navigation;
   const { codes } = corridor;
 
   const visible =
     codes.length <= MAX_CHIPS ? codes : codes.slice(0, MAX_CHIPS - 1);
   const hidden = codes.length - visible.length;
-  const lines =
-    codes.length === 1 ? `línia ${codes[0]}` : `línies ${codes.join(", ")}`;
+  const lines = t.lines(codes);
 
   return (
     <div className="relative flex items-center gap-1">

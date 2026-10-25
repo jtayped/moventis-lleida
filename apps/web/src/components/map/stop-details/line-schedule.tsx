@@ -4,6 +4,8 @@ import type { Schedules } from "@moventis/shared";
 import type { DriftLookup } from "@/hooks/use-arrival-drift";
 import { getContrastTextColor } from "@/lib/contrast";
 import { TriangleAlert } from "lucide-react";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
 
 interface StopScheduleLineProps {
   line: Schedules[number];
@@ -18,6 +20,7 @@ export const StopScheduleLine = ({
   now,
   getDrift,
 }: StopScheduleLineProps) => {
+  const t = stopDetailsCopy[useLang()].lineSchedule;
   return (
     <div className="py-3">
       <div className="flex items-center gap-3 pr-2 pb-2">
@@ -38,7 +41,7 @@ export const StopScheduleLine = ({
       {line.incidencias != null && (
         <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
           <TriangleAlert size={14} className="mt-0.5 shrink-0" />
-          <span>incidència de servei en aquesta línia</span>
+          <span>{t.incident}</span>
         </div>
       )}
 
@@ -106,7 +109,7 @@ export const StopScheduleLine = ({
           })
         ) : (
           <Badge variant="outline" className="font-normal">
-            sense busos
+            {t.noBuses}
           </Badge>
         )}
       </div>

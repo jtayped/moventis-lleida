@@ -1,7 +1,10 @@
 import type { DirectionsPlace } from "@/context/directions";
 import { formatAbsoluteTime } from "@/lib/time";
+import type { Lang } from "@moventis/shared";
+import { directionsCopy } from "@/i18n/copy/directions";
 
-export const clock = (d: Date): string => formatAbsoluteTime(d) ?? "";
+export const clock = (d: Date, lang: Lang): string =>
+  formatAbsoluteTime(d, lang) ?? "";
 
 /** "22 min", "1 h 5 min". */
 export function duration(seconds: number): string {
@@ -18,11 +21,15 @@ export function distance(meters: number): string {
   return `${(meters / 1000).toFixed(1).replace(".", ",")} km`;
 }
 
-export function placeLabel(place: DirectionsPlace | null): string | null {
+export function placeLabel(
+  place: DirectionsPlace | null,
+  lang: Lang,
+): string | null {
   if (!place) return null;
-  if (place.kind === "location") return "la meva ubicació";
+  const t = directionsCopy[lang];
+  if (place.kind === "location") return t.myLocation;
   if (place.kind === "stop") return place.name;
-  return "punt al mapa";
+  return t.mapPoint;
 }
 
 /**

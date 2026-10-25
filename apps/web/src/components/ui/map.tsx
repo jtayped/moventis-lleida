@@ -3,6 +3,8 @@ import React, { useRef, useState } from "react";
 import { APIProvider, Map } from "@vis.gl/react-google-maps";
 import { env } from "@/env";
 import { Button } from "@/components/ui/button";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 interface Coordinates {
   lat: number;
@@ -100,6 +102,7 @@ const MapComponent = ({
   defaultCenter = { lat: 0, lng: 0 },
   children,
 }: MapComponentProps) => {
+  const t = mapCopy[useLang()].ui;
   const apiKey = env.NEXT_PUBLIC_MAPS_API_KEY;
 
   // Where the map was last looking. Lives out here, in the component the
@@ -118,11 +121,10 @@ const MapComponent = ({
       <div className={className}>
         <div className="bg-muted/40 flex h-full w-full flex-col items-center justify-center gap-4 p-6 text-center">
           <p className="text-muted-foreground max-w-xs text-sm">
-            no s&apos;ha pogut carregar el mapa. comprova la connexió i torna-ho
-            a provar.
+            {t.mapLoadFailed}
           </p>
           <Button variant="outline" onClick={() => window.location.reload()}>
-            recarrega
+            {t.reload}
           </Button>
         </div>
       </div>

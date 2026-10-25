@@ -1,5 +1,7 @@
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
 
 /**
  * States, in words, where one arrival time came from.
@@ -33,6 +35,7 @@ export default function TimeSourceBadge({
    */
   iconOnly?: boolean;
 }) {
+  const t = stopDetailsCopy[useLang()].timeSource;
   const base = "flex items-center gap-1 leading-none font-medium";
   const Label = ({ children }: { children: string }) =>
     iconOnly ? <span className="sr-only">{children}</span> : <>{children}</>;
@@ -45,13 +48,13 @@ export default function TimeSourceBadge({
           "text-emerald-700 dark:text-emerald-400",
           className,
         )}
-        title="hora en temps real: moventis segueix aquest bus i n'estima l'arribada. no en rebem la posició, només l'hora."
+        title={t.liveTitle}
       >
         <span aria-hidden className="relative flex size-1.5 shrink-0">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
           <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
         </span>
-        <Label>en directe</Label>
+        <Label>{t.live}</Label>
       </span>
     );
   }
@@ -59,10 +62,10 @@ export default function TimeSourceBadge({
   return (
     <span
       className={cn(base, "text-muted-foreground", className)}
-      title="hora de l'horari oficial: ara mateix no hi ha cap estimació en temps real per a aquest bus."
+      title={t.timetableTitle}
     >
       <Clock size={10} className="shrink-0" aria-hidden />
-      <Label>horari</Label>
+      <Label>{t.timetable}</Label>
     </span>
   );
 }

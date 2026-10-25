@@ -12,6 +12,8 @@ import { useBusFinder } from "@/context/buses";
 import { useDirections } from "@/context/directions";
 import { DrawerClose } from "@/components/ui/drawer";
 import type { StopDetailsVariant } from "@/components/map/stop-details/shell";
+import { useLang } from "@/i18n/lang-context";
+import { stopDetailsCopy } from "@/i18n/copy/stop-details";
 
 interface StopDetailsHeaderProps {
   externalId: string;
@@ -44,13 +46,14 @@ const DirectionsButton = ({
 }) => {
   const { open } = useDirections();
   const { requestCloseStop } = useBusFinder();
+  const t = stopDetailsCopy[useLang()].header;
   return (
     <Button
       variant="ghost"
       size="icon"
       className="text-muted-foreground hover:text-foreground"
-      aria-label="com arribar-hi"
-      title="com arribar-hi"
+      aria-label={t.directions}
+      title={t.directions}
       onClick={() => {
         open({ to: { kind: "stop", externalId, name, ...position } }, "stop");
         requestCloseStop();
@@ -76,6 +79,7 @@ const DirectionsButton = ({
  */
 const CloseButton = ({ variant }: { variant: StopDetailsVariant }) => {
   const { requestCloseStop } = useBusFinder();
+  const t = stopDetailsCopy[useLang()].header;
 
   if (variant === "panel") {
     return (
@@ -83,7 +87,7 @@ const CloseButton = ({ variant }: { variant: StopDetailsVariant }) => {
         onClick={requestCloseStop}
         variant="ghost"
         size="icon"
-        aria-label="tanca"
+        aria-label={t.close}
       >
         <X className="h-4 w-4" />
       </Button>
@@ -99,7 +103,7 @@ const CloseButton = ({ variant }: { variant: StopDetailsVariant }) => {
         }}
         variant="ghost"
         size="icon"
-        aria-label="tanca"
+        aria-label={t.close}
       >
         <X className="h-4 w-4" />
       </Button>
@@ -118,6 +122,7 @@ export const StopDetailsHeader = ({
   refetch,
   variant,
 }: StopDetailsHeaderProps) => {
+  const t = stopDetailsCopy[useLang()].header;
   // Soonest first, so the bus you are about to miss is the one you do not have
   // to scroll for. Lines with nothing due sink to the end rather than dropping
   // out — "line 7 serves this stop and has no bus" is worth knowing, and a row
@@ -141,10 +146,7 @@ export const StopDetailsHeader = ({
       <div className="min-w-0 flex-1">
         {/* `li`s, not badges loose inside a list — a screen reader reading an
             `ol` with no list items announces a list of nothing. */}
-        <ul
-          className="flex flex-wrap gap-1"
-          aria-label="línies d'aquesta parada i pròxim bus"
-        >
+        <ul className="flex flex-wrap gap-1" aria-label={t.lines}>
           {ordered.map((l) => {
             const next = nextByLine.get(l.code);
             return (
@@ -164,7 +166,7 @@ export const StopDetailsHeader = ({
                     backgroundColor: l.color,
                     color: getContrastTextColor(l.color),
                   }}
-                  aria-label={`línia ${l.code}`}
+                  aria-label={t.line(l.code)}
                 >
                   {l.code}
                 </Badge>
@@ -200,7 +202,7 @@ export const StopDetailsHeader = ({
           variant="ghost"
           size="icon"
           className="text-muted-foreground hover:text-foreground"
-          aria-label="actualitza les hores"
+          aria-label={t.refresh}
           disabled={isFetching}
         >
           <RefreshCw size={20} className={isFetching ? "animate-spin" : ""} />

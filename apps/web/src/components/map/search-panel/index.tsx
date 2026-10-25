@@ -10,6 +10,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { PEEK_CONTENT_PX, useBusFinder } from "@/context/buses";
 import { useColorByLine } from "@/hooks/use-color-by-line";
 import { compareLineCodes } from "@/lib/lines";
+import { useLang } from "@/i18n/lang-context";
+import { mapCopy } from "@/i18n/copy/map";
 
 /**
  * `overlay` fills the band between the tools card and the bottom bar on a
@@ -61,6 +63,7 @@ export const SearchPanel = ({
     selectedStopId,
   } = useBusFinder();
   const colorByLine = useColorByLine();
+  const t = mapCopy[useLang()].searchPanel;
 
   const hasQuery = debouncedSearchQuery.trim().length > 0;
 
@@ -80,8 +83,8 @@ export const SearchPanel = ({
 
   const body = (
     <>
-      <PanelHeader onClose={onClose} closeLabel="tanca la cerca">
-        <span className="font-semibold">cerca</span>
+      <PanelHeader onClose={onClose} closeLabel={t.close}>
+        <span className="font-semibold">{t.title}</span>
       </PanelHeader>
 
       {/* Below `lg` the stop timetable is a sheet that peeks over the bottom of
@@ -106,23 +109,21 @@ export const SearchPanel = ({
           </div>
         ) : !hasQuery ? (
           <p className="text-muted-foreground px-3 py-2 text-sm">
-            escriu el nom d&apos;una parada
+            {t.typeName}
           </p>
         ) : isLoadingStops ? (
           <p className="text-muted-foreground flex items-center gap-2 px-3 py-2 text-sm">
-            <Spinner /> carregant
+            <Spinner /> {t.loading}
           </p>
         ) : results.length === 0 ? (
           // Search is scoped to the selected lines when there are any — that is
           // what the map is showing — so the copy has to say so, or a stop that
           // exists on another line reads as a stop that does not exist.
           <p className="text-muted-foreground px-3 py-2 text-sm">
-            {selectedRoutes.length > 0
-              ? "cap parada d'aquestes línies amb aquest nom"
-              : "cap parada amb aquest nom"}
+            {selectedRoutes.length > 0 ? t.noneOnLines : t.none}
           </p>
         ) : (
-          <ul className="space-y-0.5" aria-label="resultats de la cerca">
+          <ul className="space-y-0.5" aria-label={t.results}>
             {results.map((stop) => (
               <StopResult
                 key={stop.id}
@@ -147,7 +148,7 @@ export const SearchPanel = ({
 
   if (variant === "panel") {
     return (
-      <Panel aria-label="resultats de la cerca" className="h-full">
+      <Panel aria-label={t.results} className="h-full">
         {body}
       </Panel>
     );
@@ -155,7 +156,7 @@ export const SearchPanel = ({
 
   return (
     <section
-      aria-label="resultats de la cerca"
+      aria-label={t.results}
       className="bg-background flex min-h-0 flex-1 flex-col"
     >
       {body}
