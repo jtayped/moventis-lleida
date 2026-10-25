@@ -16,12 +16,12 @@ export const ROOT_METADATA: Metadata = {
   metadataBase: new URL(SITE_URL),
 
   title: {
-    default: "bus urbà lleida | temps real",
+    default: "moventis lleida en temps real: mapa del bus urbà",
     template: `%s${TITLE_SUFFIX}`,
   },
 
   description:
-    "consulta els horaris de l'autobús urbà de lleida en temps real. una alternativa ràpida i neta a la web oficial de moventis.",
+    "on és el teu bus? els autobusos urbans de lleida en temps real sobre un mapa, amb les properes arribades a cada parada i els horaris de totes les línies. web no oficial, amb les dades públiques de moventis.",
 
   keywords: [
     "bus lleida",

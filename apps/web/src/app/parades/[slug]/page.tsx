@@ -52,8 +52,14 @@ const lineList = (codes: string[]) => {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { stop } = await loadStop(params);
   const lines = stop.lineCodes.length > 0 ? lineList(stop.lineCodes) : null;
+  const codes = [...stop.lineCodes].sort(compareLineCodes);
+  // The line numbers are what tells this stop's result apart from moventis'.
+  const served =
+    codes.length === 0
+      ? ""
+      : ` (${codes.length === 1 ? "línia" : "línies"} ${joinCatalan(codes)})`;
   return pageMetadata({
-    title: `parada ${stop.name}: horaris i línies`,
+    title: `parada ${stop.name}${served}: horaris i pròxim bus`,
     description: `horaris del bus urbà de lleida a la parada ${stop.name}${
       lines ? `, on para ${lines}` : ""
     }. pròxims busos, parades properes i temps real al mapa.`,
