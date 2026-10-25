@@ -8,11 +8,10 @@ import { StopDiagram } from "@/components/content/stop-diagram";
 import { TimeChips } from "@/components/content/time-chips";
 import { useLleidaMinutes } from "@/hooks/use-lleida-minutes";
 import { FOCUS_RING } from "@/components/content/styles";
-import {
-  DAY_TYPE_LABELS,
-  DAY_TYPE_ORDER,
-  DAY_TYPE_PHRASES,
-} from "@/lib/service-time";
+import { contentCopy } from "@/i18n/copy/content";
+import { linesCopy, type LinesCopy } from "@/i18n/copy/lines";
+import { useLang } from "@/i18n/lang-context";
+import { DAY_TYPE_ORDER } from "@/lib/service-time";
 import { cn } from "@/lib/utils";
 
 const endpoints = (segment: LinePageSegment) => ({
@@ -21,10 +20,10 @@ const endpoints = (segment: LinePageSegment) => ({
 });
 
 /** The name {@link SegmentName} draws, as plain text, for comparing. */
-const segmentTitle = (segment: LinePageSegment) => {
+const segmentTitle = (segment: LinePageSegment, t: LinesCopy["timetable"]) => {
   const { first, last } = endpoints(segment);
   if (!first || !last) return segment.description;
-  return first === last ? `circular des de ${first}` : `${first} → ${last}`;
+  return first === last ? t.loopFrom(first) : `${first} → ${last}`;
 };
 
 /**
@@ -32,29 +31,38 @@ const segmentTitle = (segment: LinePageSegment) => {
  * share them (line 2 runs two loops from the same stop), Moventis' own variant
  * name tells them apart, and the stop count where even that repeats.
  */
-const pickerLabels = (segments: LinePageSegment[]) => {
+const pickerLabels = (
+  segments: LinePageSegment[],
+  t: LinesCopy["timetable"],
+) => {
   const count = (values: string[], value: string) =>
     values.filter((v) => v === value).length;
-  const titles = segments.map(segmentTitle);
+  const titles = segments.map((segment) => segmentTitle(segment, t));
   const names = segments.map((s) => s.description);
   return segments.map((segment, i) => {
     if (count(titles, titles[i]!) === 1) return null;
     return count(names, names[i]!) === 1
       ? segment.description
-      : `${segment.description} · ${segment.stops.length} parades`;
+      : `${segment.description} · ${t.stopCount(segment.stops.length)}`;
   });
 };
 
 /** "pla d'urgell → agrònoms", read out as "pla d'urgell fins a agrònoms". */
-const SegmentName = ({ segment }: { segment: LinePageSegment }) => {
+const SegmentName = ({
+  segment,
+  t,
+}: {
+  segment: LinePageSegment;
+  t: LinesCopy["timetable"];
+}) => {
   const { first, last } = endpoints(segment);
   if (!first || !last) return <>{segment.description}</>;
-  if (first === last) return <>circular des de {first}</>;
+  if (first === last) return <>{t.loopFrom(first)}</>;
   return (
     <>
       {first}
       <span aria-hidden> → </span>
-      <span className="sr-only"> fins a </span>
+      <span className="sr-only">{t.until}</span>
       {last}
     </>
   );
@@ -111,8 +119,11 @@ export const TimetableViewer = ({
   initialDay: DayType;
 }) => {
   const id = useId();
+  const lang = useLang();
+  const c = contentCopy[lang];
+  const t = linesCopy[lang].timetable;
   const now = useLleidaMinutes();
-  const labels = pickerLabels(segments);
+  const labels = pickerLabels(segments, t);
   const dayTypes = DAY_TYPE_ORDER.filter((type) => days[type]);
   const [day, setDay] = useState<DayType>(
     dayTypes.includes(initialDay) ? initialDay : (dayTypes[0] ?? "weekday"),
@@ -143,22 +154,26 @@ export const TimetableViewer = ({
   const current =
     running.find((segment) => segment.trayectoId === picked) ?? busiest;
   const labelOf = (segment: LinePageSegment) =>
-    labels[segments.indexOf(segment)] ?? <SegmentName segment={segment} />;
+    labels[segments.indexOf(segment)] ?? (
+      <SegmentName segment={segment} t={t} />
+    );
   const textLabelOf = (segment: LinePageSegment) =>
-    labels[segments.indexOf(segment)] ?? segmentTitle(segment);
+    labels[segments.indexOf(segment)] ?? segmentTitle(segment, t);
 
   const spokenRoute = (segment: LinePageSegment) => {
     const { first, last } = endpoints(segment);
     if (!first || !last) return segment.description;
-    return first === last
-      ? `circular des de ${first}`
-      : `de ${first} a ${last}`;
+    return first === last ? t.loopFrom(first) : t.spokenFromTo(first, last);
   };
   const announcement = !touched
     ? ""
     : current
-      ? `${DAY_TYPE_LABELS[day]}, ${spokenRoute(current)}: ${current.departures[day]!.length} sortides`
-      : `aquesta línia no circula ${DAY_TYPE_PHRASES[day]}`;
+      ? t.announce(
+          c.dayTypeLabels[day],
+          spokenRoute(current),
+          current.departures[day]!.length,
+        )
+      : t.noRunLineSr(c.dayTypePhrases[day]);
 
   return (
     <div className="space-y-5">
@@ -169,7 +184,7 @@ export const TimetableViewer = ({
       </p>
       <div className="space-y-2">
         <p id={`${id}-days`} className="text-sm font-medium">
-          dia
+          {t.day}
         </p>
         <div
           role="group"
@@ -182,7 +197,7 @@ export const TimetableViewer = ({
               pressed={type === day}
               onClick={() => pickDay(type)}
             >
-              <span className="block text-center">{DAY_TYPE_LABELS[type]}</span>
+              <span className="block text-center">{c.dayTypeLabels[type]}</span>
             </Choice>
           ))}
         </div>
@@ -196,9 +211,9 @@ export const TimetableViewer = ({
                 htmlFor={`${id}-route`}
                 className="block text-sm font-medium"
               >
-                recorregut{" "}
+                {t.route}{" "}
                 <span className="text-muted-foreground font-normal">
-                  ({running.length} {DAY_TYPE_PHRASES[day]})
+                  {t.routeCount(running.length, c.dayTypePhrases[day])}
                 </span>
               </label>
               <div className="relative">
@@ -227,7 +242,7 @@ export const TimetableViewer = ({
           ) : (
             <>
               <p id={`${id}-routes`} className="text-sm font-medium">
-                recorregut
+                {t.route}
               </p>
               <div
                 role="group"
@@ -251,7 +266,7 @@ export const TimetableViewer = ({
 
       {running.length === 0 && (
         <p className="bg-muted/60 rounded-lg px-4 py-3 text-sm">
-          aquesta línia no circula {DAY_TYPE_PHRASES[day]}.
+          {t.noRunLine(c.dayTypePhrases[day])}
         </p>
       )}
 
@@ -263,12 +278,13 @@ export const TimetableViewer = ({
         >
           <div className="border-border border-t pt-4">
             <h3 className="text-base leading-snug font-semibold">
-              <SegmentName segment={segment} />
+              <SegmentName segment={segment} t={t} />
             </h3>
             <p className="text-muted-foreground mt-1 text-sm">
               {labels[i] && `${segment.description} · `}
-              {segment.stops.length} parades · sortides de{" "}
-              {segment.stops[0]?.name ?? "la primera parada"}
+              {t.stopCount(segment.stops.length)}
+              {t.departuresFrom}
+              {segment.stops[0]?.name ?? t.firstStop}
             </p>
           </div>
 
@@ -287,7 +303,7 @@ export const TimetableViewer = ({
                   />
                 ) : (
                   <p className="bg-muted/50 text-muted-foreground rounded-lg px-4 py-3 text-sm">
-                    aquest recorregut no circula {DAY_TYPE_PHRASES[type]}.
+                    {t.noRunRoute(c.dayTypePhrases[type])}
                   </p>
                 )}
               </div>
@@ -295,7 +311,7 @@ export const TimetableViewer = ({
           })}
 
           <Disclosure
-            summary={`veure les ${segment.stops.length} parades`}
+            summary={t.showStops(segment.stops.length)}
             icon={<ListOrdered size={16} className="shrink-0" />}
           >
             <StopDiagram stops={segment.stops} />

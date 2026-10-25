@@ -6,6 +6,8 @@ import React from "react";
 import { AuthorCard } from "@/components/content/author-card";
 import { SiteLinks } from "@/components/content/site-links";
 import { FOCUS_RING } from "@/components/content/styles";
+import { contentCopy } from "@/i18n/copy/content";
+import { siteCopy } from "@/i18n/copy/site";
 import { JsonLd } from "@/components/seo/json-ld";
 import { breadcrumbJsonLd, type Breadcrumb } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -23,9 +25,9 @@ import { cn } from "@/lib/utils";
  * these pages are the way back to it as much as the way in.
  */
 const HEADER_LINKS = [
-  { href: "/linies", label: "línies", icon: BusFront },
-  { href: "/parades", label: "parades", icon: MapPin },
-  { href: "/", label: "mapa", icon: MapIcon },
+  { href: "/linies", key: "lines", icon: BusFront },
+  { href: "/parades", key: "stops", icon: MapPin },
+  { href: "/", key: "map", icon: MapIcon },
 ] as const;
 
 export const ContentPage = ({
@@ -65,6 +67,7 @@ export const ContentPage = ({
   children: React.ReactNode;
 }) => {
   const column = wide ? "max-w-4xl" : "max-w-2xl";
+  const t = contentCopy[lang];
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-border border-b">
@@ -90,11 +93,11 @@ export const ContentPage = ({
             />
             {/* Kept as the link's name on a phone, where the row has room
                 for the three sections and not for the site name too. */}
-            <span className="max-sm:sr-only">bus urbà lleida</span>
+            <span className="max-sm:sr-only">{siteCopy[lang].siteName}</span>
           </Link>
-          <nav aria-label="seccions">
+          <nav aria-label={t.header.sections}>
             <ul className="flex items-center gap-1">
-              {HEADER_LINKS.map(({ href, label, icon: Icon }) => (
+              {HEADER_LINKS.map(({ href, key, icon: Icon }) => (
                 <li key={href}>
                   <Link
                     href={href}
@@ -112,7 +115,7 @@ export const ContentPage = ({
                       aria-hidden
                       className="shrink-0 max-sm:hidden"
                     />
-                    {label}
+                    {t.header[key]}
                   </Link>
                 </li>
               ))}
@@ -125,7 +128,7 @@ export const ContentPage = ({
         {breadcrumbs && breadcrumbs.length > 0 && (
           <>
             <JsonLd data={breadcrumbJsonLd(lang, breadcrumbs, title)} />
-            <nav aria-label="ruta de navegació" className="mb-3">
+            <nav aria-label={t.header.breadcrumbs} className="mb-3">
               <ol className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm">
                 {breadcrumbs.map((crumb) => (
                   <li key={crumb.href} className="flex items-center gap-1.5">
@@ -157,20 +160,19 @@ export const ContentPage = ({
 
       <footer className="border-border border-t">
         <div className={cn("mx-auto w-full space-y-6 px-4 py-10", column)}>
-          <SiteLinks label="pàgines del web" className="-mx-2" />
+          <SiteLinks label={t.footer.pages} className="-mx-2" />
           {credit && <AuthorCard />}
           {/* The disclaimer is what keeps a page that ranks for "moventis"
               from reading as Moventis' own; it stays on every page. */}
           <ul className="text-muted-foreground space-y-2 text-sm">
             <li className="flex items-start gap-2">
               <Info size={16} aria-hidden className="mt-0.5 shrink-0" />
-              web no oficial, sense relació amb moventis, autobusos de lleida ni
-              la paeria.
+              {t.footer.unofficial}
             </li>
             <li className="flex items-start gap-2">
               <Database size={16} aria-hidden className="mt-0.5 shrink-0" />
               <span>
-                dades públiques de{" "}
+                {t.footer.dataFrom}{" "}
                 <a
                   href="https://www.moventis.es/ca"
                   target="_blank"
@@ -181,10 +183,7 @@ export const ContentPage = ({
                   )}
                 >
                   moventis.es
-                  <span className="sr-only">
-                    {" "}
-                    (s&apos;obre en una pestanya nova)
-                  </span>
+                  <span className="sr-only">{t.newTab}</span>
                 </a>
               </span>
             </li>

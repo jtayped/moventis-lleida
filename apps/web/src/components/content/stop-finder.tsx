@@ -4,6 +4,8 @@ import { Link } from "@/i18n/link";
 import { Search } from "lucide-react";
 import React, { useDeferredValue, useId, useState } from "react";
 import type { StopIndexEntry } from "@moventis/api";
+import { stopsCopy } from "@/i18n/copy/stops";
+import { useLang } from "@/i18n/lang-context";
 import { LineBadges } from "@/components/content/line-badge";
 import { FOCUS_RING } from "@/components/content/styles";
 import { slugify, stopPath } from "@/lib/stops";
@@ -30,6 +32,7 @@ export const StopFinder = ({
   colors: Record<string, string>;
 }) => {
   const id = useId();
+  const t = stopsCopy[useLang()].finder;
   const [query, setQuery] = useState("");
   const deferred = useDeferredValue(query);
   const needle = slugify(deferred).replace(/-/g, " ");
@@ -45,7 +48,7 @@ export const StopFinder = ({
     <div className="space-y-6">
       <div className="space-y-2">
         <label htmlFor={`${id}-q`} className="block text-sm font-medium">
-          cerca una parada
+          {t.label}
         </label>
         <div className="relative">
           <Search
@@ -58,7 +61,7 @@ export const StopFinder = ({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="p. ex. plaça espanya"
+            placeholder={t.placeholder}
             autoComplete="off"
             className={cn(
               "border-border bg-background min-h-12 w-full rounded-lg border py-2 pr-3 pl-10 text-base",
@@ -67,14 +70,12 @@ export const StopFinder = ({
           />
         </div>
         <p className="text-muted-foreground text-sm" aria-live="polite">
-          {needle
-            ? `${matching.length} ${matching.length === 1 ? "parada" : "parades"}`
-            : `${stops.length} parades`}
+          {needle ? t.matches(matching.length) : t.total(stops.length)}
         </p>
       </div>
 
       {!needle && (
-        <nav aria-label="parades per lletra">
+        <nav aria-label={t.byLetter}>
           <ul className="flex flex-wrap gap-1.5">
             {letters.map((letter) => (
               <li key={letter}>
@@ -124,9 +125,7 @@ export const StopFinder = ({
       ))}
 
       {needle && matching.length === 0 && (
-        <p className="bg-muted/60 rounded-lg px-4 py-3 text-sm">
-          cap parada es diu així. prova amb una altra paraula del nom.
-        </p>
+        <p className="bg-muted/60 rounded-lg px-4 py-3 text-sm">{t.noMatch}</p>
       )}
     </div>
   );

@@ -1,9 +1,9 @@
+"use client";
+
 import type { DaySummary, DayType, ServiceDays } from "@moventis/api";
-import {
-  DAY_TYPE_LABELS,
-  DAY_TYPE_ORDER,
-  formatServiceTime,
-} from "@/lib/service-time";
+import { contentCopy } from "@/i18n/copy/content";
+import { useLang } from "@/i18n/lang-context";
+import { DAY_TYPE_ORDER, formatServiceTime } from "@/lib/service-time";
 
 /**
  * The service day the bars are drawn on: 05:00 to 05:00 the next morning. Every
@@ -33,50 +33,58 @@ export const ServiceSpan = ({
 }: {
   summary: Partial<Record<DayType, DaySummary>>;
   days: ServiceDays;
-}) => (
-  <dl className="space-y-1.5">
-    {DAY_TYPE_ORDER.filter((type) => days[type]).map((type) => {
-      const day = summary[type];
-      return (
-        <div
-          key={type}
-          className="grid grid-cols-[5rem_1fr] items-center gap-2 text-sm"
-        >
-          <dt className="text-muted-foreground">{DAY_TYPE_LABELS[type]}</dt>
-          <dd className="flex items-center gap-2">
-            <span
-              className="bg-muted relative h-2 flex-1 rounded-full"
-              aria-hidden
-            >
-              {day && (
-                <span
-                  className="absolute inset-y-0 rounded-full bg-(--line)"
-                  style={{
-                    left: offset(day.first),
-                    width: length(day.last - day.first),
-                  }}
-                />
-              )}
-            </span>
-            <span className="w-[6.75rem] shrink-0 text-right tabular-nums">
-              {day ? (
-                <>
-                  <span aria-hidden>
-                    {formatServiceTime(day.first)}–{formatServiceTime(day.last)}
+}) => {
+  const t = contentCopy[useLang()];
+  return (
+    <dl className="space-y-1.5">
+      {DAY_TYPE_ORDER.filter((type) => days[type]).map((type) => {
+        const day = summary[type];
+        return (
+          <div
+            key={type}
+            className="grid grid-cols-[5rem_1fr] items-center gap-2 text-sm"
+          >
+            <dt className="text-muted-foreground">{t.dayTypeLabels[type]}</dt>
+            <dd className="flex items-center gap-2">
+              <span
+                className="bg-muted relative h-2 flex-1 rounded-full"
+                aria-hidden
+              >
+                {day && (
+                  <span
+                    className="absolute inset-y-0 rounded-full bg-(--line)"
+                    style={{
+                      left: offset(day.first),
+                      width: length(day.last - day.first),
+                    }}
+                  />
+                )}
+              </span>
+              <span className="w-[6.75rem] shrink-0 text-right tabular-nums">
+                {day ? (
+                  <>
+                    <span aria-hidden>
+                      {formatServiceTime(day.first)}–
+                      {formatServiceTime(day.last)}
+                    </span>
+                    {/* The dash is read out as "en dash", or not at all. */}
+                    <span className="sr-only">
+                      {t.serviceSpan.fromTo(
+                        formatServiceTime(day.first),
+                        formatServiceTime(day.last),
+                      )}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {t.serviceSpan.notRunning}
                   </span>
-                  {/* The dash is read out as "en dash", or not at all. */}
-                  <span className="sr-only">
-                    de {formatServiceTime(day.first)} a{" "}
-                    {formatServiceTime(day.last)}
-                  </span>
-                </>
-              ) : (
-                <span className="text-muted-foreground">no circula</span>
-              )}
-            </span>
-          </dd>
-        </div>
-      );
-    })}
-  </dl>
-);
+                )}
+              </span>
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
+  );
+};

@@ -6,11 +6,10 @@ import { LineBadge } from "@/components/content/line-badge";
 import { FOCUS_RING } from "@/components/content/styles";
 import { TimeChips } from "@/components/content/time-chips";
 import { useLleidaMinutes } from "@/hooks/use-lleida-minutes";
-import {
-  DAY_TYPE_LABELS,
-  DAY_TYPE_ORDER,
-  DAY_TYPE_PHRASES,
-} from "@/lib/service-time";
+import { contentCopy } from "@/i18n/copy/content";
+import { stopsCopy } from "@/i18n/copy/stops";
+import { useLang } from "@/i18n/lang-context";
+import { DAY_TYPE_ORDER } from "@/lib/service-time";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,6 +34,9 @@ export const StopTimetable = ({
   initialDay: DayType;
 }) => {
   const id = useId();
+  const lang = useLang();
+  const c = contentCopy[lang];
+  const t = stopsCopy[lang].timetable;
   const now = useLleidaMinutes();
   const dayTypes = DAY_TYPE_ORDER.filter((type) => days[type]);
   const [day, setDay] = useState<DayType>(
@@ -50,12 +52,12 @@ export const StopTimetable = ({
       <p className="sr-only" aria-live="polite">
         {touched &&
           (runningOn(day) > 0
-            ? `${DAY_TYPE_LABELS[day]}: ${runningOn(day)} ${runningOn(day) === 1 ? "línia i direcció" : "línies i direccions"}`
-            : `cap bus para aquí ${DAY_TYPE_PHRASES[day]}`)}
+            ? t.announce(c.dayTypeLabels[day], runningOn(day))
+            : t.noBus(c.dayTypePhrases[day]))}
       </p>
       <div className="space-y-2">
         <p id={`${id}-days`} className="text-sm font-medium">
-          dia
+          {t.day}
         </p>
         <div
           role="group"
@@ -79,7 +81,7 @@ export const StopTimetable = ({
                 FOCUS_RING,
               )}
             >
-              {DAY_TYPE_LABELS[type]}
+              {c.dayTypeLabels[type]}
             </button>
           ))}
         </div>
@@ -91,7 +93,7 @@ export const StopTimetable = ({
           <div key={type} hidden={type !== day} className="space-y-3">
             {running.length === 0 && (
               <p className="bg-muted/60 rounded-lg px-4 py-3 text-sm">
-                cap bus para aquí {DAY_TYPE_PHRASES[type]}.
+                {t.noBusSentence(c.dayTypePhrases[type])}
               </p>
             )}
             {running.map((group) => (
@@ -109,10 +111,10 @@ export const StopTimetable = ({
                       here, and two headings that both say "fa la volta i
                       torna aquí" are no help to anyone jumping by heading. */}
                   <h3 className="min-w-0 flex-1 text-base leading-snug font-semibold">
-                    <span className="sr-only">línia {group.lineCode}: </span>
+                    <span className="sr-only">{t.lineSr(group.lineCode)}</span>
                     {group.destination === stopId
-                      ? "fa la volta i torna aquí"
-                      : `cap a ${group.destinationName ?? "final de línia"}`}
+                      ? t.loop
+                      : t.towards(group.destinationName)}
                   </h3>
                 </header>
                 <TimeChips

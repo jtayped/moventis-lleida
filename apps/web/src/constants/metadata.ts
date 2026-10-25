@@ -1,109 +1,99 @@
+import type { Lang } from "@moventis/shared";
 import type { Metadata, Viewport } from "next";
+import { siteCopy } from "@/i18n/copy/site";
 import { AUTHOR_NAME, PORTFOLIO_URL } from "@/lib/project-links";
 
 export const SITE_URL = "https://moventis-lleida.joeltaylor.business";
 
-export const SITE_NAME = "bus urbà lleida";
-
 /**
- * What `title.template` appends to every page title. Exported because Open
- * Graph and Twitter titles do not go through the template, and `pageMetadata`
- * has to rebuild the same string for them by hand.
+ * The metadata every page inherits. `pageMetadata` rebuilds the Open Graph and
+ * Twitter titles from `titleSuffix` by hand, because those do not go through
+ * `title.template`.
  */
-export const TITLE_SUFFIX = " | bus lleida";
+export const rootMetadata = (lang: Lang): Metadata => {
+  const t = siteCopy[lang];
+  return {
+    metadataBase: new URL(SITE_URL),
 
-export const ROOT_METADATA: Metadata = {
-  metadataBase: new URL(SITE_URL),
+    title: {
+      default: t.homeTitle,
+      template: `%s${t.titleSuffix}`,
+    },
 
-  title: {
-    default: "moventis lleida en temps real: mapa del bus urbà",
-    template: `%s${TITLE_SUFFIX}`,
-  },
+    description: t.description,
 
-  description:
-    "on és el teu bus? els autobusos urbans de lleida en temps real sobre un mapa, amb les properes arribades a cada parada i els horaris de totes les línies. web no oficial, amb les dades públiques de moventis.",
+    keywords: t.keywords,
 
-  keywords: [
-    "bus lleida",
-    "horaris bus",
-    "moventis",
-    "autobús lleida",
-    "temps real",
-    "parades lleida",
-    "línies bus lleida",
-  ],
+    authors: [{ name: AUTHOR_NAME, url: PORTFOLIO_URL }],
+    creator: AUTHOR_NAME,
+    publisher: AUTHOR_NAME,
 
-  authors: [{ name: AUTHOR_NAME, url: PORTFOLIO_URL }],
-  creator: AUTHOR_NAME,
-  publisher: AUTHOR_NAME,
-
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    robots: {
       index: true,
       follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-
-  alternates: {
-    canonical: "/",
-  },
-
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
-  },
-
-  manifest: "/manifest.json",
-
-  appleWebApp: {
-    capable: true,
-    title: "horaris bus urbà lleida | temps real",
-    statusBarStyle: "default",
-  },
-
-  formatDetection: {
-    telephone: false,
-  },
-
-  openGraph: {
-    title: "horaris bus urbà lleida",
-
-    description:
-      "consulta els horaris de l'autobús urbà de lleida en temps real.",
-
-    url: SITE_URL,
-
-    siteName: SITE_NAME,
-
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 675,
-        alt: "imatge de l'aplicació d'horaris de bus de lleida",
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
       },
-    ],
+    },
 
-    locale: "ca_ES",
+    alternates: {
+      canonical: "/",
+    },
 
-    type: "website",
-  },
+    icons: {
+      icon: "/favicon.ico",
+      shortcut: "/favicon-16x16.png",
+      apple: "/apple-touch-icon.png",
+    },
 
-  twitter: {
-    card: "summary_large_image",
+    manifest: "/manifest.json",
 
-    title: "horaris bus urbà lleida",
+    appleWebApp: {
+      capable: true,
+      title: t.appleWebAppTitle,
+      statusBarStyle: "default",
+    },
 
-    description:
-      "consulta els horaris de l'autobús urbà de lleida en temps real.",
-    creator: "@jtayped_",
-    images: ["/og-image.png"],
-  },
+    formatDetection: {
+      telephone: false,
+    },
+
+    openGraph: {
+      title: t.shareTitle,
+
+      description: t.shareDescription,
+
+      url: SITE_URL,
+
+      siteName: t.siteName,
+
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 675,
+          alt: t.shareImageAlt,
+        },
+      ],
+
+      locale: t.ogLocale,
+
+      type: "website",
+    },
+
+    twitter: {
+      card: "summary_large_image",
+
+      title: t.shareTitle,
+
+      description: t.shareDescription,
+      creator: "@jtayped_",
+      images: ["/og-image.png"],
+    },
+  };
 };
 
 export const ROOT_VIEWPORT: Viewport = {

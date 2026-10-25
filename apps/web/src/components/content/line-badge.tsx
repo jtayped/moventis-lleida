@@ -1,6 +1,9 @@
+"use client";
+
 import { getContrastTextColor } from "@/lib/contrast";
 import { compareLineCodes } from "@/lib/lines";
-import { joinCatalan } from "@/lib/service-time";
+import { contentCopy } from "@/i18n/copy/content";
+import { useLang } from "@/i18n/lang-context";
 import { cn } from "@/lib/utils";
 
 /** A line's code on its own colour, the way the map and the lines panel draw it. */
@@ -42,13 +45,12 @@ export const LineBadges = ({
   codes: string[];
   colors: Record<string, string>;
 }) => {
+  const t = contentCopy[useLang()];
   const sorted = [...codes].sort(compareLineCodes);
   if (sorted.length === 0) return null;
   return (
     <span className="flex shrink-0 flex-wrap justify-end gap-1">
-      <span className="sr-only">
-        , {sorted.length === 1 ? "línia" : "línies"} {joinCatalan(sorted)}
-      </span>
+      <span className="sr-only">{t.linesServing(sorted)}</span>
       {sorted.map((code) => (
         <LineBadge
           key={code}

@@ -1,4 +1,7 @@
 import React from "react";
+import { FOCUS_RING } from "@/components/content/styles";
+import { Link } from "@/i18n/link";
+import { cn } from "@/lib/utils";
 
 /**
  * Text building blocks for the content pages. They used to live inside
@@ -52,4 +55,23 @@ export const External = ({
   >
     {children ?? <span className="break-all">{href}</span>}
   </a>
+);
+
+/** A link to another page of this site, given its Catalan path. */
+export const InternalLink = ({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) => (
+  <Link
+    href={href}
+    className={cn(
+      "text-foreground rounded-sm underline underline-offset-4",
+      FOCUS_RING,
+    )}
+  >
+    {children}
+  </Link>
 );

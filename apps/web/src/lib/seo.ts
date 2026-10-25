@@ -1,6 +1,7 @@
 import { localePath, type Lang } from "@moventis/shared";
 import type { Metadata } from "next";
-import { ROOT_METADATA, SITE_URL, TITLE_SUFFIX } from "@/constants/metadata";
+import { rootMetadata, SITE_URL } from "@/constants/metadata";
+import { siteCopy } from "@/i18n/copy/site";
 
 interface PageMetadataInput {
   /** The page's own title. The root template appends the site suffix. */
@@ -29,20 +30,21 @@ export function pageMetadata({
   path,
   lang,
 }: PageMetadataInput): Metadata {
-  const fullTitle = `${title}${TITLE_SUFFIX}`;
+  const root = rootMetadata(lang);
+  const fullTitle = `${title}${siteCopy[lang].titleSuffix}`;
   const url = localePath(lang, path);
   return {
     title,
     description,
     alternates: { canonical: url },
     openGraph: {
-      ...ROOT_METADATA.openGraph,
+      ...root.openGraph,
       title: fullTitle,
       description,
       url,
     },
     twitter: {
-      ...ROOT_METADATA.twitter,
+      ...root.twitter,
       title: fullTitle,
       description,
     },
