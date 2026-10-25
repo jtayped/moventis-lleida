@@ -7,6 +7,7 @@ import { RouteShape } from "@/components/content/route-shape";
 import { ServiceSpan } from "@/components/content/service-span";
 import { LINE_ACCENT_CLASS, lineAccentStyle } from "@/lib/contrast";
 import { compareByLineCode } from "@/lib/lines";
+import { linesCopy } from "@/i18n/copy/lines";
 import { asLang, type LangParams } from "@/i18n/langs";
 import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -19,31 +20,27 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
 }: LangParams): Promise<Metadata> {
+  const lang = asLang((await params).lang);
+  const t = linesCopy[lang].index;
   return pageMetadata({
-    title: "línies i horaris del bus urbà de lleida",
-    description:
-      "totes les línies del bus urbà de lleida, amb el primer i l'últim bus, cada quant passen i l'horari complet de cada recorregut.",
+    title: t.title,
+    description: t.description,
     path: "/linies",
-    lang: asLang((await params).lang),
+    lang,
   });
 }
 
 const LiniesPage = async ({ params }: LangParams) => {
   const lang = asLang((await params).lang);
+  const t = linesCopy[lang].index;
   const { days, lines } = await api.content.lines();
   const sorted = [...lines].sort(compareByLineCode);
-  const dates = describeServiceDays(days);
+  const dates = describeServiceDays(days, lang);
 
   return (
-    <ContentPage
-      lang={lang}
-      section="/linies"
-      title="línies i horaris del bus urbà de lleida"
-      wide
-    >
+    <ContentPage lang={lang} section="/linies" title={t.title} wide>
       <p className="text-muted-foreground mt-3 text-base">
-        {sorted.length} línies. tria&apos;n una per veure&apos;n l&apos;horari i
-        les parades.
+        {t.intro(sorted.length)}
       </p>
 
       <ul className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -71,13 +68,13 @@ const LiniesPage = async ({ params }: LangParams) => {
                         href={`/linies/${line.code}`}
                         className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none"
                       >
-                        <span className="sr-only">línia {line.code}: </span>
+                        <span className="sr-only">{t.lineSr(line.code)}</span>
                         {lineDisplayName(line.code, line.name)}
                       </Link>
                     </h2>
                     {headway && (
                       <p className="text-muted-foreground mt-1 text-sm">
-                        cada {headway} min els feiners
+                        {t.headway(headway)}
                       </p>
                     )}
                   </div>
@@ -96,14 +93,7 @@ const LiniesPage = async ({ params }: LangParams) => {
         })}
       </ul>
 
-      {dates && (
-        <Note title="d'on surten aquestes hores">
-          són les hores de sortida de l&apos;inici del recorregut, de
-          l&apos;horari programat de moventis per a un dia concret de cada
-          tipus: {dates}. la freqüència és el temps més habitual entre dos busos
-          del recorregut que en té més.
-        </Note>
-      )}
+      {dates && <Note title={t.noteTitle}>{t.note(dates)}</Note>}
     </ContentPage>
   );
 };

@@ -1,11 +1,7 @@
-import {
-  ROOT_METADATA,
-  ROOT_VIEWPORT,
-  SITE_NAME,
-  SITE_URL,
-} from "@/constants/metadata";
+import { rootMetadata, ROOT_VIEWPORT, SITE_URL } from "@/constants/metadata";
 import "@/styles/globals.css";
 
+import type { Lang } from "@moventis/shared";
 import type { Viewport, Metadata } from "next";
 import { Geist } from "next/font/google";
 import Script from "next/script";
@@ -16,11 +12,19 @@ import {
   PORTFOLIO_URL,
 } from "@/lib/project-links";
 import { env } from "@/env";
+import { siteCopy } from "@/i18n/copy/site";
 import { asLang } from "@/i18n/langs";
 import { LangProvider } from "@/i18n/lang-context";
 import RootProviders from "./providers";
 
-export const metadata: Metadata = ROOT_METADATA;
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  return rootMetadata(asLang((await params).lang));
+}
+
 export const viewport: Viewport = ROOT_VIEWPORT;
 
 const geist = Geist({
@@ -54,20 +58,20 @@ const UMAMI_DOMAIN = "moventis-lleida.joeltaylor.business";
  * is not Moventis' site, and structured data claiming an organisation would say
  * otherwise in the one place Google reads as fact.
  */
-const WEBSITE_JSON_LD = {
+const websiteJsonLd = (lang: Lang) => ({
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: SITE_NAME,
-  alternateName: "horaris bus lleida",
+  name: siteCopy[lang].siteName,
+  alternateName: siteCopy[lang].alternateName,
   url: SITE_URL,
-  inLanguage: "ca",
+  inLanguage: lang,
   publisher: {
     "@type": "Person",
     name: AUTHOR_NAME,
     url: PORTFOLIO_URL,
     sameAs: [GITHUB_PROFILE_URL],
   },
-};
+});
 
 export default async function RootLayout({
   children,
@@ -87,7 +91,7 @@ export default async function RootLayout({
     <html lang={lang} className={`${geist.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        <JsonLd data={WEBSITE_JSON_LD} />
+        <JsonLd data={websiteJsonLd(lang)} />
       </head>
       <body className="lowercase">
         <LangProvider value={lang}>

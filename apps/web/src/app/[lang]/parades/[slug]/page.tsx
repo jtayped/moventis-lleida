@@ -11,13 +11,11 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { SITE_URL } from "@/constants/metadata";
 import { compareByLineCode, compareLineCodes } from "@/lib/lines";
 import { localePath } from "@moventis/shared";
+import { contentCopy } from "@/i18n/copy/content";
+import { stopsCopy } from "@/i18n/copy/stops";
 import { asLang } from "@/i18n/langs";
 import { pageMetadata } from "@/lib/seo";
-import {
-  describeServiceDays,
-  joinCatalan,
-  todayDayType,
-} from "@/lib/service-time";
+import { describeServiceDays, todayDayType } from "@/lib/service-time";
 import { stopPath } from "@/lib/stops";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/server";
@@ -47,27 +45,15 @@ const loadStop = async (params: Props["params"]) => {
   return { ...page, lang };
 };
 
-const lineList = (codes: string[]) => {
-  const sorted = [...codes].sort(compareLineCodes);
-  return sorted.length === 1
-    ? `la línia ${sorted[0]}`
-    : `les línies ${joinCatalan(sorted)}`;
-};
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { stop, lang } = await loadStop(params);
-  const lines = stop.lineCodes.length > 0 ? lineList(stop.lineCodes) : null;
-  const codes = [...stop.lineCodes].sort(compareLineCodes);
+  const t = stopsCopy[lang].page;
   // The line numbers are what tells this stop's result apart from moventis'.
-  const served =
-    codes.length === 0
-      ? ""
-      : ` (${codes.length === 1 ? "línia" : "línies"} ${joinCatalan(codes)})`;
+  const codes = [...stop.lineCodes].sort(compareLineCodes);
+  const joined = contentCopy[lang].joinList(codes);
   return pageMetadata({
-    title: `parada ${stop.name}${served}: horaris i pròxim bus`,
-    description: `horaris del bus urbà de lleida a la parada ${stop.name}${
-      lines ? `, on para ${lines}` : ""
-    }. pròxims busos, parades properes i temps real al mapa.`,
+    title: t.title(stop.name, codes.length, joined),
+    description: t.description(stop.name, codes.length, joined),
     path: stopPath(stop),
     lang,
   });
@@ -80,13 +66,14 @@ const ParadaPage = async ({ params }: Props) => {
   const page = await loadStop(params);
   const { lang } = page;
   const { stop } = page;
+  const t = stopsCopy[lang].page;
   const routes = await api.routes.getAll();
   const lines = Object.fromEntries(
     routes.map((r) => [r.code, { color: r.color, name: r.name }]),
   );
   const colors = Object.fromEntries(routes.map((r) => [r.code, r.color]));
   const serving = [...page.lines].sort(compareByLineCode);
-  const dates = describeServiceDays(page.days);
+  const dates = describeServiceDays(page.days, lang);
 
   return (
     <ContentPage
@@ -98,7 +85,7 @@ const ParadaPage = async ({ params }: Props) => {
           <MapPin size={20} aria-hidden />
         </span>
       }
-      breadcrumbs={[{ label: "parades", href: "/parades" }]}
+      breadcrumbs={[{ label: t.breadcrumb, href: "/parades" }]}
     >
       <JsonLd
         data={{
@@ -114,13 +101,11 @@ const ParadaPage = async ({ params }: Props) => {
         }}
       />
 
-      <p className="text-muted-foreground mt-3 text-base">
-        parada del bus urbà de lleida.
-      </p>
+      <p className="text-muted-foreground mt-3 text-base">{t.intro}</p>
 
       <div className="mt-6 space-y-3">
         {serving.length > 0 && (
-          <nav aria-label="línies que hi paren">
+          <nav aria-label={t.servingLines}>
             <ul className="flex flex-wrap gap-2">
               {serving.map((line) => (
                 <li key={line.code}>
@@ -133,7 +118,7 @@ const ParadaPage = async ({ params }: Props) => {
                   >
                     <LineBadge code={line.code} color={line.color} decorative />
                     <span className="text-sm font-medium">
-                      línia {line.code}
+                      {t.line(line.code)}
                     </span>
                   </Link>
                 </li>
@@ -150,19 +135,14 @@ const ParadaPage = async ({ params }: Props) => {
           )}
         >
           <Radio size={18} aria-hidden className="shrink-0" />
-          <span className="flex-1">
-            quan arriba de debò? temps real al mapa
-          </span>
+          <span className="flex-1">{t.realtime}</span>
         </Link>
       </div>
 
       <section id="horaris" className="mt-12 scroll-mt-6 space-y-5">
-        <h2 className="text-xl font-semibold">horaris</h2>
+        <h2 className="text-xl font-semibold">{t.timetables}</h2>
         {page.groups.length === 0 ? (
-          <p className="text-muted-foreground text-base">
-            ara mateix no tenim l&apos;horari d&apos;aquesta parada. al mapa en
-            directe pots veure quan hi passa cada bus.
-          </p>
+          <p className="text-muted-foreground text-base">{t.noTimetable}</p>
         ) : (
           <StopTimetable
             stopId={stop.externalId}
@@ -176,7 +156,7 @@ const ParadaPage = async ({ params }: Props) => {
 
       {page.nearby.length > 0 && (
         <section id="properes" className="mt-12 scroll-mt-6 space-y-4">
-          <h2 className="text-xl font-semibold">parades a prop</h2>
+          <h2 className="text-xl font-semibold">{t.nearby}</h2>
           <ul className="grid gap-2 sm:grid-cols-2">
             {page.nearby.map((near) => (
               <li key={near.externalId}>
@@ -192,7 +172,7 @@ const ParadaPage = async ({ params }: Props) => {
                       {near.name}
                     </span>
                     <span className="text-muted-foreground block text-sm">
-                      a {distance(near.distanceM)}
+                      {t.away(distance(near.distanceM))}
                     </span>
                   </span>
                   <LineBadges codes={near.lineCodes} colors={colors} />
@@ -204,16 +184,9 @@ const ParadaPage = async ({ params }: Props) => {
       )}
 
       {dates && (
-        <Note title="d'on surten aquestes hores">
-          <p>
-            de l&apos;horari programat de moventis, per a un dia concret de cada
-            tipus: {dates}. el pròxim bus es marca segons l&apos;hora del teu
-            dispositiu.
-          </p>
-          <p>
-            els festius i els canvis de temporada poden tenir un horari
-            diferent. per saber quan arriba de debò, mira el temps real al mapa.
-          </p>
+        <Note title={t.noteTitle}>
+          <p>{t.noteDates(dates)}</p>
+          <p>{t.noteHolidays}</p>
         </Note>
       )}
     </ContentPage>

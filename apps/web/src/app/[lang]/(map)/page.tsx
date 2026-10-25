@@ -1,9 +1,12 @@
 import BusMap from "@/components/map";
 import { JsonLd } from "@/components/seo/json-ld";
-import { SITE_NAME, SITE_URL } from "@/constants/metadata";
+import { SITE_URL } from "@/constants/metadata";
 import { BusFinderProvider } from "@/context/buses";
 import { DirectionsProvider } from "@/context/directions";
+import { siteCopy } from "@/i18n/copy/site";
+import { asLang, type LangParams } from "@/i18n/langs";
 import { api, HydrateClient } from "@/trpc/server";
+import type { Lang } from "@moventis/shared";
 import React from "react";
 
 /** Reads a single query param; missing, empty and whitespace-only all give null. */
@@ -33,27 +36,28 @@ const parseLines = (raw: string | null, validCodes: Set<string>) => {
  * What the map is, for search engines: the page has almost no text of its own,
  * so this is the one place that says it is an app and that it costs nothing.
  */
-const WEB_APPLICATION_JSON_LD = {
+const webApplicationJsonLd = (lang: Lang) => ({
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: SITE_NAME,
+  name: siteCopy[lang].siteName,
   url: SITE_URL,
-  inLanguage: "ca",
+  inLanguage: lang,
   applicationCategory: "TravelApplication",
   operatingSystem: "any",
   browserRequirements: "requires javascript",
-  description:
-    "mapa en temps real dels autobusos urbans de lleida, amb les properes arribades a cada parada.",
+  description: siteCopy[lang].webAppDescription,
   offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
-};
+});
 
 const HomePage = async ({
+  params: langParams,
   searchParams,
-}: {
+}: LangParams & {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) => {
   // `routes.getAll` is cached, so reading it here to validate `?lines=` is
   // free on top of the prefetch that seeds the client cache.
+  const lang = asLang((await langParams).lang);
   const [params, routes] = await Promise.all([
     searchParams,
     api.routes.getAll(),
@@ -71,12 +75,10 @@ const HomePage = async ({
 
   return (
     <HydrateClient>
-      <JsonLd data={WEB_APPLICATION_JSON_LD} />
+      <JsonLd data={webApplicationJsonLd(lang)} />
       {/* The map has no visible title; this one names the page for screen
           readers and for search engines, which weigh the h1. */}
-      <h1 className="sr-only">
-        moventis lleida en temps real: mapa del bus urbà
-      </h1>
+      <h1 className="sr-only">{siteCopy[lang].homeTitle}</h1>
       {/* Outside the bus finder: the phone's stop sheet is rendered by that
           provider, and its "com arribar-hi" has to reach this. */}
       <DirectionsProvider>
