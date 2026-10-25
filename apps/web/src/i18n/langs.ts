@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
  * The languages the site serves. A language in `LANGS` but not here has no
  * public URLs: the middleware treats its prefix as an unknown Catalan path.
  */
-export const PUBLISHED_LANGS: readonly Lang[] = ["ca"];
+export const PUBLISHED_LANGS: readonly Lang[] = ["ca", "es"];
 
 /**
  * The `[lang]` route param as a `Lang`. The middleware only rewrites onto a

@@ -40,12 +40,16 @@ const dateFormat = (lang: Lang) => {
 /** `"2026-10-05"` → `"dilluns 5 d'octubre"`, with a straight apostrophe. */
 export const formatServiceDate = (date: string, lang: Lang): string => {
   const parts = dateFormat(lang).formatToParts(new Date(`${date}T00:00:00Z`));
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((p) => p.type === type)?.value ?? "";
-  return `${part("weekday")} ${part("day")} ${part("month")}`.replace(
-    /’/g,
-    "'",
-  );
+  const index = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.findIndex((p) => p.type === type);
+  const weekday = parts[index("weekday")]?.value ?? "";
+  // Day through month, literals included: Catalan folds its "d'" into the
+  // month ("d’octubre"), Spanish puts " de " in a literal between the two.
+  const dayMonth = parts
+    .slice(index("day"), index("month") + 1)
+    .map((p) => p.value)
+    .join("");
+  return `${weekday} ${dayMonth}`.replace(/’/g, "'");
 };
 
 /**

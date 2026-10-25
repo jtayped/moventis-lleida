@@ -29,7 +29,25 @@ const ca = {
 
 export type InfoCopy = typeof ca;
 
-// Filled in by the Spanish translation; Catalan until then so nothing renders blank.
-const es: InfoCopy = ca;
+const es: InfoCopy = {
+  metaTitle: "información del bus urbano de lleida",
+  description:
+    "cómo funciona el bus urbano de lleida (autobusos de lleida, grupo moventis): a qué hora pasa el último bus, si hay buses los domingos y festivos, el bus nocturno n1, tiempo real, contacto y objetos perdidos.",
+  title: "el bus urbano de lleida",
+  reviewedOn: "3 de octubre de 2026",
+  updated: (date: string) => `revisado el ${date}`,
+
+  lastBusTable: {
+    line: "línea",
+    lineSr: (code: string) => `línea ${code}`,
+    notRunning: "no circula",
+  },
+
+  noSundayClause: (count: number, joined: string) =>
+    count === 0
+      ? ""
+      : `, y ${joined} no ${count === 1 ? "circula" : "circulan"}`,
+  lineRef: (code: string) => `la ${code}`,
+};
 
 export const infoCopy: Record<Lang, InfoCopy> = { ca, es };

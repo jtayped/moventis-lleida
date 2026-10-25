@@ -9,7 +9,11 @@ const ca = {
 
 export type PrivacyCopy = typeof ca;
 
-// Filled in by the Spanish translation; Catalan until then so nothing renders blank.
-const es: PrivacyCopy = ca;
+const es: PrivacyCopy = {
+  title: "privacidad",
+  description:
+    "qué guarda este sitio en tu navegador, qué no sale nunca de él y cómo puedes cambiarlo.",
+  updated: "última actualización: septiembre de 2026",
+};
 
 export const privacyCopy: Record<Lang, PrivacyCopy> = { ca, es };

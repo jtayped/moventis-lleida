@@ -95,3 +95,17 @@ export const routePublicPath = (
     lang: DEFAULT_LANG,
   };
 };
+
+/**
+ * The Catalan path of the page a public pathname shows, the inverse of
+ * `localePath`: `"/es/lineas/20"` → `"/linies/20"`. What a language switch
+ * needs to find the same page in the other language.
+ */
+export const catalanPathOf = (
+  pathname: string,
+  published: readonly Lang[],
+): string => {
+  const route = routePublicPath(pathname, published);
+  if ("redirect" in route) return catalanPathOf(route.redirect, published);
+  return route.rewrite.slice(route.lang.length + 1) || "/";
+};

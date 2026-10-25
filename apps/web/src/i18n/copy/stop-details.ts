@@ -107,7 +107,110 @@ const ca = {
 
 export type StopDetailsCopy = typeof ca;
 
-// Filled in by the Spanish translation; Catalan until then so nothing renders blank.
-const es: StopDetailsCopy = ca;
+const es: StopDetailsCopy = {
+  srTitle: "parada",
+  srDescription: (name?: string) =>
+    name ? `horas de llegada de la parada ${name}` : "horas de llegada",
+  retry: "reintentar",
+  stale: (ago: string, justNow: boolean) =>
+    `no se ha podido actualizar. ${
+      !ago
+        ? "las horas pueden estar desfasadas"
+        : justNow
+          ? "las horas son de ahora mismo"
+          : `las horas son de ${ago}`
+    }.`,
+  joinLines: (codes: string[]) =>
+    codes.length <= 1
+      ? (codes[0] ?? "")
+      : `${codes.slice(0, -1).join(", ")} y ${codes[codes.length - 1]}`,
+  partial: (failed: string[], joined: string) =>
+    `no se han podido cargar las horas de ${
+      failed.length === 1 ? "la línea" : "las líneas"
+    } ${joined}`,
+  deleted:
+    "esta parada ya no está en servicio. puede ser temporal, por obras o cambios de ruta.",
+  deletedSaved:
+    " la tienes en favoritas, por eso sigue en el mapa. quítala con la estrella de arriba.",
+  newStop: "esta parada se ha añadido a la red hace poco.",
+  allPassed: "ya han pasado todas las horas: actualiza.",
+  refresh: "actualizar",
+  noSchedules: "no hay horarios disponibles para esta parada.",
+  selectedLines: "líneas seleccionadas",
+  transfers: "correspondencias",
+  fullTimetable: "horario completo de la parada",
+  header: {
+    directions: "cómo llegar",
+    lines: "líneas de esta parada y próximo bus",
+    line: (code: string) => `línea ${code}`,
+    refresh: "actualizar las horas",
+    close: "cerrar",
+  },
+  lastUpdated: "actualizado",
+  error: {
+    title: "ha habido un problema al cargar los buses :(",
+    retry: "reintentar",
+  },
+  preferida: {
+    disabled:
+      "favoritas desactivadas: has rechazado guardar datos en este dispositivo",
+    remove: "quitar de favoritas",
+    add: "añadir a favoritas",
+  },
+  lineSchedule: {
+    incident: "incidencia de servicio en esta línea",
+    noBuses: "sin buses",
+  },
+  legend: {
+    live: "hora estimada con el bus ya en ruta",
+    timetable: "hora prevista en el horario oficial",
+  },
+  timeSource: {
+    liveTitle:
+      "hora en tiempo real: moventis sigue este bus y estima su llegada. no recibimos su posición, solo la hora.",
+    live: "en directo",
+    timetableTitle:
+      "hora del horario oficial: ahora mismo no hay ninguna estimación en tiempo real para este bus.",
+    timetable: "horario",
+  },
+  arrival: {
+    accessible: "vehículo accesible",
+    driftLabel: (
+      magnitude: number,
+      later: boolean,
+      baseline: string | null,
+      realTimeBaseline: boolean,
+    ) =>
+      `${magnitude} ${magnitude === 1 ? "minuto" : "minutos"} ${
+        later ? "más tarde" : "antes"
+      } de lo previsto (${baseline})${realTimeBaseline ? "" : " según el horario"}`,
+    driftChip: (magnitude: number, later: boolean, isNext: boolean) =>
+      `${later ? "▲ +" : "▼ −"}${magnitude} min${isNext ? (later ? " tarde" : " pronto") : ""}`,
+  },
+  navigation: {
+    lines: (codes: string[]) =>
+      codes.length === 1 ? `línea ${codes[0]}` : `líneas ${codes.join(", ")}`,
+    neighbour: (lines: string, isPrev: boolean, name: string) =>
+      `${lines}, parada ${isPrev ? "anterior" : "siguiente"}: ${name}`,
+  },
+  liveBus: {
+    loading: "situando los autobuses en el mapa…",
+    skipped: "no situamos en el mapa los autobuses de esta parada.",
+    skippedHint: (maxLines: number) =>
+      `solo lo hacemos para las ${maxLines} últimas líneas que has marcado. desmarca alguna para incluir esta.`,
+    error: "ahora mismo no podemos situar los autobuses en el mapa.",
+    errorHint: "las horas de llegada de aquí abajo siguen funcionando.",
+    none: "ningún bus de esta línea tiene una hora en tiempo real ahora mismo.",
+    noneHint: "por eso no podemos situar ninguno en el mapa.",
+    count: (n: number) =>
+      n === 1
+        ? "1 autobús situado en el mapa"
+        : `${n} autobuses situados en el mapa`,
+    deduced:
+      "deducimos el tramo a partir de las horas de llegada; moventis no publica su posición.",
+    approximate: (n: number) =>
+      n === 1 ? "1 con el tramo aproximado" : `${n} con el tramo aproximado`,
+  },
+};
 
 export const stopDetailsCopy: Record<Lang, StopDetailsCopy> = { ca, es };

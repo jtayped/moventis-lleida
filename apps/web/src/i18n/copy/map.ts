@@ -117,7 +117,119 @@ const ca = {
 
 export type MapCopy = typeof ca;
 
-// Filled in by the Spanish translation; Catalan until then so nothing renders blank.
-const es: MapCopy = ca;
+const es: MapCopy = {
+  time: {
+    nowCompact: "ahora",
+    arriving: "llegando",
+    countdownNow: "ahora",
+    agoNow: "ahora",
+    agoSeconds: (s: number) => `hace ${s}s`,
+    agoMinutes: (m: number) => `hace ${m}m`,
+  },
+  nav: {
+    label: "navegación principal",
+    pages: {
+      linies: { label: "líneas", title: "líneas y horarios" },
+      parades: { label: "paradas", title: "todas las paradas" },
+    },
+    info: {
+      tarifes: { label: "tarifas", title: "tarifas y títulos de transporte" },
+      informacio: { label: "información", title: "sobre esta web" },
+    },
+    panels: {
+      search: { label: "buscar", title: "busca una parada" },
+      settings: { label: "ajustes", title: "ajustes" },
+    },
+  },
+  shell: {
+    kofiLabel: "haz un donativo al proyecto en ko-fi",
+    kofiTitle: "haz un donativo en ko-fi",
+    locateError: "no se ha podido obtener la ubicación",
+    locateUnsupported: "el navegador no admite la geolocalización",
+    locate: "mi ubicación",
+    arrivalTimes: "horas de llegada",
+    directions: "cómo llegar",
+    userLocation: "tu ubicación",
+  },
+  panel: {
+    close: "cerrar",
+  },
+  ui: {
+    sheetClose: "cerrar",
+    dialogClose: "cerrar",
+    loading: "cargando",
+    mapLoadFailed:
+      "no se ha podido cargar el mapa. comprueba la conexión y vuelve a intentarlo.",
+    reload: "recargar",
+  },
+  busMarker: {
+    line: (code: string) => `bus línea ${code}`,
+    consecutive: "entre dos paradas consecutivas",
+    span: (n: number) => `entre paradas (${n} tramos)`,
+    estimated: "posición estimada",
+    imprecise: "posición poco precisa",
+  },
+  stopsError: {
+    message: "no se han podido cargar las paradas",
+    retry: "reintentar",
+  },
+  search: {
+    placeholder: "busca tu parada",
+    loading: "cargando",
+    error: "error",
+    count: (n: number) => `${n} paradas`,
+    none: "ninguna parada",
+  },
+  routes: {
+    hideSaved: "ocultar las paradas favoritas",
+    showSaved: "mostrar las paradas favoritas",
+    toggleLine: (selected: boolean, code: string, active: boolean) =>
+      `${selected ? "ocultar" : "mostrar"} las paradas de la línea ${code}${
+        active ? "" : " (fuera de horario hoy)"
+      }`,
+    offHours: "fuera de horario hoy",
+    list: "líneas",
+    selectHint: "selecciona una línea para ver sus paradas en el mapa",
+  },
+  searchPanel: {
+    close: "cerrar la búsqueda",
+    title: "buscar",
+    typeName: "escribe el nombre de una parada",
+    loading: "cargando",
+    noneOnLines: "ninguna parada de estas líneas con este nombre",
+    none: "ninguna parada con este nombre",
+    results: "resultados de la búsqueda",
+    saved: "favorita",
+    line: (code: string) => `línea ${code}`,
+  },
+  consent: {
+    accept: "de acuerdo",
+    acceptLabel: "aceptar el uso del almacenamiento local para las favoritas",
+    decline: "rechazar",
+    declineLabel: "rechazar el uso del almacenamiento local para las favoritas",
+    more: "más información",
+  },
+  cookieBanner: {
+    label: "preferencias de privacidad",
+    text: "este sitio guarda en tu navegador las paradas que marques como favoritas, solo en este dispositivo. no usamos cookies de seguimiento. contamos visitas de forma anónima con una herramienta propia, y puedes desactivarlo en los ajustes.",
+  },
+  errorPage: {
+    title: "algo ha fallado",
+    text: "no hemos podido mostrar esta página. si estás en la parada, vuelve a intentarlo: suele ser cosa de la conexión.",
+    retry: "reintentar",
+    backToMap: "volver al mapa",
+  },
+  notFound: {
+    title: "esta página no existe",
+    text: "puede que el enlace haya cambiado.",
+    backToMap: "volver al mapa",
+    lines: "líneas",
+    stops: "paradas",
+  },
+  loading: {
+    logoAlt: "logo",
+    text: "cargando...",
+  },
+};
 
 export const mapCopy: Record<Lang, MapCopy> = { ca, es };

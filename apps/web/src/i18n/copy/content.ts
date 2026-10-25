@@ -79,7 +79,76 @@ const ca = {
 
 export type ContentCopy = typeof ca;
 
-// Filled in by the Spanish translation; Catalan until then so nothing renders blank.
-const es: ContentCopy = ca;
+/** "a, b y c". */
+const joinListEs = (items: string[]): string =>
+  items.length <= 1
+    ? (items[0] ?? "")
+    : `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}`;
+
+const es: ContentCopy = {
+  dayTypeLabels: {
+    weekday: "laborables",
+    saturday: "sábados",
+    sunday: "domingos",
+  },
+  dayTypePhrases: {
+    weekday: "los días laborables",
+    saturday: "los sábados",
+    sunday: "los domingos",
+  },
+  joinList: joinListEs,
+  onDate: (date: string) => `el ${date}`,
+
+  newTab: " (se abre en una pestaña nueva)",
+
+  header: {
+    sections: "secciones",
+    breadcrumbs: "ruta de navegación",
+    lines: "líneas",
+    stops: "paradas",
+    map: "mapa",
+  },
+  footer: {
+    pages: "páginas de la web",
+    unofficial:
+      "web no oficial, sin relación con moventis, autobusos de lleida ni la paeria.",
+    dataFrom: "datos públicos de",
+  },
+
+  siteLinks: {
+    map: "mapa en directo",
+    lines: "líneas y horarios",
+    stops: "paradas",
+    info: "información",
+    fares: "tarifas",
+    privacy: "privacidad",
+  },
+
+  authorCard: {
+    madeBy: "hecho por",
+    donate: "haz un donativo",
+    codeAt: "el código en ",
+  },
+
+  linesServing: (codes: string[]) =>
+    `, ${codes.length === 1 ? "línea" : "líneas"} ${joinListEs(codes)}`,
+
+  serviceSpan: {
+    notRunning: "no circula",
+    fromTo: (first: string, last: string) => `de ${first} a ${last}`,
+  },
+
+  stopWithoutName: (externalId: string) => `parada ${externalId}`,
+
+  periods: {
+    morning: "mañana",
+    afternoon: "tarde",
+    night: "noche",
+  },
+  next: "próximo",
+  noMoreToday: "hoy ya no pasa ninguno más.",
+  showGone: (n: number) =>
+    n === 1 ? "ver el que ya ha pasado" : `ver los ${n} que ya han pasado`,
+};
 
 export const contentCopy: Record<Lang, ContentCopy> = { ca, es };
