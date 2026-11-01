@@ -184,7 +184,7 @@ jobs:
       # Prisma schema as it starts), the lockfile or the compose file itself.
       - id: changes
         if: github.event_name == 'push'
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             compose:
