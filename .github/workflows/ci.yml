@@ -112,7 +112,7 @@ jobs:
             const { data } = await github.rest.git.getCommit({ ...context.repo, commit_sha: context.sha });
             return data.tree.sha;
       - run: echo "$GITHUB_SHA" > "$RUNNER_TEMP/verified-commit"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ci-passed-${{ steps.tree.outputs.result }}
           path: ${{ runner.temp }}/verified-commit
