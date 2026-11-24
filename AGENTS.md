@@ -333,14 +333,3 @@ Timetable (routeId, trayectoId, date, stops[], trips, unpaired)  ← composite P
 This has bitten twice. `discoverLines` in the scraper is the recovery path that un-deletes the network, and without the override it returned zero routes on the one run that needed it. `stops.getByExternalIds` was the second: it is documented above as including soft-deleted stops, and silently did not, so a saved stop that got soft-deleted disappeared from the map instead of staying clickable. Both now pass `deletedAt: undefined` explicitly — a key whose value is `undefined` still has to be _present_, so `toEqual` alone cannot tell the fixed query from the broken one.
 
 The extension also does not reach included relations: `stop.findUnique({ include: { routes: true } })` returns soft-deleted routes, which is why `stops.get` filters them in the `include`.
-
-<!-- BEGIN:turborepo-agent-rules -->
-
-# This is NOT the Turborepo you know
-
-Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
-
-Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
-
-This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
-<!-- END:turborepo-agent-rules -->
