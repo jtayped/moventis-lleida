@@ -16,7 +16,7 @@
 
 - [ ] `pnpm lint`, `pnpm typecheck` and `pnpm test` pass locally
 - [ ] `pnpm build` passes if the change touches `apps/web`
-- [ ] CLAUDE.md / AGENTS.md updated if a command, a package or the data flow changed (see the maintenance note at the top of each)
+- [ ] AGENTS.md updated if a command, a package or the data flow changed (see the maintenance note at the top of it)
 - [ ] no secret, credential or personal data in the diff
 
 ## screenshots

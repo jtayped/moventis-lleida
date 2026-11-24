@@ -37,7 +37,7 @@ The ids that matter:
 | `COD_PARADA`  | `20001`   | The public stop code the official site prints as "Código 20001". Not the same as `ID_PARADA` |
 | `nid`         | `86606`   | A Drupal node. Per language, see above                                                       |
 
-Dates in URLs and in the line feed are `YYYYMMDD`. Times of day are either `HH:MM` strings or integer minutes after the service day's midnight, and the integer form goes past 1440 for a service that runs after midnight. Every clock time is a `Europe/Madrid` wall clock; `CLAUDE.md` explains why that matters on a UTC server.
+Dates in URLs and in the line feed are `YYYYMMDD`. Times of day are either `HH:MM` strings or integer minutes after the service day's midnight, and the integer form goes past 1440 for a service that runs after midnight. Every clock time is a `Europe/Madrid` wall clock; `AGENTS.md` explains why that matters on a UTC server.
 
 An error comes back as an HTML page, not JSON. An unknown endpoint answers `404` with `text/html`.
 
@@ -45,7 +45,7 @@ An error comes back as an HTML page, not JSON. An unknown endpoint answers `404`
 
 `GET /es/moventis/es/lines`
 
-About 3.6 MB. On 2026-10-03 it held 11,520 rows covering every Moventis zone, one row per line per operating day. The scraper keeps the rows whose `ID_ZONA` is `"2"`, which is Lleida, or whose `ID_LINEA` it already stores. `CLAUDE.md` explains the second test.
+About 3.6 MB. On 2026-10-03 it held 11,520 rows covering every Moventis zone, one row per line per operating day. The scraper keeps the rows whose `ID_ZONA` is `"2"`, which is Lleida, or whose `ID_LINEA` it already stores. `AGENTS.md` explains the second test.
 
 | Field              | Example       | Notes                                                                                     |
 | ------------------ | ------------- | ----------------------------------------------------------------------------------------- |
@@ -284,7 +284,7 @@ Not used.
 
 `GET /api/json/GetTiemposParada/{lang}/{ID_PARADA}/{ID_LINEA}/{second ID_LINEA or 0}`
 
-Arrivals at one stop, a mix of real-time countdowns and timetable times. The official site passes up to two lines and polls every 10 seconds. `packages/api/src/lib/stop-schedule.ts` reads it with `lang` `es` and second line `0`, and `packages/shared/src/schemas/schedule.ts` holds its schema. `CLAUDE.md` covers how arrivals are parsed and why the throttle exists.
+Arrivals at one stop, a mix of real-time countdowns and timetable times. The official site passes up to two lines and polls every 10 seconds. `packages/api/src/lib/stop-schedule.ts` reads it with `lang` `es` and second line `0`, and `packages/shared/src/schemas/schedule.ts` holds its schema. `AGENTS.md` covers how arrivals are parsed and why the throttle exists.
 
 The answer is an array with one entry per line serving the stop: `{ idLinea, desc_linea, trayectos, incidencias, selected }`. `desc_linea` is `"CODE - NAME"`. `trayectos` maps each journey name to its arrivals, as an object or as an array. `selected` is `1` for the lines named in the URL and `0` for the rest, which the official site shows as connections.
 
