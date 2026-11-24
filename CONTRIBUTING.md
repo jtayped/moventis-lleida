@@ -1,6 +1,6 @@
 # contributing
 
-Short form of how this repo is worked on. CLAUDE.md (mirrored as AGENTS.md) is the long form: architecture, the traps that have already bitten, and the reasoning behind the odd-looking parts.
+Short form of how this repo is worked on. AGENTS.md is the long form: architecture, the traps that have already bitten, and the reasoning behind the odd-looking parts.
 
 ## the shape of the repo
 
@@ -69,4 +69,4 @@ Merging to `main` deploys. Nothing else does. `docs/deployment.md` explains the 
 
 ## comments and docs
 
-Comments explain the code, not the process that produced it: no ticket numbers, no plan names. When a change alters a command, a package, or how data flows, update CLAUDE.md and AGENTS.md in the same pull request. Both files carry a maintenance note at the top saying what does and does not belong there.
+Comments explain the code, not the process that produced it: no ticket numbers, no plan names. When a change alters a command, a package, or how data flows, update AGENTS.md in the same pull request. It carries a maintenance note at the top saying what does and does not belong there.

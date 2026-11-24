@@ -84,6 +84,6 @@ fusionar a `main` és l'únic camí a producció. ci construeix les dues imatges
 
 ## on mirar després
 
-- [`CLAUDE.md`](CLAUDE.md) (i el seu mirall `AGENTS.md`): l'arquitectura llarga i les trampes que ja han picat alguna vegada.
+- [`AGENTS.md`](AGENTS.md): l'arquitectura llarga i les trampes que ja han picat alguna vegada.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): com es treballa en aquest repositori.
 - [`DESIGN.md`](DESIGN.md) i [`PRODUCT.md`](PRODUCT.md): els criteris visuals i de producte.

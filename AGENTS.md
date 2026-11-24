@@ -1,8 +1,8 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to coding agents when working with code in this repository.
 
-> **Maintenance note:** Update this file only when something genuinely changes that future Codex instances would otherwise get wrong — a new package, a renamed command, a shift in the data flow. Do not add information that can be derived by reading the code directly. Keep it concise.
+> **Maintenance note:** Update this file only when something genuinely changes that future agents would otherwise get wrong — a new package, a renamed command, a shift in the data flow. Do not add information that can be derived by reading the code directly. Keep it concise.
 
 ## Project Overview
 
@@ -211,9 +211,54 @@ Each arrival card says how far that bus has slipped from the first time we liste
 
 Two facts about the lists, both pinned by `packages/api/src/__fixtures__/line-*-snapshot.json`, are what the old back-projecting locator got wrong and what produced markers in convoy: an **origin stop lists departures** of the next few trips, and every downstream stop carries those trips as `real:"S"` projections — on a loop (most of the network; `pnpm list-loop-variants`) the terminal _is_ the origin, so its whole list is projections a lap apart per vehicle, and a bus in the closing segment or its layover is invisible until it departs. Nothing at the first probed stop is ever emitted, and a stop whose response does not list the journey is _unavailable_ (skipped), not "no bus". ETAs are compared across stops to the second, so every probe of one call is rebased on **one reference instant** (`toProbeResult`'s `now`), never on its own fetch time.
 
-Probe budget (`DEFAULT_PROBE_BUDGET`): a coarse pass of ≤ ~8 stops per variant (origin, every k-th, terminal), then up to 8 bisections of occupied brackets, widest first — ~7–15 requests per variant, shared across variants via one memo per call and across viewers via a 10 s per-line cache in `buses.ts`. Do not raise it casually: everything goes through the 5 req/s throttle with the stop drawer's own fetches.
+Probe budget (`DEFAULT_PROBE_BUDGET`): a coarse pass of ≤ ~8 stops per variant (origin, every k-th, terminal), then up to 8 bisections of occupied brackets, widest first — ~7–15 requests per variant, shared across variants via one memo per call and across viewers via the per-line cache in `buses.ts`. Do not raise it casually: everything goes through the 5 req/s throttle with the stop drawer's own fetches.
+
+Two limits keep that budget from becoming everyone's problem, and both exist because the throttle is FIFO and process-wide — saturating it makes the _stop drawer_ slow for whoever tapped a stop next, on someone else's device:
+
+- **The client predicts at most `MAX_PREDICTED_LINES` (3) selected lines**, the most recently toggled (`apps/web/src/lib/live-buses.ts`; `selectedRoutes` is in toggle order, so the cap is its tail). All 14 lines at once is ~250–500 requests against a 25 s refetch timer and 5 req/s — the queue never drains. Skipped lines get status `"skipped"`, not `"error"`: the drawer must not report an outage that never happened.
+- **`buses.ts`'s per-line cache serves an entry for as long as it is in flight**, and for 10 s after it _settles_. Timing the TTL from the start deduplicates nothing under load — a 90 s locate would let a fresh full locate begin every 10 s and pile onto the same queue.
 
 Tests are in three layers, and a change must keep all three green: `alignLists` unit cases; `src/lib/testing/fleet-simulator.ts` renders a synthetic fleet (projections, cap, dwell, jitter, failures, shared stops, loops) into lists and asserts every bus lands in its true bracket with no phantoms, plus the screenshot regression (three buses on a 48-min loop, not a convoy); and the recorded snapshots replayed offline. `pnpm validate-bus-positions <line> [I|V] [--full]` (from `packages/api`) runs the same checks against the live API and prints a per-bus verdict; `--full` probes every stop as ground truth and flags phantoms (fail) and misses (report).
+
+### Next bus on map pins (`stopEtas`)
+
+At the `large` zoom bucket only (≥ 16.5, `apps/web/src/lib/zoom-buckets.ts` — shared with the
+pin renderer so the two cannot drift), each pin carries the next bus at that stop on its
+top-right shoulder. `StopEtasProvider` (`apps/web/src/context/stop-etas.tsx`) holds the map's
+only `idle`/bounds listener and picks the set; it sits inside `<Map>` and around the pin
+renderers because `MapPinsRenderer` is mounted three times and would otherwise keep three
+listeners and three different capped sets.
+
+Three things are load-bearing and not visible in the code:
+
+- **`stops.nextArrivals` costs one upstream request per stop, not one per route.**
+  `GetTiemposParada` answers with every line serving the stop whatever route id the URL
+  names, so unlike `stops.get` — which fans out over the stop's routes and merges — this asks
+  once. `schedule-contract.test.ts` pins that against the two recorded snapshots; if it ever
+  stops holding, this feature's budget triples silently. The route it asks about is one that
+  operates today where possible, because a dormant line's id answers the `{"idLinea":"N"}`
+  sentinel and a stop served by a running line would report nothing.
+- **The cap is not what protects the drawer — the priority lane is.** `ThrottledQueue` has
+  three lanes: `nextArrivals` is the only caller that passes `"low"`, `directions.plan` the
+  only one that passes `"batch"` (between the two, so a plan never delays a tap), and
+  everything else defaults to `"high"` and keeps its old behaviour. Capping alone was tried first and is not
+  sufficient: with 15 legitimate prefetches queued FIFO ahead of a tap, 7 of 11 drawer opens
+  took over three seconds and the worst took 8.9 s. With the lane, drawer latency under full
+  prefetch load (median 3.1 s) matches an idle queue (2.4 s); the rest is Moventis's own
+  latency. `MAX_ETA_STOPS` (15) and the 60 s interval still bound the _total_ traffic, and
+  stops past the cap show no pill rather than an empty one. Note the 8 s axios timeout starts
+  at dispatch, not at enqueue, so queue depth never manufactures a timeout.
+- **Progressive paint is `httpBatchStreamLink`, not a streaming procedure.** One query per
+  stop goes out in a single HTTP request and each result streams back as it settles, so the
+  pills appear one at a time. The resolved map is passed to `MapPin` as a prop rather than
+  read from context inside it — context bypasses `React.memo`, and every pin would re-render
+  on each of those arrivals.
+
+The pill names a selected line where the stop serves one and falls back to the earliest of
+any line otherwise, so a saved stop off every selected line still answers "what comes here?".
+`SettleCache` (`packages/api/src/lib/settle-cache.ts`) backs both this and `buses.byLine`:
+an entry serves callers while in flight, plus a TTL measured from **settlement** — timing it
+from the start deduplicates nothing when the queue is the reason the work is slow.
 
 ### Saved Stops (`preferides`)
 
@@ -241,6 +286,7 @@ Search query is deliberately not in the URL.
 `/linies`, `/linies/[code]`, `/parades`, `/parades/[slug]`, `/informacio`, `/tarifes` and `/privadesa` share the shell in `apps/web/src/components/content/`: a header back to the map, and a footer that links the content pages to each other and says the site is not Moventis'. Six things are easy to get wrong:
 
 - Every page other than `/` builds its metadata with `pageMetadata()` (`apps/web/src/lib/seo.ts`). Next merges metadata one level deep, so a page that sets nothing inherits the root's `canonical: "/"` and og:url, and tells Google it is a copy of the home page.
+- Crawlers get a dynamic page's metadata in `<head>` only because `next.config.js` adds Googlebot to `htmlLimitedBots`. Next's default list leaves it out, streams the tags into `<body>` instead, and Google ignores a canonical there.
 - `CONTENT_LINKS` (`apps/web/src/lib/content-links.ts`) is the list of content pages the footer and the settings panel read. The map links pages from its bars instead (`components/map/nav/index.tsx`): the phone's bottom bar has línies and parades, and the desktop bar at the bottom of the column has those plus tarifes and informació. Those are the only `<a>` elements in `/`'s server HTML, since everything else on the map is a button and crawlers do not follow buttons. Both bars stay in the DOM at every width (one is `display: none`), which crawlers still follow. `/privadesa` is not on the map; it is linked from `/informacio`, the cookie banner, the settings panel and the sitemap. List only pages that exist.
 - The map's floating controls share one grid: the right rail is 48px icon-only squares (ko-fi, ubicació, ruta), named by `aria-label` and `title`, and from `lg` the rail and the desktop bar share a 32px bottom inset, which is what keeps Google's logo in the map's bottom-left corner uncovered.
 - Copy is lowercase in the source, proper nouns included. `body.lowercase` only changes what is drawn; crawlers and snippets read the source.
@@ -287,3 +333,14 @@ Timetable (routeId, trayectoId, date, stops[], trips, unpaired)  ← composite P
 This has bitten twice. `discoverLines` in the scraper is the recovery path that un-deletes the network, and without the override it returned zero routes on the one run that needed it. `stops.getByExternalIds` was the second: it is documented above as including soft-deleted stops, and silently did not, so a saved stop that got soft-deleted disappeared from the map instead of staying clickable. Both now pass `deletedAt: undefined` explicitly — a key whose value is `undefined` still has to be _present_, so `toEqual` alone cannot tell the fixed query from the broken one.
 
 The extension also does not reach included relations: `stop.findUnique({ include: { routes: true } })` returns soft-deleted routes, which is why `stops.get` filters them in the `include`.
+
+<!-- BEGIN:turborepo-agent-rules -->
+
+# This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
+<!-- END:turborepo-agent-rules -->
